@@ -1,0 +1,23 @@
+fileFormatVersion: 2
+guid: 45e666212c1cbc24281bb4c830aedb4a
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - turnActionProxyPrefab: {fileID: 1018211222963423413, guid: 4e1b6809da92d76498dd235aaed06608,
+      type: 3}
+  - actionDecisionPanel: {fileID: 6176332045973777808, guid: 402bce79b9f95684fb1fb61550402718,
+      type: 3}
+  - projectilePrefab: {fileID: 8867444999891569452, guid: 0d05db078f4c41b4792295d312d68231,
+      type: 3}
+  - actionDecisionPanelActionButton: {fileID: 2204910441194745505, guid: f01e2ac0fd3a2544893118a7a0334df6,
+      type: 3}
+  - currentMainCamera: {instanceID: 0}
+  - IM: {instanceID: 0}
+  - currentMainHandler: {instanceID: 0}
+  - allCharactersParent: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

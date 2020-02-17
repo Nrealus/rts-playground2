@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7ef86ae9787c394193decf9bacfd912, type: 3}
+  m_Name: FactionBData
+  m_EditorClassIdentifier: 
+  factionName: Faction B
+  baseColor: {r: 0.9339623, g: 0.7333516, b: 0.048460312, a: 1}
+  selectionCirclePrefab: {fileID: 1119517943554234098, guid: b0ba1efe4078ad44cadb6bf9903aebfb,
+    type: 3}

@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ee3efe57feb3c84a84454167953c52e, type: 3}
+  m_Name: SOGuiArrowButtonData
+  m_EditorClassIdentifier: 
+  buttonSprite: {fileID: 21300000, guid: 69af136344f1de648b5b634842e1175e, type: 3}
+  buttonSpriteState:
+    m_HighlightedSprite: {fileID: 21300000, guid: c56964a03f0c02f499b857701f04a16f,
+      type: 3}
+    m_PressedSprite: {fileID: 21300000, guid: bc05758ebea9cc541b1a78fe53ea012b, type: 3}
+    m_SelectedSprite: {fileID: 21300000, guid: 31cc2485ae1dbec4bbb1e79cba041dcb, type: 3}
+    m_DisabledSprite: {fileID: 4248092638813358934, guid: 21d95ce433be297468b2acf554347603,
+      type: 3}
+  buttonSpritePressedHighlighted: {fileID: 21300000, guid: 31cc2485ae1dbec4bbb1e79cba041dcb,
+    type: 3}
+  buttonPressedSpriteState:
+    m_HighlightedSprite: {fileID: 21300000, guid: 31cc2485ae1dbec4bbb1e79cba041dcb,
+      type: 3}
+    m_PressedSprite: {fileID: 21300000, guid: 6041d9def74ebe74fa921658e16e0747, type: 3}
+    m_SelectedSprite: {fileID: 0}
+    m_DisabledSprite: {fileID: 21300000, guid: f0d0d6cccbd313541975ba0b7e2361a7, type: 3}
+  buttonColor: {r: 1, g: 1, b: 1, a: 1}
+  CTNormalColor: {r: 1, g: 1, b: 1, a: 1}
+  CTHighlightedColor: {r: 1, g: 1, b: 1, a: 1}
+  CTPressedColor: {r: 1, g: 1, b: 1, a: 1}
+  CTDisabledColor: {r: 1, g: 1, b: 1, a: 1}

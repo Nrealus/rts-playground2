@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45e666212c1cbc24281bb4c830aedb4a, type: 3}
+  m_Name: GameManager
+  m_EditorClassIdentifier: 
+  zkey: 122
+  skey: 0
+  dkey: 0
+  qkey: 0
+  akey: 0
+  ekey: 0
+  fkey: 0
+  rkey: 0
+  lshiftkey: 0
+  laltkey: 0
+  lctrlkey: 0
+  alpha0key: 0
+  alpha1key: 0
+  alpha2key: 0
+  alpha3key: 0
+  alpha4key: 0
+  alpha5key: 0
+  alpha6key: 0
+  alpha7key: 0
+  alpha8key: 0
+  alpha9key: 0
+  lmb: 0
+  mmb: 2
+  rmb: 1
+  doublePressMaxTime: 0.2
+  doubleClickMaxTime: 0.2
+  turnActionProxyPrefab: {fileID: 1018211222963423413, guid: 4e1b6809da92d76498dd235aaed06608,
+    type: 3}
+  actionDecisionPanel: {fileID: 6176332045973777808, guid: 402bce79b9f95684fb1fb61550402718,
+    type: 3}
+  projectilePrefab: {fileID: 8867444999891569452, guid: 0d05db078f4c41b4792295d312d68231,
+    type: 3}
+  actionDecisionPanelActionButton: {fileID: 2204910441194745505, guid: f01e2ac0fd3a2544893118a7a0334df6,
+    type: 3}
+  currentMainCamera: {fileID: 0}
+  IM: {fileID: 0}
+  currentMainHandler: {fileID: 0}
+  allCharactersParent: {fileID: 0}

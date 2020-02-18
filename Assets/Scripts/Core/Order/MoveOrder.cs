@@ -25,11 +25,9 @@ namespace Core.Orders
         
         public MoveOrder()
         {
-            _myWrapper = new OrderWrapper<MoveOrder>(this);
-
             btClock = new Clock();
 
-            BaseConstructor();
+            BaseConstructor<MoveOrder>();
         }
 
         protected override void OrderPhasesFSMInit()
@@ -56,7 +54,7 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.AllGoodToStartExecution,
                 () =>
                 {
-                    //GetMyWrapper().RegisterOrderIfAppropriate(this);
+                    //GetMyWrapper().RegisterMeIfAppropriate();
                 });
 
             orderPhasesFSM.AddState(OrderPhase.Execution,
@@ -89,7 +87,7 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.End,
                () =>
                {
-                   //receiverWrapper.UnregisterOrder(this);
+
                },
                () =>
                {
@@ -118,15 +116,14 @@ namespace Core.Orders
             }
         }
 
+        public void AddWaypoint(Vector3 waypoint)
+        {
+            this.waypointsList.Add(waypoint);
+        }
+
         public void AddWaypoints(List<Vector3> waypoints)
         {
             this.waypointsList.AddRange(waypoints);
-        }
-
-        public void AddWaypointsMeAndChildren(List<Vector3> waypoints)
-        {
-            foreach (var v in GetMeAndAllChildrenWrappersListOfType<MoveOrder>())
-                ((MoveOrder)v.WrappedObject).AddWaypoints(waypoints);
         }
 
         private void UpdateBTClock()
@@ -139,7 +136,7 @@ namespace Core.Orders
             return new Root(new Blackboard(btClock), btClock,
                         new Condition(() => { return IsInPhase(OrderPhase.Execution); },
                             new Sequence(
-                                new Condition(() => { return ReceiverExists()/* && PathExists() && !PathFinished() && !IsInPhase(OrderPhase.Pause)*/; },
+                                new Condition(() => { return ReceiverExists() && PathExists() && !PathFinished(); }, Stops.LOWER_PRIORITY,
                                     new Action(NavigateAlongPath)),
                                 new Condition(() => { return PathFinished(); },
                                     new Action(GetMyWrapper().EndExecution)))));
@@ -165,21 +162,14 @@ namespace Core.Orders
             return currentWaypointIndex >= waypointsList.Count;
         }
 
-        private bool PathOntoLastPoint()
-        {
-            return currentWaypointIndex == waypointsList.Count - 1;
-        }
-
         private float s = 0.1f;
         private void NavigateAlongPath()
         {
             unitWrapper.WrappedObject.myMover.MoveToPosition(waypointsList[currentWaypointIndex], s);
-
             if (unitWrapper.WrappedObject.myMover.DistanceConditionToPosition(waypointsList[currentWaypointIndex], 0.05f))
             {
                 currentWaypointIndex++;
             }
-
         }
 
         public override bool IsOrderApplicable()

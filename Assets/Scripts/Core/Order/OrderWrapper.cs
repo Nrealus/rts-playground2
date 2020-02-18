@@ -22,14 +22,7 @@ namespace Core.Orders
 
         public void SetOrderReceiver(IOrderable<T> orderedUnitWrapper)
         {
-            if (WrappedObject.IsInPhase(Order.OrderPhase.Preparation))
-            {
-                WrappedObject.SetOrderReceiver(orderedUnitWrapper);
-            }
-            else
-            {
-                Debug.Log("Order is not in setup phase anymore");
-            }
+            SetOrderReceiver((IOrderable)orderedUnitWrapper);
         }
         
     }
@@ -57,28 +50,22 @@ namespace Core.Orders
             {
                 GetOrderHandler().AddToOrderWrapperList(this);
                 SubscribeOnClearance(() => UnregisterMe());
-            }
-            else
-            {
-                Debug.LogError("order was already registered");
-            }
-
-            if (WrappedObject.IsRoot())
-            {
                 return true;
             }
             else
             {
+                Debug.LogError("order was already registered");
                 return false;
             }
+
         }
 
         private bool UnregisterMe()
         {
-            if (!GetOrderHandler().OrderWrapperRegistered(this))
+            if (GetOrderHandler().OrderWrapperRegistered(this))
             {
                 GetOrderHandler().RemoveFromOrderWrapperList(this);
-                UnsubscribeOnClearance(() => UnregisterMe());
+                UnsubscribeOnClearance(() => UnregisterMe()); 
                 return true;
             }
             else
@@ -102,43 +89,16 @@ namespace Core.Orders
             }
         }
 
-        public bool TryStartIndividualExecution()
+        public bool TryStartExecution()
         {
             if(WrappedObject.IsInPhase(Order.OrderPhase.AllGoodToStartExecution))
             {
-                WrappedObject.SetMeAndAllChildrenPhase(Order.OrderPhase.Execution);
+                WrappedObject.SetPhase(Order.OrderPhase.Execution);
                 return true;
             }
             else
             {
                 return false;
-            }
-        }
-
-        public bool TryStartExecution(bool individualIndependently)
-        {
-            if (!individualIndependently)
-            {
-                Debug.Log(WrappedObject.GetMeAndAllChildrenWrappersList().Count);
-                if (WrappedObject.AreMeAndAllChildrenInPhase(Order.OrderPhase.AllGoodToStartExecution))
-                {
-                    WrappedObject.SetMeAndAllChildrenPhase(Order.OrderPhase.Execution);
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                var list = WrappedObject.GetMeAndAllChildrenWrappersList();
-                bool b = true;
-                foreach (OrderWrapper v in list)
-                {
-                    b = b && TryStartIndividualExecution();
-                }
-                return b; // if all could start ("individually" though (= even when another order is not ready))
             }
         }
 
@@ -147,19 +107,6 @@ namespace Core.Orders
             if (WrappedObject.IsInPhase(Order.OrderPhase.Execution))
             {
                 WrappedObject.SetPhase(Order.OrderPhase.Pause);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        public bool PauseMeAndAllChildrenExecution()
-        {
-            if (WrappedObject.AreMeAndAllChildrenInPhase(Order.OrderPhase.Execution))
-            {
-                WrappedObject.SetMeAndAllChildrenPhase(Order.OrderPhase.Pause);
                 return true;
             }
             else
@@ -181,54 +128,29 @@ namespace Core.Orders
             }
         }
 
-        public bool UnpauseMeAndAllChildrenExecution()
-        {
-            if (WrappedObject.AreMeAndAllChildrenInPhase(Order.OrderPhase.Pause))
-            {
-                WrappedObject.SetMeAndAllChildrenPhase(Order.OrderPhase.Execution);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
         public bool CancelOrder()
         {
             WrappedObject.SetPhase(Order.OrderPhase.Cancelled);
             return true;
         }
 
-        public bool CancelMeAndAllChildrenOrder()
+        public bool EndExecution()
         {
-            WrappedObject.SetMeAndAllChildrenPhase(Order.OrderPhase.Cancelled);
+            WrappedObject.SetPhase(Order.OrderPhase.End);
             return true;
-        }
-
-        public void EndExecution()
-        {
-            CancelOrder();
         }
 
         
         public void SetOrderReceiver(IOrderable orderedUnitWrapper)
         {
-            if (WrappedObject.IsInPhase(Order.OrderPhase.Preparation))
-            {
-                WrappedObject.SetOrderReceiver(orderedUnitWrapper);
-            }
-            else
-            {
-                Debug.Log("Order is not in setup phase anymore");
-            }
+            WrappedObject.SetOrderReceiver(orderedUnitWrapper);
         }
-        
+        /*
         public IOrderable GetOrderReceiver()
         {
             return WrappedObject.GetOrderReceiver();
         }
-
+        */
     }
 
 }

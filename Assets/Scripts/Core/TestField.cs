@@ -100,16 +100,17 @@ public class TestField : MonoBehaviour
             var l = testSelector.GetCurrentlySelectedEntities();
             foreach (var v in l)
                 converted.Add((IOrderable<Unit>)v);
-            var movOrdWrps = orderFactory.CreateOrdersAndSetReceiversHierarchy<MoveOrder>(converted);
-            movOrdWrp = movOrdWrps[0];
-            Debug.Log(movOrdWrps[0].WrappedObject.GetParentWrapper());
-            Debug.Log(movOrdWrps[1].WrappedObject.GetParentWrapper());
+            movOrdWrp = orderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>(converted[0]);
+
+            movOrdGrpWrp = orderFactory.CreateOrderGroup();
+            Debug.Log(movOrdGrpWrp);
+            movOrdGrpWrp.AddChildOrderWrapper(movOrdWrp);
         }
 
     }
 
-    private MoveOrder movOrd;
     private OrderWrapper movOrdWrp;
+    private OrderGroupWrapper movOrdGrpWrp;
     private List<Vector3> wps = new List<Vector3>();
     private void UnitTesting(Unit u)
     {
@@ -159,19 +160,19 @@ public class TestField : MonoBehaviour
         */
         if (u.subTesting && Input.GetKeyDown(KeyCode.KeypadPlus))
         {
-            wps.Add(pointedPosition);
-            ((OrderWrapper<MoveOrder>)movOrdWrp).ConvertWrappedToT().AddWaypointsMeAndChildren(wps);
+            //wps.Add(pointedPosition);
+            ((OrderWrapper<MoveOrder>)movOrdWrp).ConvertWrappedToT().AddWaypoint(pointedPosition);
         }
 
         if (u.subTesting && Input.GetKeyDown(KeyCode.Space) && movOrdWrp.WrappedObject != null)
         {
             movOrdWrp.GetConfirmationFromReceiver();
-            //Debug.Log(movOrdWrp.WrappedObject.IsInPhase(Order.OrderPhase.AllGoodToStartExecution));
+            Debug.Log(movOrdWrp.WrappedObject.IsInPhase(Order.OrderPhase.AllGoodToStartExecution));
         }
 
         if (u.subTesting && Input.GetKeyDown(KeyCode.KeypadEnter) && movOrdWrp.WrappedObject != null)
         {
-            movOrdWrp.TryStartExecution(false);
+            movOrdWrp.TryStartExecution();
             movOrdWrp = null;
             wps.Clear();
         }

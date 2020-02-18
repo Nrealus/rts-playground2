@@ -10,7 +10,7 @@ namespace Core.Orders
 {
 
     public abstract class Order :
-        IHasRefWrapperAndTree<OrderWrapper>
+        IHasRefWrapper<OrderWrapper>
     {
         /*public static NPBehave.Clock GetAllOrdersClock()
         {
@@ -23,10 +23,6 @@ namespace Core.Orders
         { Preparation, RequestConfirmation, AllGoodToStartExecution, NotReadyToStartExecution,
             Execution, Pause, Cancelled, End, Disposed }
         protected StateMachine<OrderPhase> orderPhasesFSM;
-
-        /*--------*/
-
-        protected OrderTreeNode orderTreeNode;
 
         /*--------*/
 
@@ -47,9 +43,9 @@ namespace Core.Orders
             //BaseConstructor(); <-- NO : BECAUSE C# CALLS CONSTRUCTORS "FROM TOP TO BOTTOM" (base then derived)
         }
 
-        protected void BaseConstructor()
+        protected void BaseConstructor<T>() where T : Order
         {
-            orderTreeNode = new OrderTreeNode(GetMyWrapper());
+            _myWrapper = new OrderWrapper<T>(this);
             orderPhasesFSM = new StateMachine<OrderPhase>();
             OrderPhasesFSMInit();
         }
@@ -72,70 +68,14 @@ namespace Core.Orders
             orderPhasesFSM.CurrentState = phase;
         }
 
-        public void SetMeAndAllChildrenPhase(OrderPhase phase)
-        {
-            var list = GetMeAndAllChildrenWrappersList();
-            foreach (OrderWrapper v in list)
-            {
-                v.WrappedObject.SetPhase(phase);
-            }
-        }
-
         public bool IsInPhase(OrderPhase phase)
         {
             return orderPhasesFSM.CurrentState == phase;
         }
 
-        public bool AreMeAndAllChildrenInPhase(OrderPhase phase)
-        {
-            var list = GetMeAndAllChildrenWrappersList();
-            var b = false;
-            foreach (OrderWrapper v in list)
-            {
-                b = true;
-                if(!v.WrappedObject.IsInPhase(phase))
-                {
-                    return false;
-                }
-            }
-            return b;
-        }
-
         public void UpdateOrderPhaseFSM()
         {
             orderPhasesFSM.Update();
-        }
-
-        public List<OrderWrapper> GetMeAndAllChildrenWrappersList()
-        {
-            return orderTreeNode.BFSListMeAndAllChildrenWrappers();
-        }
-
-        public List<OrderWrapper<T>> GetMeAndAllChildrenWrappersListOfType<T>() where T : Order
-        {
-            var bfslist = orderTreeNode.BFSListMeAndAllChildrenWrappers();
-            List<OrderWrapper<T>> res = new List<OrderWrapper<T>>();
-            foreach (var v in bfslist)
-            {
-                if(v is OrderWrapper<T>)
-                    res.Add(v as OrderWrapper<T>);
-            }
-            return res;
-        }
-
-        public OrderWrapper GetParentWrapper()
-        {
-            return orderTreeNode.GetParentWrapper();
-        }
-
-        public bool IsRoot()
-        {
-            return orderTreeNode.IsRoot();
-        }
-
-        public void SetParentOrder(Order order)
-        {
-            orderTreeNode.ChangeParentTo(order.orderTreeNode);
         }
 
         //public abstract void SetOptions(OrderOptions options);

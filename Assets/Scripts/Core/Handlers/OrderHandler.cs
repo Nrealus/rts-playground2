@@ -14,6 +14,7 @@ namespace Core.Handlers
 
         //public NPBehave.Clock ordersBTClock;
 
+        //plebean implementation, this is actually a forest
         private List<OrderWrapper> orderWrappersList = new List<OrderWrapper>();
         //public List<Order> disposeOrdersList;
 
@@ -33,7 +34,7 @@ namespace Core.Handlers
                 orderWrappersList[i].UpdateOrderPhaseFSM();
             }
 
-            if (Input.GetKeyDown(KeyCode.K))
+            /*if (Input.GetKeyDown(KeyCode.K))
             {
                 foreach (OrderWrapper ow in orderWrappersList)
                 {
@@ -42,7 +43,8 @@ namespace Core.Handlers
                     else
                         ow.PauseExecution();
                 }
-            }
+            }*/
+
             /*
             if (Input.GetKeyDown(KeyCode.U))
             {
@@ -56,8 +58,29 @@ namespace Core.Handlers
 
         public bool OrderWrapperRegistered(OrderWrapper wrapper)
         {
-            return orderWrappersList.Contains(wrapper);
+            return orderWrappersList.Contains(wrapper);                
         }
+
+        /*
+        public bool OrderWrapperFirstInQueue(OrderWrapper wrapper)
+        {
+            return CorrectPositionsOfOrderWrapper(wrapper)[1] == 0;
+        }
+
+        private int[] CorrectPositionsOfOrderWrapper(OrderWrapper wrapper)
+        {
+            for (int i = 0; i < orderWrappersList.Count; i++)
+            {
+                for (int j = 0; j < orderWrappersList[i].Count; j++)
+                {
+                    if(orderWrappersList[i][j] == wrapper)
+                    {
+                        return new int[] {i,j};                        
+                    }
+                }
+            }
+            return new int[] {-1,-1};
+        }*/
 
         public bool AddToOrderWrapperList(OrderWrapper wrapper)
         {
@@ -67,9 +90,7 @@ namespace Core.Handlers
                 return true;
             }
             else
-            {
                 return false;
-            }
         }
 
         public bool RemoveFromOrderWrapperList(OrderWrapper wrapper)

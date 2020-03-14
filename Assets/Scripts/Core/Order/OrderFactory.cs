@@ -13,7 +13,7 @@ namespace Core.Orders
             return (new OrderGroup()).GetMyWrapper();
         }
 
-        public OrderWrapper<T> CreateOrderwrapper<T>() where T : Order
+        private OrderWrapper<T> CreateOrderWrapper<T>() where T : Order
         {
             switch (typeof(T))
             {
@@ -37,7 +37,7 @@ namespace Core.Orders
 
         public OrderWrapper<T> CreateOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper) where T : Order
         {
-            OrderWrapper<T> res = CreateOrderwrapper<T>();
+            OrderWrapper<T> res = CreateOrderWrapper<T>();
             res.SetOrderReceiver(receiverWrapper);
             return res;
         }
@@ -47,9 +47,9 @@ namespace Core.Orders
             IOrderable<Unit> res = null;
             IOrderable<Unit> u = uwrppr;
 
-            while (u == null || u.GetMyReferenceWrapperGeneric().WrappedObject.GetParentWrapper() != null)
+            while (u == null || u.GetOrderableAsReferenceWrapperGeneric().WrappedObject.GetParentWrapper() != null)
             {
-                u = u.GetMyReferenceWrapperGeneric().WrappedObject.GetParentWrapper();
+                u = u.GetOrderableAsReferenceWrapperGeneric().WrappedObject.GetParentWrapper();
                 if(list.Contains(u))
                 {
                     res = u;

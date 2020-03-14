@@ -20,7 +20,8 @@ namespace Core.Orders
         //protected OrderOptions orderOptions;
 
         public enum OrderPhase
-        { Preparation, RequestConfirmation, AllGoodToStartExecution, NotReadyToStartExecution,
+        { InitialState,
+            Registration, RequestConfirmation, AllGoodToStartExecution, NotReadyToStartExecution,
             Execution, Pause, Cancelled, End, Disposed }
         protected StateMachine<OrderPhase> orderPhasesFSM;
 
@@ -30,11 +31,7 @@ namespace Core.Orders
         public OrderWrapper GetMyWrapper() { return _myWrapper; }
         public OrderWrapper<T> GetMyWrapper<T>() where T : Order { return _myWrapper as OrderWrapper<T>; }
 
-        public void ClearWrapper()
-        {
-            GetMyWrapper().DestroyWrappedReference();
-            _myWrapper = null;
-        }
+        //public abstract void ClearWrapper();
 
         /*--------*/
 
@@ -43,9 +40,8 @@ namespace Core.Orders
             //BaseConstructor(); <-- NO : BECAUSE C# CALLS CONSTRUCTORS "FROM TOP TO BOTTOM" (base then derived)
         }
 
-        protected void BaseConstructor<T>() where T : Order
+        protected void CreateAndInitFSM()
         {
-            _myWrapper = new OrderWrapper<T>(this);
             orderPhasesFSM = new StateMachine<OrderPhase>();
             OrderPhasesFSMInit();
         }
@@ -55,6 +51,8 @@ namespace Core.Orders
         public abstract bool IsOrderApplicable();
 
         public abstract IOrderable GetOrderReceiver();
+        
+        //public abstract T GetOrderReceiverAsT<T>() where T : IOrderable;
 
         public abstract void SetOrderReceiver(IOrderable orderable);
 

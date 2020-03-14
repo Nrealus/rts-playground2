@@ -16,17 +16,22 @@ namespace Core.Selection
 
     public interface ISelectable : ISelectableBase
     {
-        ReferenceWrapper GetMyReferenceWrapperNonGeneric();
+        ReferenceWrapper GetSelectableAsReferenceWrapperNonGeneric();
+
+        Y GetSelectableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper;
     }
 
 
     public interface ISelectable<T> : ISelectable
     {
-        ReferenceWrapper<T> GetMyReferenceWrapperGeneric();
+        ReferenceWrapper<T> GetSelectableAsReferenceWrapperGeneric();
+
+        new Y GetSelectableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper<T>;
+
     }
 
     public interface ISelectable<T,Y> : ISelectable<T> where Y : ReferenceWrapper<T>
     {
-        Y GetMyReferenceWrapperSpecific();
+        Y GetSelectableAsReferenceWrapperSpecific();
     }
 }

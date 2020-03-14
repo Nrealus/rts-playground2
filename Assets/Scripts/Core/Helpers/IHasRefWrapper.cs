@@ -9,6 +9,6 @@ namespace Core.Helpers
     {
         T GetMyWrapper();
 
-        void ClearWrapper();
+        //void ClearWrapper();
     }
 }

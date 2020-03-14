@@ -13,15 +13,9 @@ namespace Core.Orders
         public OrderGroupWrapper GetMyWrapper() { return _myWrapper; }
         //public OrderGroupWrapper<T> GetMyWrapper<T>() where T : Order { return _myWrapper as OrderWrapper<T>; }
 
-        public void ClearWrapper()
-        {
-            GetMyWrapper().DestroyWrappedReference();
-            _myWrapper = null;
-        }
-
         public OrderGroup()
         {
-            _myWrapper = new OrderGroupWrapper(this);
+            _myWrapper = new OrderGroupWrapper(this, () => {_myWrapper = null;});
         }
 
     }

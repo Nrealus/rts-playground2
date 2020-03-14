@@ -30,21 +30,18 @@ namespace Core.Units
 
         /*--------*/
 
+        private SpriteRenderer mySprRenderer;
+
         private UnitTreeNode unitTreeNode;
 
         /*--------*/
 
         private UnitWrapper _myWrapper;
         public UnitWrapper GetMyWrapper() { return _myWrapper; }
-        public void ClearWrapper()
-        {
-            GetMyWrapper().DestroyWrappedReference();
-            _myWrapper = null;
-        }
 
         /*--------*/
 
-        public UnitMover myMover;
+        [HideInInspector] public UnitMover myMover;
 
         /*--------*/
 
@@ -55,9 +52,10 @@ namespace Core.Units
 
         public void Init()
         {
-            _myWrapper = new UnitWrapper(this);
+            _myWrapper = new UnitWrapper(this, () => {_myWrapper = null;});
             unitTreeNode = new UnitTreeNode(GetMyWrapper());
             myMover = GetComponent<UnitMover>();
+            mySprRenderer = GetComponent<SpriteRenderer>();
         }
 
         private void Awake()
@@ -69,36 +67,31 @@ namespace Core.Units
         public bool subTesting = false;
         private void Update()
         {
-
+            DrawUpdate();
         }
 
-        private void OnDrawGizmos()
+        private void DrawUpdate()
         {
-            Color color = Color.white;
-
-            if(Application.isPlaying && GetUsedSelector() != null)
-            {
-                if (Application.isPlaying
-                    && GetMyWrapper().IsSelected(GetUsedSelector()))
+            mySprRenderer.color = Color.white;
+            
+                if (GetMyWrapper().IsSelected(GetUsedSelector()))
                 {
-                    color = factionAffiliation.MyFaction.baseColor;
+                    mySprRenderer.color = factionAffiliation.MyFaction.baseColor;
                 }
-                else if (Application.isPlaying
-                        && (GetMyWrapper().IsHighlighted(GetUsedSelector()) 
+                else if ((GetMyWrapper().IsHighlighted(GetUsedSelector()) 
                             || GetMyWrapper().IsThereAnyParentHighlightedOrSelected(GetUsedSelector())))
                 {
-                    color = factionAffiliation.MyFaction.baseColor;
-                    color.a /= 2;
+                    mySprRenderer.color = 
+                        new Color(factionAffiliation.MyFaction.baseColor.r,
+                                factionAffiliation.MyFaction.baseColor.g,
+                                factionAffiliation.MyFaction.baseColor.b,
+                                factionAffiliation.MyFaction.baseColor.a/2);
                 }
-
-                Gizmos.color = color;
-                Gizmos.DrawSphere(transform.position, 5f/(int)unitLevel);
-            }
         }
 
         public void Dismantle()
         {
-            ClearWrapper();
+            GetMyWrapper().DestroyWrappedReference();
             Destroy(gameObject);
         }
 

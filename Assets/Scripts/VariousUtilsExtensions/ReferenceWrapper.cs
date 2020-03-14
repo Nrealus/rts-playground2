@@ -12,6 +12,8 @@ namespace VariousUtilsExtensions
 
         public abstract void UnsubscribeOnClearance(Action action);
 
+        public abstract void UnsubscribeOnClearanceAll();
+
         public abstract void DestroyWrappedReference();
 
     }
@@ -48,16 +50,30 @@ namespace VariousUtilsExtensions
 
         private event Action OnClearance;
 
+        private Action nullifyPrivateRefToWrapper;
+
         //private Dictionary<int, Action> clearanceActionsDictionary;
 
         //private Action _cachedClearAction;
 
-        public ReferenceWrapper(T wrappedObject)
+        /*public ReferenceWrapper(T wrappedObject)
         {
             _wrappedObject = wrappedObject;
 
 			Cleared = false;
 			
+            //clearanceActionsDictionary = new Dictionary<int, Action>();
+
+        }*/
+        
+        public ReferenceWrapper(T wrappedObject, Action nullifyPrivateRefToWrapper)
+        {
+            _wrappedObject = wrappedObject;
+
+			Cleared = false;
+			
+            this.nullifyPrivateRefToWrapper = nullifyPrivateRefToWrapper;
+
             //clearanceActionsDictionary = new Dictionary<int, Action>();
 
         }
@@ -67,7 +83,7 @@ namespace VariousUtilsExtensions
             OnClearance += action;
             int key = 0;
             /*for(int k = 0; k < clearanceActionsDictionary.Keys.Count; k++)
-            {
+            {ClearWrapper
                 if (clearanceActionsDictionary.ContainsKey(key))
                     key++;
                 else
@@ -82,13 +98,10 @@ namespace VariousUtilsExtensions
             OnClearance -= action;
         }
         
-        /*
-        public void UnsubscribeOnClearance(int key)
+        public override void UnsubscribeOnClearanceAll()
         {
-            OnClearance -= clearanceActionsDictionary[key];
-            clearanceActionsDictionary.Remove(key);
-        }
-        */
+            OnClearance = null;
+        }        
 
         public override void DestroyWrappedReference()
         {
@@ -99,11 +112,15 @@ namespace VariousUtilsExtensions
         {
             if (Cleared == false)
             {
-                _wrappedObject = default(T);
+                OnClearance += nullifyPrivateRefToWrapper;
+                // Needed so the (possibly private) reference to the wrapper 
+                // from the wrapped object is set to null 
+                // after all other handlers have been executed.
 
                 OnClearance.Invoke();
-                OnClearance = null;
-                //clearanceActionsDictionary.Clear();
+                OnClearance = null; // Automatically unsubscribe everything
+
+                _wrappedObject = default(T);
             }
         }
 

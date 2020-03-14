@@ -176,8 +176,8 @@ namespace Core.Units
                 int c = orderMarkersList.Count;
                 for (int i=c-1; i>=0; i--)
                 {
-                    if (orderMarkersList[i].GetWrappedAs<OrderMarker>().ordWrapper.GetOrderReceiver() == this
-                        && orderMarkersList[i].GetWrappedAs<OrderMarker>().ordWrapper != currentOrderWrapper)
+                    if (orderMarkersList[i].GetWrappedAs<OrderMarker>().ordWrapper == wrapper
+                        /*&& orderMarkersList[i].GetWrappedAs<OrderMarker>().ordWrapper != currentOrderWrapper*/)
                     {
                         orderMarkersList[i].DestroyWrappedReference();
                         orderMarkersList.RemoveAt(i);

@@ -169,6 +169,10 @@ namespace Core.Selection
 
                 // will be done with the new InputSystem - the global idea will remain the same (as in no overly complicated stuff involved)
                 // but the great thing is that these will be done with anonymous methods subscribing to events
+                if (Input.GetMouseButtonDown(0) && isSelecting && isUsed)
+                {
+                    isSelecting = false;
+                }
                 if (Input.GetMouseButtonDown(0) && !isSelecting && isUsed)
                 {
                     isSelecting = true;

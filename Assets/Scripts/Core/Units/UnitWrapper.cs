@@ -205,7 +205,7 @@ namespace Core.Units
                 return null;
         }*/
 
-        public OrderWrapper GetLastAddedOrder()
+        public OrderWrapper GetMostRecentAddedOrder()
         {
             if(orderWrappersList.Count > 0)
                 return orderWrappersList[orderWrappersList.Count-1];

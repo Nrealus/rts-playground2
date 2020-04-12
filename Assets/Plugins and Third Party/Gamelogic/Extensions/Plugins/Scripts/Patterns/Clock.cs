@@ -1,4 +1,5 @@
 ﻿// Copyright Gamelogic (c) http://www.gamelogic.co.za
+// # MODIFIED BY NREALUS IN A FEW PLACES
 
 using System;
 using Gamelogic.Extensions.Internal;

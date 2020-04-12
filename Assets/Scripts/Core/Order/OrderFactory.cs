@@ -6,14 +6,14 @@ using VariousUtilsExtensions;
 
 namespace Core.Orders
 {
-    public class OrderFactory {
+    public static class OrderFactory {
         
-        public OrderGroupWrapper CreateOrderGroup()
+        public static OrderGroupWrapper CreateOrderGroup()
         {
             return (new OrderGroup()).GetMyWrapper();
         }
 
-        private OrderWrapper<T> CreateOrderWrapper<T>() where T : Order
+        private static OrderWrapper<T> CreateOrderWrapper<T>() where T : Order
         {
             switch (typeof(T))
             {
@@ -35,14 +35,14 @@ namespace Core.Orders
 
         } 
 
-        public OrderWrapper<T> CreateOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper) where T : Order
+        public  static OrderWrapper<T> CreateOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper) where T : Order
         {
             OrderWrapper<T> res = CreateOrderWrapper<T>();
             res.SetOrderReceiver(receiverWrapper);
             return res;
         }
 
-        private IOrderable<Unit> GetClosestParentContainedInList(IOrderable<Unit> uwrppr, List<IOrderable<Unit>> list)
+        private static IOrderable<Unit> GetClosestParentContainedInList(IOrderable<Unit> uwrppr, List<IOrderable<Unit>> list)
         {
             IOrderable<Unit> res = null;
             IOrderable<Unit> u = uwrppr;

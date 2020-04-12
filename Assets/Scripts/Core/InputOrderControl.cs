@@ -9,17 +9,31 @@ using Core.Selection;
 using Core.Orders;
 using Core.MapMarkers;
 using Gamelogic.Extensions;
+using Core.Helpers;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 
-public class InputOrderControl : MonoBehaviour
+public class InputOrderControl : MonoBehaviour, 
+    IHasCameraRef
 {
 
     public List<ReferenceWrapper<Unit>> unitsList;
 
-    private Camera cam;
+    [SerializeField] private Camera _cam;
+    public Camera GetMyCamera()
+    {
+        return _cam;
+    }
 
-    public Vector3 pointedPosition;
 
-    private OrderFactory orderFactory = new OrderFactory();
+    private struct PointedPositionInfo
+    {
+        public Vector3 pointedPositionWorld;
+        public Vector3 pointedPositionScreen;
+    }
+    private PointedPositionInfo pointedPositionInfo;
+
+    //private OrderFactory orderFactory = new OrderFactory();
 
     private OrderWrapper currentlyEditedOrderWrapper;
     private List<OrderWrapper> currentlyEditedOrderWrappersList = new List<OrderWrapper>();
@@ -38,7 +52,6 @@ public class InputOrderControl : MonoBehaviour
     {
         testSelector = GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
         unitsList = new List<ReferenceWrapper<Unit>>();
-        cam = FindObjectOfType<Camera>();
     }
 
 
@@ -47,38 +60,63 @@ public class InputOrderControl : MonoBehaviour
         OrderOptions, OrderOptionsDuringExec, OrderOptionsDuringEditing,
         OrderConfirm , OrderCancel, }
 
-    private PushdownAutomaton<ChoiceStates> controlPhasesFSM;
+    private StateMachine<ChoiceStates> controlPhasesFSM;
 
     private void Start()
     {
-        controlPhasesFSM = new PushdownAutomaton<ChoiceStates>();
+
+        controlPhasesFSM = new StateMachine<ChoiceStates>();
         controlPhasesFSM.AddState(ChoiceStates.Neutral,
             () => {
-                testSelector.activeSelector = true;
+                testSelector.ActivateAndUnpause();
             },
             () => {
+                /*testSelector.UpdatePointerCurrentScreenPosition(pointedPositionInfo.pointedPositionScreen);
                 //foreach (Transform u in GameManager.Instance.currentMainHandler.unitsRoot.transform)
                 //    UnitTesting(u.GetComponent<Unit>());
+
+                if (Input.GetMouseButtonDown(0) && testSelector.GetLowState()==Selector.LowStates.NotSelecting)
+                    testSelector.StartSelecting();
+
+                if (Input.GetMouseButtonUp(0) && testSelector.GetLowState()==Selector.LowStates.Selecting)
+                    testSelector.ConfirmSelecting();
+
+                if (Input.GetMouseButtonDown(1) && testSelector.GetLowState()==Selector.LowStates.Selecting)
+                    testSelector.CancelSelecting();
+
+                if (Input.GetKey(KeyCode.LeftShift))
+                    testSelector.selectionMode = Selector.SelectionModes.Additive;
+                else if (Input.GetKey(KeyCode.LeftControl))
+                    testSelector.selectionMode = Selector.SelectionModes.Subtractive;
+                else
+                    testSelector.selectionMode = Selector.SelectionModes.Default;
 
                 if (Input.GetMouseButtonDown(1))
                 {
                     controlPhasesFSM.CurrentState = ChoiceStates.OrderChoice;
-                }
+                }*/
             },
             () => {
-                testSelector.activeSelector = false;
+                testSelector.Deactivate();
             }
         );
+        
+        #if FALSE
+        
         UnityEngine.UI.Button bbu1 = null;
         UnityEngine.UI.Button bbu2 = null;
         controlPhasesFSM.AddState(ChoiceStates.OrderChoice,
             () => {
-                bbu1 = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, FindObjectOfType<Canvas>().transform);
-                bbu1.transform.position = pointedPosition - Vector3.right * 5;
+                bbu1 = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, GameObject.Find("ScreenUICanvas").transform);
+                bbu1.GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera().ScreenToViewportPoint(pointedPositionInfo.pointedPositionScreen) - Vector3.right*0.1f);
                 bbu1.GetComponentInChildren<UnityEngine.UI.Text>().text = "Options";                
 
-                bbu2 = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, FindObjectOfType<Canvas>().transform);
-                bbu2.transform.position = pointedPosition + Vector3.right * 5;
+                bbu2 = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, GameObject.Find("ScreenUICanvas").transform);
+                bbu2.GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera().ScreenToViewportPoint(pointedPositionInfo.pointedPositionScreen) + Vector3.right*0.1f);
                 bbu2.GetComponentInChildren<UnityEngine.UI.Text>().text = "Move";
                 
                 bbu1.onClick.AddListener(
@@ -127,8 +165,8 @@ public class InputOrderControl : MonoBehaviour
                 foreach (var v in l)
                 {
                     //orderReceivers.Add((IOrderable<Unit>)v);
-                    orderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>((IOrderable<Unit>)v);
-                    GetCurrentlyEditedOrderWrappers().Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastAddedOrder());
+                    //orderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>((IOrderable<Unit>)v);
+                    GetCurrentlyEditedOrderWrappers().Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
                 }
 
                 //currentlyEditedOrderWrapper = orderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>(converted[0]);
@@ -147,11 +185,11 @@ public class InputOrderControl : MonoBehaviour
                 
                 if (Input.GetMouseButtonDown(0)
                     // cringeee
-                    && NoObjectOfTypeUnderPosition<WaypointMarkerTransform>(Input.mousePosition, 10))
+                    && NoObjectOfTypeUnderPosition<WaypointMarkerTransform>(pointedPositionInfo.pointedPositionScreen, 10))
                 {
-                    //wps.Add(pointedPosition);            
+                    //wps.Add(pointedPositionInfo.pointedPositionWorld);            
                     
-                    //var wpmrk = new WaypointMarker(pointedPosition);
+                    //var wpmrk = new WaypointMarker(pointedPositionInfo.pointedPositionWorld);
                     //currentlyEditedOrderWrapper.GetWrappedAs<MoveOrder>()
                     //    .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
 
@@ -160,7 +198,7 @@ public class InputOrderControl : MonoBehaviour
                     for(int i = 0; i < c; i++)
                     {
                         wpmrk = new WaypointMarker(
-                            pointedPosition - Vector3.right * 10 * i / c);
+                            pointedPositionInfo.pointedPositionWorld - Vector3.right * 10 * i / c);
                         GetCurrentlyEditedOrderWrappers()[i]
                             .GetWrappedAs<MoveOrder>()
                             .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
@@ -184,16 +222,20 @@ public class InputOrderControl : MonoBehaviour
         UnityEngine.UI.Button bu3opt = null;
         controlPhasesFSM.AddState(ChoiceStates.OrderOptionsDuringEditing,
             () => {
-                /*var bu = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, FindObjectOfType<Canvas>().transform);
-                bu.transform.position = pointedPosition - Vector3.right * 5;
+                /*var bu = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, GameObject.Find("ScreenUICanvas").transform);
+                bu.GetComponent<RectTransform>().position = pointedPositionInfo.pointedPositionWorld - Vector3.right * 5;
                 bu.GetComponentInChildren<UnityEngine.UI.Text>().text = "Back";                
                 */
-                bu2opt = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, FindObjectOfType<Canvas>().transform);
-                bu2opt.transform.position = pointedPosition - Vector3.right * 5;
+                bu2opt = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, GameObject.Find("ScreenUICanvas").transform);
+                bu2opt.GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera().ScreenToViewportPoint(pointedPositionInfo.pointedPositionScreen) - Vector3.right*0.1f);
                 bu2opt.GetComponentInChildren<UnityEngine.UI.Text>().text = "Cancel";                
                 
-                bu3opt = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, FindObjectOfType<Canvas>().transform);
-                bu3opt.transform.position = pointedPosition + Vector3.right * 5;
+                bu3opt = Instantiate<UnityEngine.UI.Button>(sampleButtonPrefab, GameObject.Find("ScreenUICanvas").transform);
+                bu3opt.GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera().ScreenToViewportPoint(pointedPositionInfo.pointedPositionScreen) + Vector3.right*0.1f);
                 bu3opt.GetComponentInChildren<UnityEngine.UI.Text>().text = "Confirm";
                 
                 /*bu.onClick.AddListener(
@@ -299,25 +341,20 @@ public class InputOrderControl : MonoBehaviour
                 
             }
         );
+
+        #endif
+        
         controlPhasesFSM.CurrentState = ChoiceStates.Neutral;
     }
 
     int orderChoice = 0;
     private void Update()
     {
-        MousePointUpdate();
-        
+        pointedPositionInfo.pointedPositionScreen = Input.mousePosition;
+        pointedPositionInfo.pointedPositionWorld = GetMyCamera().GetPointedPositionPhysRaycast(pointedPositionInfo.pointedPositionScreen);
+
         controlPhasesFSM.Update();
 
-    }
-
-    private RaycastHit hit;
-    private void MousePointUpdate()
-    {
-        if (Physics.Raycast(cam.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity))
-        {
-            pointedPosition = hit.point;
-        }
     }
 
 
@@ -330,7 +367,7 @@ public class InputOrderControl : MonoBehaviour
         Vector3 sp;
         foreach (var o in objectList)
         {
-            sp = cam.WorldToScreenPoint(o.transform.position);
+            sp = GetMyCamera().WorldToScreenPoint(o.transform.position);
             sp.z = 0;
             if((position - sp).magnitude < distance)
             {

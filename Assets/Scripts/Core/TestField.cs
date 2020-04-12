@@ -8,17 +8,20 @@ using VariousUtilsExtensions;
 using Core.Selection;
 using Core.Orders;
 using Core.MapMarkers;
+using Core.Helpers;
 
-public class TestField : MonoBehaviour
+public class TestField : MonoBehaviour, IHasCameraRef
 {
 
     public List<ReferenceWrapper<Unit>> unitsList;
 
-    private Camera cam;
+    [SerializeField] private Camera _cam;
+    public Camera GetMyCamera()
+    {
+        return _cam;
+    }
 
-    public Vector3 pointedPosition;
-
-    private OrderFactory orderFactory = new OrderFactory();
+    //private OrderFactory orderFactory = new OrderFactory();
 
     private Selector testSelector;
 
@@ -40,7 +43,6 @@ public class TestField : MonoBehaviour
     {
         testSelector = GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
         unitsList = new List<ReferenceWrapper<Unit>>();
-        cam = FindObjectOfType<Camera>();
     }
 
     private void Start()
@@ -60,16 +62,6 @@ public class TestField : MonoBehaviour
             }
         }
 
-    }
-
-
-    private RaycastHit hit;
-    private void MousePointUpdate()
-    {
-        if (Physics.Raycast(cam.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity))
-        {
-            pointedPosition = hit.point;
-        }
     }
 
 }

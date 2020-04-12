@@ -20,7 +20,7 @@ namespace Core.MapMarkers
 
             waypointMarkerTransform = MonoBehaviour.Instantiate<WaypointMarkerTransform>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>()
-                .waypointMarkerTransformPrefab, GameObject.Find("Canvas").transform);
+                .waypointMarkerTransformPrefab, GameObject.Find("WorldUICanvas").transform);
             waypointMarkerTransform.transform.position = position;
             waypointMarkerTransform.associatedMarkerWrapper = GetMyWrapper<WaypointMarker>();
         }

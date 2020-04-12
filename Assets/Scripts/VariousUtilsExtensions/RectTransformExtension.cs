@@ -59,6 +59,18 @@ namespace VariousUtilsExtensions
         {
             trans.localPosition = new Vector3(newPos.x, newPos.y, trans.localPosition.z);
         }
+        /// <summary>
+        /// Sets localPosition corresponding to viewport coordinates position.
+        /// </summary>
+        /// <param name="trans"></param>
+        /// <param name="newPos"></param>
+        public static void SetPositionOfPivotFromViewportPosition(this RectTransform trans, RectTransform canvas, Vector2 viewportPosition)
+        {
+            viewportPosition.x -= 0.5f;
+            viewportPosition.y -= 0.5f;
+            viewportPosition.Scale(canvas.rect.size);
+            trans.localPosition = viewportPosition;
+        }
         public static void SetLeftBottomPosition(this RectTransform trans, Vector2 newPos)
         {
             trans.localPosition = new Vector3(newPos.x + (trans.pivot.x * trans.rect.width), newPos.y + (trans.pivot.y * trans.rect.height), trans.localPosition.z);

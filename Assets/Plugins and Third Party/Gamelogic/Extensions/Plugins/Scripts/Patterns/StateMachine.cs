@@ -6,6 +6,68 @@ using Gamelogic.Extensions.Internal;
 
 namespace Gamelogic.Extensions
 {
+
+	public abstract class StateMachineBase<TLabel>
+	{
+
+		protected class State
+		{
+			public readonly TLabel label;
+			public readonly Action onStart;
+			public readonly Action onStop;
+			public readonly Action onUpdate;
+
+			public State(TLabel label, Action onStart, Action onUpdate, Action onStop)
+			{
+				this.onStart = onStart;
+				this.onUpdate = onUpdate;
+				this.onStop = onStop;
+				this.label = label;
+			}
+		}
+
+		protected abstract TState GetStateFromLabelAs<TState>(TLabel label) where TState : State;
+
+		protected abstract void SetStateFromLabel(TLabel label, State state);
+
+		protected abstract TState GetStateCurrentState<TState>() where TState : State;
+
+		protected abstract void SetStateCurrentState(State state);
+
+		/// <summary>
+		/// Returns the label of the current state.
+		/// </summary>
+		public TLabel CurrentState
+		{
+			get { return GetStateCurrentState<State>().label; }
+
+			set { ChangeState(value); }
+		}
+
+		/// <summary>
+		/// Returns the current state name
+		/// </summary>
+		public override string ToString()
+		{
+			return CurrentState.ToString();
+		}
+
+		public abstract void Update();
+
+		public abstract void AddState(TLabel label, Action onStart, Action onUpdate, Action onStop);
+
+		public abstract void AddState(TLabel label, Action onStart, Action onUpdate);
+
+		public abstract void AddState(TLabel label, Action onStart);
+
+		public abstract void AddState(TLabel label);
+
+		public abstract void AddState<TSubStateLabel>(TLabel label, StateMachine<TSubStateLabel> subMachine,
+			TSubStateLabel subMachineStartState);
+
+		protected abstract void ChangeState(TLabel newState);
+	}
+
 	/// <summary>
 	/// A lightweight state machine.
 	/// </summary>
@@ -30,7 +92,7 @@ namespace Gamelogic.Extensions
 	/// 		</item>
 	/// 		<item>
 	/// 			<description>Set the CurrentState property on the state machine to transition.
-	/// (You can either set it from one of the state delegates, or from anywhere else.
+	/// (You can either set itï¿½from one of the state delegates, or from anywhere else.
 	/// </description>
 	/// 		</item>
 	/// 	</list>
@@ -41,86 +103,35 @@ namespace Gamelogic.Extensions
 	/// <typeparam name="TLabel">The label type of this state machine. Enums are common,
 	/// but strings or int are other possibilities.</typeparam>
 	[Version(1)]
-	public class StateMachine<TLabel>
+	public class StateMachine<TLabel> : StateMachineBase<TLabel>
 	{
-		#region  Types
 
-		private class State
+		private Dictionary<TLabel, State> _stateDictionary = new Dictionary<TLabel, State>();
+		protected override TState GetStateFromLabelAs<TState>(TLabel label)
+		{ return _stateDictionary[label] as TState; }
+
+		protected override void SetStateFromLabel(TLabel label, State state)
 		{
-			#region Public Fields
-
-			public readonly TLabel label;
-			public readonly Action onStart;
-			public readonly Action onStop;
-			public readonly Action onUpdate;
-
-			#endregion
-
-			#region Constructors
-
-			public State(TLabel label, Action onStart, Action onUpdate, Action onStop)
-			{
-				this.onStart = onStart;
-				this.onUpdate = onUpdate;
-				this.onStop = onStop;
-				this.label = label;
-			}
-
-			#endregion
+			_stateDictionary[label] = state;
 		}
 
-		#endregion
+		private State _currentState;
+		protected override TState GetStateCurrentState<TState>()
+		{ return _currentState as TState; }
 
-		#region Private Fields
-
-		private readonly Dictionary<TLabel, State> stateDictionary;
-		private State currentState;
-
-		#endregion
-
-		#region  Properties
-
-		/// <summary>
-		/// Returns the label of the current state.
-		/// </summary>
-		public TLabel CurrentState
-		{
-			get { return currentState.label; }
-
-			[Version(1, 2)]
-			set { ChangeState(value); }
-		}
-
-		#endregion
-
-		#region Constructors
-
-		/// <summary>
-		/// Constructs a new StateMachine.
-		/// </summary>
-		public StateMachine()
-		{
-			stateDictionary = new Dictionary<TLabel, State>();
-		}
-
-		#endregion
-
-		#region Unity Callbacks
+		protected override void SetStateCurrentState(State state)
+		{ _currentState = state; }
 
 		/// <summary>
 		/// This method should be called every frame.
 		/// </summary>
-		public void Update()
+		public override void Update()
 		{
-			if (currentState != null && currentState.onUpdate != null)
+			if (GetStateCurrentState<State>() != null && GetStateCurrentState<State>().onUpdate != null)
 			{
-				currentState.onUpdate();
+				GetStateCurrentState<State>().onUpdate();
 			}
 		}
-
-		#endregion
-
-		#region Public Methods
 
 		/// <summary>
 		/// Adds a state, and the delegates that should run 
@@ -133,9 +144,9 @@ namespace Gamelogic.Extensions
 		/// <param name="onStart">The action performed when the state is entered.</param>
 		/// <param name="onUpdate">The action performed when the state machine is updated in the given state.</param>
 		/// <param name="onStop">The action performed when the state machine is left.</param>
-		public void AddState(TLabel label, Action onStart, Action onUpdate, Action onStop)
+		public override void AddState(TLabel label, Action onStart, Action onUpdate, Action onStop)
 		{
-			stateDictionary[label] = new State(label, onStart, onUpdate, onStop);
+			SetStateFromLabel(label, new State(label, onStart, onUpdate, onStop));
 		}
 
 		/// <summary>
@@ -148,7 +159,7 @@ namespace Gamelogic.Extensions
 		/// <param name="label">The name of the state to add.</param>
 		/// <param name="onStart">The action performed when the state is entered.</param>
 		/// <param name="onUpdate">The action performed when the state machine is updated in the given state.</param>
-		public void AddState(TLabel label, Action onStart, Action onUpdate)
+		public override void AddState(TLabel label, Action onStart, Action onUpdate)
 		{
 			AddState(label, onStart, onUpdate, null);
 		}
@@ -161,7 +172,7 @@ namespace Gamelogic.Extensions
 		/// </summary>
 		/// <param name="label">The name of the state to add.</param>
 		/// <param name="onStart">The action performed when the state is entered.</param>
-		public void AddState(TLabel label, Action onStart)
+		public override void AddState(TLabel label, Action onStart)
 		{
 			AddState(label, onStart, null);
 		}
@@ -170,7 +181,7 @@ namespace Gamelogic.Extensions
 		/// Adds a state.
 		/// </summary>
 		/// <param name="label">The name of the state to add.</param>
-		public void AddState(TLabel label)
+		public override void AddState(TLabel label)
 		{
 			AddState(label, null);
 		}
@@ -186,7 +197,7 @@ namespace Gamelogic.Extensions
 		/// <param name="subMachine">The sub-machine that will run during the given state.</param>
 		/// <param name="subMachineStartState">The starting state of the sub-machine.</param>
 		[Version(1, 4)]
-		public void AddState<TSubStateLabel>(TLabel label, StateMachine<TSubStateLabel> subMachine,
+		public override void AddState<TSubStateLabel>(TLabel label, StateMachine<TSubStateLabel> subMachine,
 			TSubStateLabel subMachineStartState)
 		{
 			AddState(
@@ -196,18 +207,6 @@ namespace Gamelogic.Extensions
 		}
 
 		/// <summary>
-		/// Returns the current state name
-		/// </summary>
-		public override string ToString()
-		{
-			return CurrentState.ToString();
-		}
-
-		#endregion
-
-		#region Private Methods
-
-		/// <summary>
 		/// Changes the state from the existing one to the state with the given label.
 		/// 
 		/// It is legal (and useful) to transition to the same state, in which case the 
@@ -215,21 +214,20 @@ namespace Gamelogic.Extensions
 		/// state keeps on updating as before. The behaviour is exactly the same as switching to
 		/// a new state.
 		/// </summary>
-		private void ChangeState(TLabel newState)
+		protected override void ChangeState(TLabel newState)
 		{
-			if (currentState != null && currentState.onStop != null)
+			if (GetStateCurrentState<State>() != null && GetStateCurrentState<State>().onStop != null)
 			{
-				currentState.onStop();
+				GetStateCurrentState<State>().onStop();
 			}
 
-			currentState = stateDictionary[newState];
+			SetStateCurrentState(GetStateFromLabelAs<State>(newState));
 
-			if (currentState.onStart != null)
+			if (GetStateCurrentState<State>().onStart != null)
 			{
-				currentState.onStart();
+				GetStateCurrentState<State>().onStart();
 			}
 		}
 
-		#endregion
 	}
 }

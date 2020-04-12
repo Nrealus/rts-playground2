@@ -5,38 +5,29 @@ using Core.Faction;
 using Core.Units;
 using VariousUtilsExtensions;
 using Core.Helpers;
+using Gamelogic.Extensions;
 
 namespace Core.Selection
 {
 
-    public class Selector : MonoBehaviour
+    public class Selector : MonoBehaviour, IHasCameraRef
     {
+        public FactionData selectorFaction;
 
-        private Camera cam;
-        private UnitsRoot unitsRoot;
-        private Vector3 myPreviousMousePosition, myCurrentMousePosition;
-
-        [HideInInspector] public enum SelectionModes { Simple, Additive, Complementary };
-        private bool isSelecting;
-
-        public bool isUsed;
-
-        private bool _activeSelector = false;
-        public bool activeSelector
+        private Camera _cam;
+        public Camera GetMyCamera()
         {
-            get { return _activeSelector; }
+            if(_cam == null)
+                _cam = GameObjectExtension.FindObjectOfTypeAndLayer<Camera>(LayerMask.NameToLayer("Default"));
 
-            set {
-                if(value == false && activeSelector == true)
-                {
-                    CancelShapeSelecting();
-                    isSelecting = false;
-                }
-                _activeSelector = value;
-            }
+            return _cam;
         }
 
-        public FactionData selectorFaction;
+        private UnitsRoot unitsRoot;
+        private Vector3 myPointerPreviousScreenPosition, myPointerCurrentScreenPostion;
+
+        public enum SelectionModes { Default, Additive, Subtractive };
+        public SelectionModes selectionMode = SelectionModes.Default;
 
         /*
         private List<ISelectable<Unit>> selectedUnits = new List<ISelectable<Unit>>();
@@ -130,6 +121,18 @@ namespace Core.Selection
             }
         }
 
+        private void DeselectAndDepreselectEveryone()
+        {
+            int i;
+            int c = selectedEntities.Count;
+            for (i = c-1; i >= 0; i--)
+                DeselectEntity(selectedEntities[i]);
+
+            c = preselectedEntities.Count;
+            for (i = c-1; i >= 0; i--)
+                DepreselectEntity(preselectedEntities[i]);
+        }
+
         public void DepreselectEntity(ISelectable selectable)
         {
             if (preselectedEntities.Contains(selectable))
@@ -151,63 +154,93 @@ namespace Core.Selection
         }
 
         //-----------------------------------------------------------------------------------------------------//
+        
+        public bool isUsed;
 
-        private void Start()
+        public enum HighStates { Dead, Inactive, Pause, Active }
+        public enum LowStates { NotSelecting, Selecting, InternalConfirm, InternalCancel }
+
+        private StateMachine<HighStates> stateMachineHigh;
+        private StateMachine<LowStates> stateMachineLow;
+
+        public HighStates GetHighState() { return stateMachineHigh.CurrentState; }
+        public LowStates GetLowState() { return stateMachineLow.CurrentState; }
+
+        public bool Kill() { stateMachineHigh.CurrentState = HighStates.Dead; return true; }
+        public bool Deactivate() { stateMachineHigh.CurrentState = HighStates.Inactive; return true; }
+        public bool Pause() { stateMachineHigh.CurrentState = HighStates.Pause; return true; }
+        public bool ActivateAndUnpause() { stateMachineHigh.CurrentState = HighStates.Active; return true; }
+
+        public bool StartSelecting()
         {
-            cam = Camera.main;
+            if (GetHighState() == HighStates.Active)
+            {
+                stateMachineLow.CurrentState = LowStates.Selecting;
+                return true;
+            }
+            else
+                return false;
+        }
+        public bool CancelSelecting()
+        {
+            stateMachineLow.CurrentState = LowStates.InternalCancel;
+            return true;
+        }
+        public bool ConfirmSelecting()
+        {
+            if (GetHighState() == HighStates.Active)
+            {
+                stateMachineLow.CurrentState = LowStates.InternalConfirm;
+                return true;
+            }
+            else
+                return false;
+        }
+        public void UpdatePointerCurrentScreenPosition(Vector3 position)
+        {
+            if(GetHighState() == HighStates.Active)
+                myPointerCurrentScreenPostion = position;
+        }
+        
+        private void Awake()
+        {
             unitsRoot = FindObjectOfType<UnitsRoot>();
+
+            stateMachineLow = new StateMachine<LowStates>();
+            stateMachineLow.AddState(LowStates.NotSelecting);
+            stateMachineLow.AddState(LowStates.Selecting, null, () => { ShapeSelecting(); });
+            stateMachineLow.AddState(LowStates.InternalConfirm, () => { ConfirmShapeSelecting(); stateMachineLow.CurrentState = LowStates.NotSelecting; });
+            stateMachineLow.AddState(LowStates.InternalCancel, () => { CancelShapeSelecting(); stateMachineLow.CurrentState = LowStates.NotSelecting; });
+
+            stateMachineHigh = new StateMachine<HighStates>();
+            stateMachineHigh.AddState(HighStates.Dead, () => { selectionMode = SelectionModes.Default; CancelSelecting(); DeselectAndDepreselectEveryone(); });
+            stateMachineHigh.AddState(HighStates.Inactive, () => { selectionMode = SelectionModes.Default; CancelSelecting(); });
+            stateMachineHigh.AddState(HighStates.Active/*, null, () => { stateMachineLow.Update(); }*/);
+            stateMachineHigh.AddState(HighStates.Pause);
+
+            stateMachineLow.CurrentState = LowStates.NotSelecting;
+            stateMachineHigh.CurrentState = HighStates.Active;
 
         }
 
         private void Update()
         {
-
-            myCurrentMousePosition = Input.mousePosition;
-
-            if (activeSelector)
-            {
-
-                // will be done with the new InputSystem - the global idea will remain the same (as in no overly complicated stuff involved)
-                // but the great thing is that these will be done with anonymous methods subscribing to events
-                if (Input.GetMouseButtonDown(0) && isSelecting && isUsed)
-                {
-                    isSelecting = false;
-                }
-                if (Input.GetMouseButtonDown(0) && !isSelecting && isUsed)
-                {
-                    isSelecting = true;
-                }
-                if (Input.GetMouseButtonUp(0) && isSelecting && isUsed)
-                {
-                    ConfirmShapeSelecting();
-                    isSelecting = false;
-                }
-                if (isSelecting && Input.GetMouseButtonDown(1) && isUsed)
-                {
-                    CancelShapeSelecting();
-                    isSelecting = false;
-                }
-
-                if(isSelecting && isUsed)
-                {
-                    ShapeSelecting();
-                }
-
-            }
+            stateMachineHigh.Update();
+            stateMachineLow.Update();
         }
 
         private void LateUpdate()
         {
-            if (!isSelecting && isUsed)
-                myPreviousMousePosition = myCurrentMousePosition;
+            if(GetLowState() != LowStates.Selecting)
+                myPointerPreviousScreenPosition = myPointerCurrentScreenPostion;
         }
 
         private void OnGUI()
         {
-            if (isSelecting)
+            if (GetLowState() == LowStates.Selecting)
             {
                 // Create a rect from both mouse positions
-                var rect = DrawUtils.GetScreenRect(myPreviousMousePosition, myCurrentMousePosition);
+                var rect = DrawUtils.GetScreenRect(myPointerPreviousScreenPosition, myPointerCurrentScreenPostion);
                 DrawUtils.DrawScreenRect(rect, new Color(0.8f, 0.8f, 0.95f, 0.25f));
                 DrawUtils.DrawScreenRectBorder(rect, 2, new Color(0.8f, 0.8f, 0.95f));
             }
@@ -217,7 +250,7 @@ namespace Core.Selection
 
         private void ShapeSelecting()
         {
-            Bounds viewportBounds = UIUtils.GetViewportBounds(cam, myPreviousMousePosition, myCurrentMousePosition);
+            Bounds viewportBounds = UIUtils.GetViewportBounds(GetMyCamera(), myPointerPreviousScreenPosition, myPointerCurrentScreenPostion);
             Vector3 sp;
 
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
@@ -225,11 +258,11 @@ namespace Core.Selection
                 var u = unitsRoot.transform.GetChild(i).GetComponent<Unit>();
                 ISelectable s = u.GetMyWrapper();
                 
-                sp = cam.WorldToScreenPoint(u.transform.position);
+                sp = GetMyCamera().WorldToScreenPoint(u.transform.position);
                 sp.z = 0;
 
-                if (IsPointed(s, sp, Input.mousePosition, 10)
-                    || IsInViewportBounds(s, cam.WorldToViewportPoint(u.transform.position), viewportBounds))
+                if (IsPointed(s, sp, myPointerCurrentScreenPostion, 10)
+                    || IsInViewportBounds(s, GetMyCamera().WorldToViewportPoint(u.transform.position), viewportBounds))
                 {
                     PreselectEntity(s);
                 }
@@ -239,9 +272,10 @@ namespace Core.Selection
                 }
             }
         }
+        
         private void ConfirmShapeSelecting()
         {
-            Bounds viewportBounds = UIUtils.GetViewportBounds(cam, myPreviousMousePosition, myCurrentMousePosition);
+            Bounds viewportBounds = UIUtils.GetViewportBounds(GetMyCamera(), myPointerPreviousScreenPosition, myPointerCurrentScreenPostion);
             Vector3 sp;
 
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
@@ -251,15 +285,18 @@ namespace Core.Selection
 
                 DepreselectEntity(s);
 
-                sp = cam.WorldToScreenPoint(u.transform.position);
+                sp = GetMyCamera().WorldToScreenPoint(u.transform.position);
                 sp.z = 0;
 
-                if (IsPointed(s, sp, Input.mousePosition, 10)
-                    || IsInViewportBounds(s, cam.WorldToViewportPoint(u.transform.position), viewportBounds))
+                if (IsPointed(s, sp, myPointerCurrentScreenPostion, 10)
+                    || IsInViewportBounds(s, GetMyCamera().WorldToViewportPoint(u.transform.position), viewportBounds))
                 {
-                    SelectEntity(s);
+                    if (selectionMode == SelectionModes.Subtractive)
+                        DeselectEntity(s);
+                    else
+                        SelectEntity(s);
                 }
-                else
+                else if (selectionMode == SelectionModes.Default)
                 {
                     DeselectEntity(s);
                 }
@@ -278,7 +315,7 @@ namespace Core.Selection
 
         private bool IsInViewportBounds(ISelectable selectable, Vector3 selectablePosition, Bounds viewportBounds)
         {
-            // TODO : clumsy
+            // clumsy ?
             return viewportBounds.Contains(selectablePosition);
 
             /*

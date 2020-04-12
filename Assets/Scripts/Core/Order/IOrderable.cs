@@ -28,7 +28,7 @@ namespace Core.Orders
 
         //OrderWrapper GetNextOrderInQueue();
 
-        OrderWrapper GetLastAddedOrder();
+        OrderWrapper GetMostRecentAddedOrder();
 
         OrderWrapper<Z> GetNextOrderInQueueSpecific<Z>() where Z : Order;        
 

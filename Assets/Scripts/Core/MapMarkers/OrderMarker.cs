@@ -18,17 +18,17 @@ namespace Core.MapMarkers
         public OrderMarker(OrderWrapper ordWrapper)
         {
             this.ordWrapper = ordWrapper;
+            uw = ((UnitWrapper)ordWrapper.GetOrderReceiver());
 
             _myWrapper = new MapMarkerWrapper<OrderMarker>(this, () => {_myWrapper = null;});
             GetMyWrapper<OrderMarker>().SubscribeOnClearance(DestroyMarkerTransform);
 
             orderMarkerTransform = MonoBehaviour.Instantiate<OrderMarkerTransform>(
-                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>()
-                .orderMarkerTransformPrefab, GameObject.Find("Canvas").transform);
+                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().orderMarkerTransformPrefab,
+                GameObject.Find("WorldUICanvas").transform);
             orderMarkerTransform.associatedMarkerWrapper = GetMyWrapper<OrderMarker>();
+            orderMarkerTransform.transform.position = uw.WrappedObject.transform.position;
             
-            uw = ((UnitWrapper)ordWrapper.GetOrderReceiver());
-
         }
 
         public override void UpdateMe()

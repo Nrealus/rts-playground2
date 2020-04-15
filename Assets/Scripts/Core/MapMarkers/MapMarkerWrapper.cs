@@ -12,7 +12,6 @@ namespace Core.MapMarkers
 
         public MapMarkerWrapper(MapMarker wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
         {
-            
         }        
 
     }
@@ -22,7 +21,6 @@ namespace Core.MapMarkers
         
         public MapMarkerWrapper(MapMarker wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
         {
-            
         }        
 
         public T GetWrappedAs<T>() where T : MapMarker

@@ -222,8 +222,8 @@ namespace Core.Orders
         private float s = 0.05f;
         private void NavigateAlongPath()
         {
-            unitWrapper.WrappedObject.myMover.MoveToPosition(waypointMarkerWrappersList[currentWaypointIndex].GetWrappedAs<WaypointMarker>().vectorPosition, s);
-            if (unitWrapper.WrappedObject.myMover.DistanceConditionToPosition(waypointMarkerWrappersList[currentWaypointIndex].GetWrappedAs<WaypointMarker>().vectorPosition, 0.02f))
+            unitWrapper.WrappedObject.myMover.MoveToPosition(waypointMarkerWrappersList[currentWaypointIndex].GetWrappedAs<WaypointMarker>().myPosition, s);
+            if (unitWrapper.WrappedObject.myMover.DistanceConditionToPosition(waypointMarkerWrappersList[currentWaypointIndex].GetWrappedAs<WaypointMarker>().myPosition, 0.02f))
             {
                 waypointMarkerWrappersList[currentWaypointIndex].DestroyWrappedReference();
                 //currentWaypointIndex++;

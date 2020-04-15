@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Core.MapMarkers
 {
-    public class OrderMarkerTransform : MonoBehaviour
+    public class OrderMarkerComponent : MapMarkerComponent
     {
 
         public MapMarkerWrapper associatedMarkerWrapper;        

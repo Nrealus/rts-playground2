@@ -60,7 +60,11 @@ public class InputController : MonoBehaviour,
                 controlledSelector.ActivateAndUnpause();
             },
             () => {
-                if (!ShapeSelectionControl(controlledSelector) && Input.GetMouseButtonDown(1))
+                EditWaypointMarkerControl();
+
+                if (!ShapeSelectionControl(controlledSelector)
+                    && Input.GetMouseButtonDown(1)
+                    && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
                     controllerStateMachine.CurrentState = ControllerStates.Menu;
             },
             () => {
@@ -91,7 +95,11 @@ public class InputController : MonoBehaviour,
                 //PrepareButtonsForMenu(menuCurrentButtons);
             },
             () => {
-                if (!ShapeSelectionControl(controlledSelector) && Input.GetMouseButtonDown(1))
+                EditWaypointMarkerControl();
+
+                if (!ShapeSelectionControl(controlledSelector)
+                    && Input.GetMouseButtonDown(1)
+                    && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
                     controllerStateMachine.CurrentState = ControllerStates.Neutral;
             },
             () => {
@@ -132,7 +140,11 @@ public class InputController : MonoBehaviour,
                 //PrepareButtonsForMenu(menuCurrentButtons);
             },
             () => {
-                if (!ShapeSelectionControl(controlledSelector) && Input.GetMouseButtonDown(1))
+                EditWaypointMarkerControl();
+
+                if (!ShapeSelectionControl(controlledSelector)
+                && Input.GetMouseButtonDown(1)
+                && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
                     controllerStateMachine.CurrentState = ControllerStates.Menu;
             },
             () => {
@@ -144,9 +156,11 @@ public class InputController : MonoBehaviour,
         controllerStateMachine.AddState(ControllerStates.MoveOrderMenu,
             null,
             () => {
-                if (CanEditMoveOrderForSelectedEntities(controlledSelector))
+                //if (CanEditMoveOrderForSelectedEntities(controlledSelector))
 
-                if (!CurrentlyEditedMoveOrdersCreateWaypoints() && Input.GetMouseButtonDown(1))
+                if (!CurrentlyEditedMoveOrdersCreateWaypointsControl()
+                && Input.GetMouseButtonDown(1)
+                 && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
                     controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt;
             },
             null,
@@ -199,6 +213,8 @@ public class InputController : MonoBehaviour,
                 //PrepareButtonsForMenu(menuCurrentButtons);
             },
             () => {
+                EditWaypointMarkerControl();
+
                 if (Input.GetMouseButtonDown(1))
                 {
                     // To be replaced by a generic : go back to "previous order" editing menu (see "pushdown automata")
@@ -259,14 +275,15 @@ public class InputController : MonoBehaviour,
         foreach (var v in l)
         {
             OrderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>((IOrderable<Unit>)v);                    
-            v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
-            //currentlyEditedOrderWrappers.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
+            //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
+            currentlyEditedOrderWrappers.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
         }
     }
 
-    private bool CurrentlyEditedMoveOrdersCreateWaypoints()
+    private bool CurrentlyEditedMoveOrdersCreateWaypointsControl()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0)
+            && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
         {
             //wps.Add(pointedPositionInfo.pointedPositionWorld);            
             
@@ -323,7 +340,7 @@ public class InputController : MonoBehaviour,
         selector.UpdatePointerCurrentScreenPosition(pointerInfo.pointedPositionScreen);
 
         if (Input.GetMouseButtonDown(0) && selector.GetLowState()==Selector.LowStates.NotSelecting
-            && NoScreenUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen))
+            && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
             selector.StartSelecting();
 
         if (Input.GetMouseButtonUp(0) && selector.GetLowState()==Selector.LowStates.Selecting)
@@ -345,30 +362,103 @@ public class InputController : MonoBehaviour,
         return false;
     }
 
+    private WaypointMarkerWrapper _editedWaypointMarkerWrapper = null;
+    private void EditWaypointMarkerControl()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (_editedWaypointMarkerWrapper != null)
+            {
+                WaypointMarkerWrapper.UpdateWaypointMarker(_editedWaypointMarkerWrapper, false, pointerInfo.pointedPositionScreen);
+                _editedWaypointMarkerWrapper = null;
+            }
+            else if (_editedWaypointMarkerWrapper == null)
+            {
+                var ewp = GetUICloseToScreenPosition<WaypointMarkerComponent>(GetMyCamera(), pointerInfo.pointedPositionScreen, 7f);
+                if(ewp != null
+                    && ewp.associatedMarkerWrapper != null
+                    && ewp.associatedMarkerWrapper.WrappedObject != null)
+                {
+                    _editedWaypointMarkerWrapper = ewp.associatedMarkerWrapper;
+                }
+                else if (NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 0)) 
+                {
+                    
+                } 
+            }
+        }
+
+        if (_editedWaypointMarkerWrapper != null 
+            && _editedWaypointMarkerWrapper.WrappedObject != null)
+        {
+            WaypointMarkerWrapper.UpdateWaypointMarker(_editedWaypointMarkerWrapper, true, pointerInfo.pointedPositionScreen);
+        }
+    }
+
 #endregion
 
 #region Helper functions
 
-    private GraphicRaycaster graphicRaycaster;
+    private GraphicRaycaster graphicRaycasterScreenUI;
+    private GraphicRaycaster graphicRaycasterWorldUI;
     private PointerEventData pointerEventData;
     private EventSystem eventSystem;
     private List<RaycastResult> _raycastresults;
 
     private void InitCanvasRaycastingStuff()
     {
-        graphicRaycaster = GameObject.Find("ScreenUICanvas").GetComponent<GraphicRaycaster>();
+        graphicRaycasterScreenUI = GameObject.Find("ScreenUICanvas").GetComponent<GraphicRaycaster>();
+        graphicRaycasterWorldUI = GameObject.Find("WorldUICanvas").GetComponent<GraphicRaycaster>();
         eventSystem = GameObject.Find("EventSystem").GetComponent<EventSystem>();
     }
 
-    private bool NoScreenUIAtScreenPositionExceptCanvas(Vector3 screenPosition)
+    ///<summary>
+    /// mode 0 : screen ui
+    /// mode 1 : world ui
+    /// mode 2 : both
+    ///</summary>
+    private bool NoUIAtScreenPositionExceptCanvas(Vector3 screenPosition, int mode)
     {
         pointerEventData = new PointerEventData(eventSystem);
         pointerEventData.position = screenPosition;
 
         _raycastresults = new List<RaycastResult>();
-        graphicRaycaster.Raycast(pointerEventData, _raycastresults);
+        int hitcount = 0;
 
-        return _raycastresults.Count == 0;
+        graphicRaycasterScreenUI.Raycast(pointerEventData, _raycastresults);
+        hitcount += _raycastresults.Count;
+
+        graphicRaycasterWorldUI.Raycast(pointerEventData, _raycastresults);
+        hitcount += _raycastresults.Count;
+
+        return hitcount == 0;
+    }
+
+    private T GetUICloseToScreenPositionCondition<T>(Camera camera, Vector3 screenPosition, float proximityDistance, System.Func<T,bool> condition) where T : Component
+    {
+        // TODO : very ugly, this of course is only temporary
+        T[] list = GameObjectExtension.FindObjectsOfTypeAndLayer<T>(LayerMask.NameToLayer("UI"));
+        foreach (var o in list)
+        {
+            if(camera.GetWorldPosCloseToScreenPos(o.transform.position, screenPosition, proximityDistance)
+                && (condition == null ^ condition(o) == true)) 
+            {
+                return o;                
+            }
+        }
+        return null;
+    }
+
+    private T GetUICloseToScreenPosition<T>(Camera camera, Vector3 screenPosition, float proximityDistance) where T : Component
+    {
+        // TODO : very ugly, this of course is only temporary
+        T[] list = GameObjectExtension.FindObjectsOfTypeAndLayer<T>(LayerMask.NameToLayer("UI"));
+        foreach (var o in list)
+        {
+            if(camera.GetWorldPosCloseToScreenPos(o.transform.position, screenPosition, proximityDistance))
+                return o;                
+        }
+        return null;
     }
 
 #endregion

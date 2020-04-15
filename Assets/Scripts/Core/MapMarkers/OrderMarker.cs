@@ -11,7 +11,7 @@ namespace Core.MapMarkers
 
         public OrderWrapper ordWrapper;
         
-        private OrderMarkerTransform orderMarkerTransform;        
+        private OrderMarkerComponent orderMarkerTransform;        
 
         private UnitWrapper uw;
 
@@ -23,7 +23,7 @@ namespace Core.MapMarkers
             _myWrapper = new MapMarkerWrapper<OrderMarker>(this, () => {_myWrapper = null;});
             GetMyWrapper<OrderMarker>().SubscribeOnClearance(DestroyMarkerTransform);
 
-            orderMarkerTransform = MonoBehaviour.Instantiate<OrderMarkerTransform>(
+            orderMarkerTransform = MonoBehaviour.Instantiate<OrderMarkerComponent>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().orderMarkerTransformPrefab,
                 GameObject.Find("WorldUICanvas").transform);
             orderMarkerTransform.associatedMarkerWrapper = GetMyWrapper<OrderMarker>();

@@ -7,27 +7,33 @@ namespace Core.MapMarkers
     public class WaypointMarker : MapMarker
     {
 
-        public Vector3 vectorPosition;
+        internal void UpdateWaypointMarker(bool following, Vector3 screenPositionToFollow)
+        {
+            waypointMarkerTransform.FollowScreenPosition(following, screenPositionToFollow); 
+        }
+
+
+        public Vector3 myPosition;
         
-        private WaypointMarkerTransform waypointMarkerTransform;
+        private WaypointMarkerComponent waypointMarkerTransform;
 
         public WaypointMarker(Vector3 position)
         {
-            this.vectorPosition = position;
+            this.myPosition = position;
             
-            _myWrapper = new MapMarkerWrapper<WaypointMarker>(this, () => {_myWrapper = null;});
+            _myWrapper = new WaypointMarkerWrapper(this, () => {_myWrapper = null;});
             GetMyWrapper<WaypointMarker>().SubscribeOnClearance(DestroyMarkerTransform);
 
-            waypointMarkerTransform = MonoBehaviour.Instantiate<WaypointMarkerTransform>(
+            waypointMarkerTransform = MonoBehaviour.Instantiate<WaypointMarkerComponent>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>()
                 .waypointMarkerTransformPrefab, GameObject.Find("WorldUICanvas").transform);
             waypointMarkerTransform.transform.position = position;
-            waypointMarkerTransform.associatedMarkerWrapper = GetMyWrapper<WaypointMarker>();
+            waypointMarkerTransform.associatedMarkerWrapper = GetMyWrapper2<WaypointMarkerWrapper>();
         }
 
         public override void UpdateMe()
         {
-            vectorPosition = waypointMarkerTransform.transform.position;
+            myPosition = waypointMarkerTransform.transform.position;
         }
 
         private void DestroyMarkerTransform()

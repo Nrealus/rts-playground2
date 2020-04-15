@@ -52,6 +52,19 @@ namespace VariousUtilsExtensions
             return default(T);
         }
 
+        public static T[] FindObjectsOfTypeAndLayer<T>(int layer) where T : Component
+        {
+            //Debug.Log(typeof(T));
+            T[] os = GameObject.FindObjectsOfType(typeof(T)) as T[];
+            List<T> res = new List<T>();
+            foreach(var o in os)
+            {
+                if (o.gameObject.layer == layer)
+                    res.Add(o);
+            }
+            return res.ToArray();
+        }
+
     }
 }
 

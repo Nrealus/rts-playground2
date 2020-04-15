@@ -6,14 +6,15 @@ using VariousUtilsExtensions;
 
 namespace Core.MapMarkers
 {
-    public class WaypointMarkerTransform : MonoBehaviour, IHasCameraRef
+    public class WaypointMarkerComponent : MapMarkerComponent, IHasCameraRef
     {
 
         public float moveSpeed = 0.5f;
         public float offset = 5f;
-        private bool following;
+        public bool following;
+        public WaypointMarkerWrapper associatedMarkerWrapper;        
 
-        public MapMarkerWrapper associatedMarkerWrapper;        
+        public Vector3 screenPositionToFollow;
 
         private static Camera _cam;
         public Camera GetMyCamera()
@@ -37,7 +38,7 @@ namespace Core.MapMarkers
 
             if (GetMyCamera().GetWorldPosCloseToScreenPos(transform.position, Input.mousePosition, offset))
             {
-                if(Input.GetMouseButtonDown(0))
+                /*if(Input.GetMouseButtonDown(0))
                 {
                     if (following)
                     {
@@ -51,16 +52,18 @@ namespace Core.MapMarkers
                 if(Input.GetMouseButtonDown(1))
                 {
                     associatedMarkerWrapper.DestroyWrappedReference();
-                }
+                }*/
             }
+        }
 
+        internal void FollowScreenPosition(bool following, Vector3 screenPositionToFollow)
+        {
+            this.following = following;
             if (following)
             {
-                //var mp = new Vector3(Input.mousePosition.x, Input.mousePosition.y, GetMyCamera().transform.position.y - transform.position.y);
-                var mp = Input.mousePosition;
-                wp = GetMyCamera().GetPointedPositionPhysRaycast(mp);
-                transform.position = Vector3.Lerp(transform.position, wp, moveSpeed);
-                //transform.position.Set(wp.x, wp.y, wp.z);                
+                transform.position = Vector3.Lerp(transform.position, 
+                    GetMyCamera().GetPointedPositionPhysRaycast(screenPositionToFollow), moveSpeed);
+                //transform.position.Set(wp.x, wp.y, wp.z);
             }
         }
 

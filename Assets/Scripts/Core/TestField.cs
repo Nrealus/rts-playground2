@@ -33,15 +33,15 @@ public class TestField : MonoBehaviour, IHasCameraRef
         GameObject.Find("Unit (3)").GetComponent<Unit>().unitLevel = Unit.UnitLevel.Company;
         GameObject.Find("Unit (4)").GetComponent<Unit>().unitLevel = Unit.UnitLevel.Company;
 
-        GameObject.Find("Unit (3)").GetComponent<Unit>().SetAsSubordinateOf(GameObject.Find("Unit (2)").GetComponent<Unit>());
-        GameObject.Find("Unit (4)").GetComponent<Unit>().SetAsSubordinateOf(GameObject.Find("Unit (2)").GetComponent<Unit>());
-        GameObject.Find("Unit (2)").GetComponent<Unit>().SetAsSubordinateOf(GameObject.Find("Unit").GetComponent<Unit>());
-        GameObject.Find("Unit (1)").GetComponent<Unit>().SetAsSubordinateOf(GameObject.Find("Unit").GetComponent<Unit>());
+        Unit.SetAsSubordinateOf(GameObject.Find("Unit (3)").GetComponent<Unit>().GetMyWrapper(), GameObject.Find("Unit (2)").GetComponent<Unit>().GetMyWrapper());
+        Unit.SetAsSubordinateOf(GameObject.Find("Unit (4)").GetComponent<Unit>().GetMyWrapper(), GameObject.Find("Unit (2)").GetComponent<Unit>().GetMyWrapper());
+        Unit.SetAsSubordinateOf(GameObject.Find("Unit (2)").GetComponent<Unit>().GetMyWrapper(), GameObject.Find("Unit").GetComponent<Unit>().GetMyWrapper());
+        Unit.SetAsSubordinateOf(GameObject.Find("Unit (1)").GetComponent<Unit>().GetMyWrapper(), GameObject.Find("Unit").GetComponent<Unit>().GetMyWrapper());
     }
 
     private void Awake()
     {
-        testSelector = GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
+        //testSelector = GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
         unitsList = new List<ReferenceWrapper<Unit>>();
     }
 
@@ -51,7 +51,7 @@ public class TestField : MonoBehaviour, IHasCameraRef
     }
 
     int orderChoice = 0;
-    private void Update()
+    /*private void Update()
     {
         
         if (Input.GetKeyDown(KeyCode.D))
@@ -62,6 +62,6 @@ public class TestField : MonoBehaviour, IHasCameraRef
             }
         }
 
-    }
+    }*/
 
 }

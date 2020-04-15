@@ -20,7 +20,7 @@ namespace Core.Orders
 
         private UnitWrapper unitWrapper;
 
-        public override IOrderable GetOrderReceiver()
+        protected override IOrderable InstanceGetOrderReceiver()
         {
             return unitWrapper;
         }
@@ -52,7 +52,7 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.Registration,
                 () =>
                 {
-                    GetMyWrapper().RegisterMeIfAppropriate();
+                    Order.RegisterIfAppropriate(GetMyWrapper());
                 });
 
             orderPhasesFSM.AddState(OrderPhase.NotReadyToStartExecution,
@@ -64,7 +64,7 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.RequestConfirmation,
                 () =>
                 {
-                    if (IsOrderApplicable()) // individually ?
+                    if (InstanceIsOrderApplicable()) // individually ?
                     {
                         orderPhasesFSM.CurrentState = OrderPhase.AllGoodToStartExecution;
                     }
@@ -123,24 +123,24 @@ namespace Core.Orders
             {
                 GetMyWrapper().DestroyWrappedReference();
 
-                if (GetOrderReceiver().GetCurrentOrderInQueue() != null
-                    && GetOrderReceiver().GetCurrentOrderInQueue().GetConfirmationFromReceiver())
+                if (InstanceGetOrderReceiver().GetCurrentOrderInQueue() != null
+                    && Order.GetConfirmationFromReceiver(InstanceGetOrderReceiver().GetCurrentOrderInQueue()))
                 {
-                    GetOrderReceiver().GetCurrentOrderInQueue().TryStartExecution();
+                    Order.TryStartExecution(InstanceGetOrderReceiver().GetCurrentOrderInQueue());
                 }                    
             });
                
             orderPhasesFSM.CurrentState = OrderPhase.InitialState;
         }
 
-        public override void SetOrderReceiver(IOrderable orderable)
+        protected override void InstanceSetOrderReceiver(IOrderable orderable)
         {
-            if (IsInPhase(OrderPhase.InitialState))
+            if (Order.IsInPhase(GetMyWrapper(), OrderPhase.InitialState))
             {
                 unitWrapper = orderable as UnitWrapper;
                 //orderMarkerWrapper = (new OrderMarker(_myWrapper)).GetMyWrapper<OrderMarker>();
                 //GetMyWrapper().SubscribeOnClearance(() => RemoveOrderMarkerAtClearance());
-                SetPhase(OrderPhase.Registration);
+                Order.SetPhase(GetMyWrapper(), OrderPhase.Registration);
             }
             else
             {
@@ -191,12 +191,12 @@ namespace Core.Orders
         private Root CreateBehaviourTree()
         {
             return new Root(new Blackboard(btClock), btClock,
-                        new Condition(() => { return IsInPhase(OrderPhase.Execution); },
+                        new Condition(() => { return Order.IsInPhase(GetMyWrapper(), OrderPhase.Execution); },
                             new Sequence(
-                                new Condition(() => { return ReceiverExists() && PathExists() && !PathFinished(); }, Stops.LOWER_PRIORITY,
+                                new Condition(() => { return Order.ReceiverExists(GetMyWrapper()) && PathExists() && !PathFinished(); }, Stops.LOWER_PRIORITY,
                                     new Action(NavigateAlongPath)),
                                 new Condition(() => { return PathFinished(); },
-                                    new Action(GetMyWrapper().EndExecution)))));
+                                    new Action(() => Order.EndExecution(GetMyWrapper()))))));
         }
 
         private void DisposeBehaviourTree()
@@ -230,11 +230,11 @@ namespace Core.Orders
             }
         }
 
-        public override bool IsOrderApplicable()
+        protected override bool InstanceIsOrderApplicable()
         {
             //if(GetMyWrapper().AmIFirstInQueue())
             //Debug.Log(GetOrderReceiver().GetCurrentOrderInQueue());
-            if(GetOrderReceiver().GetCurrentOrderInQueue() == GetMyWrapper())
+            if(Order.GetReceiver(GetMyWrapper()).GetCurrentOrderInQueue() == GetMyWrapper())
             {
                 return true;
             }

@@ -317,9 +317,9 @@ public class InputController : MonoBehaviour,
         int c = currentlyEditedOrderWrappers.Count;
         for(int i = c-1; i >= 0; i--)
         {
-            if (currentlyEditedOrderWrappers[i].GetConfirmationFromReceiver())
+            if (Order.GetConfirmationFromReceiver(currentlyEditedOrderWrappers[i]))
             {
-                currentlyEditedOrderWrappers[i].TryStartExecution();
+                Order.TryStartExecution(currentlyEditedOrderWrappers[i]);
                 currentlyEditedOrderWrappers.RemoveAt(i);
             }
         }

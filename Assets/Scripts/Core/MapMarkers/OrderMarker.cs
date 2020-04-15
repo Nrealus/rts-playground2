@@ -18,7 +18,7 @@ namespace Core.MapMarkers
         public OrderMarker(OrderWrapper ordWrapper)
         {
             this.ordWrapper = ordWrapper;
-            uw = ((UnitWrapper)ordWrapper.GetOrderReceiver());
+            uw = (UnitWrapper)Order.GetReceiver(ordWrapper);
 
             _myWrapper = new MapMarkerWrapper<OrderMarker>(this, () => {_myWrapper = null;});
             GetMyWrapper<OrderMarker>().SubscribeOnClearance(DestroyMarkerTransform);
@@ -39,7 +39,7 @@ namespace Core.MapMarkers
             //    GetMyWrapper<OrderMarker>().WrappedObject.ClearWrapper();
             if(Input.GetKeyDown(KeyCode.T))
             {
-                ordWrapper.EndExecution();
+                Order.EndExecution(ordWrapper);
             }
         }
 

@@ -8,9 +8,9 @@ namespace Core.Selection
 {
     public interface ISelectableBase
     {
-        bool IsSelected(Selector selector);
+        //bool IsSelected(Selector selector);
 
-        bool IsHighlighted(Selector selector);
+        //bool IsHighlighted(Selector selector);
 
     }
 

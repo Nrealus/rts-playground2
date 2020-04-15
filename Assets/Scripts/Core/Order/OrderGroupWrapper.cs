@@ -103,7 +103,7 @@ namespace Core.Orders
             bool b = false;
             foreach (var ow in orderWrappersList)
             {
-                b &= true && ow.GetConfirmationFromReceiver();
+                b &= true && Order.GetConfirmationFromReceiver(ow);
             }
             return b;
         }
@@ -113,7 +113,7 @@ namespace Core.Orders
             bool b = false;
             foreach (var ow in orderWrappersList)
             {
-                b &= true && ow.TryStartExecution();
+                b &= true && Order.TryStartExecution(ow);
             }
             return b;
         }

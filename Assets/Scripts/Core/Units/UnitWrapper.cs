@@ -81,12 +81,12 @@ namespace Core.Units
 
         #endregion
 
-
+        
         public bool AmIStillUsed()
         {
             return WrappedObject != null;
         }
-
+        /*
         public bool IsSelected(Selector selector)
         {
             return selector.IsSelected(this);
@@ -122,6 +122,11 @@ namespace Core.Units
             {
                 return false;
             }
+        }*/
+
+        public ReferenceWrapper<IOrderable> testFunction()
+        {
+            return null;
         }
 
         private List<OrderWrapper> orderWrappersList = new List<OrderWrapper>();
@@ -177,7 +182,8 @@ namespace Core.Units
                 for (int i=c-1; i>=0; i--)
                 {
                     if (orderMarkersList[i].GetWrappedAs<OrderMarker>().ordWrapper == wrapper
-                        /*&& orderMarkersList[i].GetWrappedAs<OrderMarker>().ordWrapper != currentOrderWrapper*/)
+                        //&& orderMarkersList[i].GetWrappedAs<OrderMarker>().ordWrapper != currentOrderWrapper
+                        )
                     {
                         orderMarkersList[i].DestroyWrappedReference();
                         orderMarkersList.RemoveAt(i);

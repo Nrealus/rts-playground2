@@ -38,7 +38,7 @@ namespace Core.Orders
         public  static OrderWrapper<T> CreateOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper) where T : Order
         {
             OrderWrapper<T> res = CreateOrderWrapper<T>();
-            res.SetOrderReceiver(receiverWrapper);
+            Order.SetReceiver(res, receiverWrapper);
             return res;
         }
 
@@ -47,9 +47,9 @@ namespace Core.Orders
             IOrderable<Unit> res = null;
             IOrderable<Unit> u = uwrppr;
 
-            while (u == null || u.GetOrderableAsReferenceWrapperGeneric().WrappedObject.GetParentWrapper() != null)
+            while (u == null || Unit.GetParentWrapper(u.GetOrderableAsReferenceWrapperSpecific<UnitWrapper>()) != null)
             {
-                u = u.GetOrderableAsReferenceWrapperGeneric().WrappedObject.GetParentWrapper();
+                u = Unit.GetParentWrapper(u.GetOrderableAsReferenceWrapperSpecific<UnitWrapper>());
                 if(list.Contains(u))
                 {
                     res = u;

@@ -7,25 +7,38 @@ namespace Core.Handlers
 {
     public class SelectionHandler : MonoBehaviour
     {
-        public Selector[] selectors;
 
-        public Selector GetUsedSelector()
+        private static SelectionHandler _instance;
+        private static SelectionHandler MyInstance
         {
-            for (int r = 0; r < selectors.Length; r++)
+            get
             {
-                if (selectors[r].isUsed)
-                    return selectors[r];
+                if(_instance == null)
+                    _instance = FindObjectOfType<SelectionHandler>(); 
+                return _instance;
+            }
+        }
+
+        [SerializeField]
+        private Selector[] selectors;
+
+        public static Selector GetUsedSelector()
+        {
+            for (int r = 0; r < MyInstance.selectors.Length; r++)
+            {
+                if (MyInstance.selectors[r].isUsed)
+                    return MyInstance.selectors[r];
             }
             Debug.LogError("no selector is in use");
             return null;
         }
 
-        public Selector GetAppropriateSelectorForUnit(ReferenceWrapper<Unit> unitWrapper)
+        public static Selector GetAppropriateSelectorForUnit(ReferenceWrapper<Unit> unitWrapper)
         {
-            for (int r = 0; r < selectors.Length; r++)
+            for (int r = 0; r < MyInstance.selectors.Length; r++)
             {
-                if (selectors[r].selectorFaction == unitWrapper.WrappedObject.factionAffiliation)
-                    return selectors[r];
+                if (MyInstance.selectors[r].selectorFaction == unitWrapper.WrappedObject.factionAffiliation)
+                    return MyInstance.selectors[r];
             }
             return null;
         }

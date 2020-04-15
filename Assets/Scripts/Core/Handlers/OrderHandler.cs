@@ -9,18 +9,22 @@ namespace Core.Handlers
 {
     public class OrderHandler : MonoBehaviour
     {
+        
+        private static OrderHandler _instance;
+        private static OrderHandler MyInstance
+        {
+            get
+            {
+                if(_instance == null)
+                    _instance = FindObjectOfType<OrderHandler>(); 
+                return _instance;
+            }
+        }
 
-        //public NPBehave.Clock ordersBTClock;
-
-        //plebean implementation, this is actually a forest
         private List<OrderWrapper> orderWrappersList = new List<OrderWrapper>();
-        //public List<Order> disposeOrdersList;
-
+        
         private void Awake()
         {
-            //ordersBTClock = new NPBehave.Clock();
-            //ordersList = new List<Order>();
-            //disposeOrdersList = new List<Order>();
         }
 
 
@@ -29,31 +33,31 @@ namespace Core.Handlers
             //ordersBTClock.Update(Time.deltaTime);
             for (int i = orderWrappersList.Count - 1; i >= 0; i--)
             {
-                orderWrappersList[i].UpdateOrderPhaseFSM();
+                Order.UpdateFSM(orderWrappersList[i]);
             }
         }
 
-        public bool OrderWrapperRegistered(OrderWrapper wrapper)
+        public static bool IsOrderWrapperRegistered(OrderWrapper wrapper)
         {
-            return orderWrappersList.Contains(wrapper);                
+            return MyInstance.orderWrappersList.Contains(wrapper);                
         }
 
-        public bool AddToOrderWrapperList(OrderWrapper wrapper)
+        public static bool AddToOrderWrapperList(OrderWrapper wrapper)
         {
-            if(!OrderWrapperRegistered(wrapper))
+            if(!IsOrderWrapperRegistered(wrapper))
             {
-                orderWrappersList.Add(wrapper);
+                MyInstance.orderWrappersList.Add(wrapper);
                 return true;
             }
             else
                 return false;
         }
 
-        public bool RemoveFromOrderWrapperList(OrderWrapper wrapper)
+        public static bool RemoveFromOrderWrapperList(OrderWrapper wrapper)
         {
-            if(OrderWrapperRegistered(wrapper))
+            if(IsOrderWrapperRegistered(wrapper))
             {
-                orderWrappersList.Remove(wrapper);
+                MyInstance.orderWrappersList.Remove(wrapper);
                 return true;
             }
             else

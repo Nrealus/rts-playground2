@@ -12,6 +12,7 @@ using Gamelogic.Extensions;
 using Core.Helpers;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
+using Core.Handlers;
 
 public class InputOrderControl : MonoBehaviour, 
     IHasCameraRef
@@ -50,7 +51,7 @@ public class InputOrderControl : MonoBehaviour,
 
     private void Awake()
     {
-        testSelector = GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
+        testSelector = SelectionHandler.GetUsedSelector();//GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
         unitsList = new List<ReferenceWrapper<Unit>>();
     }
 

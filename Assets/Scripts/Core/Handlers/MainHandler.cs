@@ -8,6 +8,17 @@ namespace Core.Handlers
     //[RequireComponent(typeof(ParticularHandler1), typeof(ParticularHandler2), typeof(ParticularHandler3))]
     public class MainHandler : MonoBehaviour
     {
+        
+        private static MainHandler _instance;
+        private static MainHandler MyInstance
+        {
+            get
+            {
+                if(_instance == null)
+                    _instance = FindObjectOfType<MainHandler>(); 
+                return _instance;
+            }
+        }
 
         public UnitsRoot unitsRoot { get; private set; }
 

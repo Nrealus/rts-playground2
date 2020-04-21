@@ -16,7 +16,7 @@ namespace Core.Orders
         
         #region Static functions
 
-        public static bool RegisterIfAppropriate(OrderWrapper orderWrapper)
+        protected static bool RegisterIfAppropriate(OrderWrapper orderWrapper)
         {
             if (!OrderHandler.IsOrderWrapperRegistered(orderWrapper))
             {
@@ -50,11 +50,11 @@ namespace Core.Orders
             }
         }
 
-        public static bool GetConfirmationFromReceiver(OrderWrapper orderWrapper)
+        private static bool GetConfirmationFromReceiver(OrderWrapper orderWrapper)
         {
             if (orderWrapper.WrappedObject != null
                 && (Order.IsInPhase(orderWrapper, Order.OrderPhase.Registration)
-                || Order.IsInPhase(orderWrapper, Order.OrderPhase.NotReadyToStartExecution)))
+                || Order.IsInPhase(orderWrapper, Order.OrderPhase.NotReadyForExecution)))
             {
                 Order.SetPhase(orderWrapper, Order.OrderPhase.RequestConfirmation);
                 return true;
@@ -67,9 +67,10 @@ namespace Core.Orders
 
         public static bool TryStartExecution(OrderWrapper orderWrapper)
         {
-            if(Order.IsInPhase(orderWrapper, Order.OrderPhase.AllGoodToStartExecution))
+            Order.GetConfirmationFromReceiver(orderWrapper);
+            if(Order.IsInPhase(orderWrapper, Order.OrderPhase.ReadyForExecution))
             {
-                Order.SetPhase(orderWrapper, Order.OrderPhase.Execution);
+                Order.SetPhase(orderWrapper, Order.OrderPhase.ExecutionWaitingToStart);
                 return true;
             }
             else
@@ -127,6 +128,16 @@ namespace Core.Orders
             orderWrapper.WrappedObject.InstanceSetOrderReceiver(orderable);
         }
 
+        public static OrderParams GetParameters(OrderWrapper orderWrapper)
+        {
+            return orderWrapper.WrappedObject.InstanceGetOrderParams();
+        }
+
+        public static void SetParameters(OrderWrapper orderWrapper, OrderParams orderParams)
+        {
+            orderWrapper.WrappedObject.InstanceSetOrderParams(orderParams);
+        }
+
         public static bool ReceiverExists(OrderWrapper orderWrapper)
         {
             return GetReceiver(orderWrapper) != null && GetReceiver(orderWrapper).AmIStillUsed();
@@ -154,8 +165,8 @@ namespace Core.Orders
 
         public enum OrderPhase
         {   InitialState,
-            Registration, RequestConfirmation, AllGoodToStartExecution, NotReadyToStartExecution,
-            Execution, Pause, Cancelled, End, Disposed }
+            Registration, RequestConfirmation, ReadyForExecution, NotReadyForExecution,
+            ExecutionWaitingToStart, Execution, Pause, Cancelled, End, Disposed }
         protected StateMachine<OrderPhase> orderPhasesFSM;
 
         /*--------*/
@@ -174,6 +185,10 @@ namespace Core.Orders
         }
 
         #region Protected/Private abstract instance methods
+
+        protected abstract OrderParams InstanceGetOrderParams();
+
+        protected abstract void InstanceSetOrderParams(OrderParams orderParams);
 
         protected abstract IOrderable InstanceGetOrderReceiver();
         

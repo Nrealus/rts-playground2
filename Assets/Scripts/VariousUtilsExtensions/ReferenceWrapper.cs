@@ -117,6 +117,7 @@ namespace VariousUtilsExtensions
                 // from the wrapped object is set to null 
                 // after all other handlers have been executed.
 
+                // if(_wrappedObject != default(T)) ???
                 OnClearance.Invoke();
                 OnClearance = null; // Automatically unsubscribe everything
 

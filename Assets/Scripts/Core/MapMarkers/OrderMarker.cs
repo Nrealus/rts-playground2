@@ -11,7 +11,7 @@ namespace Core.MapMarkers
 
         public OrderWrapper ordWrapper;
         
-        private OrderMarkerComponent orderMarkerTransform;        
+        private OrderMarkerComponent orderMarkerComponent;        
 
         private UnitWrapper uw;
 
@@ -23,18 +23,18 @@ namespace Core.MapMarkers
             _myWrapper = new MapMarkerWrapper<OrderMarker>(this, () => {_myWrapper = null;});
             GetMyWrapper<OrderMarker>().SubscribeOnClearance(DestroyMarkerTransform);
 
-            orderMarkerTransform = MonoBehaviour.Instantiate<OrderMarkerComponent>(
-                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().orderMarkerTransformPrefab,
+            orderMarkerComponent = MonoBehaviour.Instantiate<OrderMarkerComponent>(
+                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().orderMarkerComponentPrefab,
                 GameObject.Find("WorldUICanvas").transform);
-            orderMarkerTransform.associatedMarkerWrapper = GetMyWrapper<OrderMarker>();
-            orderMarkerTransform.transform.position = uw.WrappedObject.transform.position;
+            orderMarkerComponent.associatedMarkerWrapper = GetMyWrapper<OrderMarker>();
+            orderMarkerComponent.transform.position = uw.WrappedObject.transform.position;
             
         }
 
         public override void UpdateMe()
         {
             if(uw != null && uw.WrappedObject != null)
-                orderMarkerTransform.transform.position = uw.WrappedObject.transform.position;
+                orderMarkerComponent.transform.position = uw.WrappedObject.transform.position;
             //else
             //    GetMyWrapper<OrderMarker>().WrappedObject.ClearWrapper();
             if(Input.GetKeyDown(KeyCode.T))
@@ -45,7 +45,7 @@ namespace Core.MapMarkers
 
         private void DestroyMarkerTransform()
         {
-            MonoBehaviour.Destroy(orderMarkerTransform.gameObject);
+            MonoBehaviour.Destroy(orderMarkerComponent.gameObject);
             //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearance(DestroyMarkerTransform);
             //GetMyWrapper<OrderMarker>().UnsubscribeOnClearanceAll();
         }

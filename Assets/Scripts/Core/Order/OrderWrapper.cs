@@ -15,11 +15,6 @@ namespace Core.Orders
         public OrderWrapper(Order wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
         {
         }
-
-        public void SetOrderReceiverAsT(IOrderable<T> orderedUnitWrapper)
-        {
-            Order.SetReceiver(this, (IOrderable)orderedUnitWrapper);
-        }
         
     }
 

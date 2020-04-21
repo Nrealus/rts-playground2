@@ -1,0 +1,7 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="base" style="align-items: center;&#10;justify-content: center;&#10;width: 100%;&#10;height: 100%;&#10;flex-grow: 0;&#10;flex-shrink: 1;&#10;flex-basis: auto;&#10;visibility: visible;&#10;">
+        <Style src="TestElementsHierarchy.uss" />
+        <ui:Button text="Orders" name="orders-button" style="align-items: center;&#10;justify-content: space-between;&#10;overflow: hidden;&#10;" />
+        <ui:Button text="Other" name="other-button" style="align-items: center;&#10;justify-content: space-between;&#10;overflow: hidden;&#10;" />
+    </ui:VisualElement>
+</ui:UXML>

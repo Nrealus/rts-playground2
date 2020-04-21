@@ -17,6 +17,11 @@ namespace Core.Units
 
         }
 
+        public Vector3 GetPosition()
+        {
+            return transform.position;
+        }
+
         private float speed;
         public void MoveToPosition(Vector3 position, float desiredSpeed, int mode = 1)
         {

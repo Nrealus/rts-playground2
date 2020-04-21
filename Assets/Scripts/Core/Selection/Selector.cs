@@ -18,7 +18,7 @@ namespace Core.Selection
         public Camera GetMyCamera()
         {
             if(_cam == null)
-                _cam = GameObjectExtension.FindObjectOfTypeAndLayer<Camera>(LayerMask.NameToLayer("Default"));
+                _cam = GameObject.Find("Main Camera").GetComponent<Camera>();
 
             return _cam;
         }

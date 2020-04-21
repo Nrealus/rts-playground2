@@ -6,7 +6,9 @@ using Core.MapMarkers;
 public class ResourcesListComponent : MonoBehaviour
 {
     
-    public WaypointMarkerComponent waypointMarkerTransformPrefab;
-    public OrderMarkerComponent orderMarkerTransformPrefab;
+    public WaypointMarkerComponent waypointMarkerComponentPrefab;
+    public OrderMarkerComponent orderMarkerComponentPrefab;
+
+    public BuildingMarkerComponent buildingMarkerComponentPrefab;
 
 }

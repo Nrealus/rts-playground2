@@ -12,7 +12,7 @@ namespace Core.MapMarkers
         public float moveSpeed = 0.5f;
         public float offset = 5f;
         public bool following;
-        public WaypointMarkerWrapper associatedMarkerWrapper;        
+        public MapMarkerWrapper<WaypointMarker> associatedMarkerWrapper;        
 
         public Vector3 screenPositionToFollow;
 

@@ -23,6 +23,12 @@ namespace Core.Orders
                     OrderWrapper<MoveOrder> wrapper = mo.GetMyWrapper<MoveOrder>();
                     return wrapper as OrderWrapper<T>;
                 }
+                case Type moType when moType == typeof(BuildOrder):
+                {
+                    BuildOrder mo = new BuildOrder();
+                    OrderWrapper<BuildOrder> wrapper = mo.GetMyWrapper<BuildOrder>();
+                    return wrapper as OrderWrapper<T>;
+                }
                 /*case Type MoveOrderType 
                 when MoveOrderType == typeof(MoveOrder) :
                     bool j = true;
@@ -35,7 +41,7 @@ namespace Core.Orders
 
         } 
 
-        public  static OrderWrapper<T> CreateOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper) where T : Order
+        public static OrderWrapper<T> CreateOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper) where T : Order
         {
             OrderWrapper<T> res = CreateOrderWrapper<T>();
             Order.SetReceiver(res, receiverWrapper);

@@ -69,8 +69,8 @@ namespace Core.Units
 
         public static void Dismantle(UnitWrapper unitWrapper)
         {
-            unitWrapper.DestroyWrappedReference();
             Destroy(unitWrapper.WrappedObject.gameObject);
+            unitWrapper.DestroyWrappedReference();
         }
 
         // Public for testing
@@ -129,6 +129,12 @@ namespace Core.Units
         public bool subTesting = false;
         private void Update()
         {
+            if (IsSelected(GetMyWrapper(), GetUsedSelector())
+                && Input.GetKeyDown(KeyCode.K))
+            {
+                Dismantle(GetMyWrapper());
+            }
+
             DrawUpdate();
         }
 
@@ -140,8 +146,9 @@ namespace Core.Units
             {
                 mySprRenderer.color = factionAffiliation.MyFaction.baseColor;
             }
-            else if (Unit.IsSelected(GetMyWrapper(), GetUsedSelector())
-                        || Unit.IsThereAnyParentHighlightedOrSelected(GetMyWrapper(), GetUsedSelector()))
+            else if (/*Unit.IsSelected(GetMyWrapper(), GetUsedSelector())
+                    || */Unit.IsHighlighted(GetMyWrapper(), GetUsedSelector()))
+                    // || Unit.IsThereAnyParentHighlightedOrSelected(GetMyWrapper(), GetUsedSelector()))
             {
                 mySprRenderer.color = 
                     new Color(factionAffiliation.MyFaction.baseColor.r,

@@ -7,38 +7,38 @@ namespace Core.MapMarkers
     public class WaypointMarker : MapMarker
     {
 
-        internal void UpdateWaypointMarker(bool following, Vector3 screenPositionToFollow)
+        public static void UpdateWaypointMarker(MapMarkerWrapper<WaypointMarker> waypointMarkerWrapper, bool following, Vector3 screenPositionToFollow)
         {
-            waypointMarkerTransform.FollowScreenPosition(following, screenPositionToFollow); 
+            if(waypointMarkerWrapper.WrappedObject != null)
+                waypointMarkerWrapper.GetWrappedAs<WaypointMarker>().waypointMarkerComponent.FollowScreenPosition(following, screenPositionToFollow);
         }
 
-
-        public Vector3 myPosition;
+        public Vector3 myPosition { get; private set; }
         
-        private WaypointMarkerComponent waypointMarkerTransform;
+        private WaypointMarkerComponent waypointMarkerComponent;
 
         public WaypointMarker(Vector3 position)
         {
             this.myPosition = position;
             
-            _myWrapper = new WaypointMarkerWrapper(this, () => {_myWrapper = null;});
-            GetMyWrapper<WaypointMarker>().SubscribeOnClearance(DestroyMarkerTransform);
+            _myWrapper = new MapMarkerWrapper<WaypointMarker>(this, () => {_myWrapper = null;});
+            GetMyWrapper<WaypointMarker>().SubscribeOnClearance(DestroyMarkerComponent);
 
-            waypointMarkerTransform = MonoBehaviour.Instantiate<WaypointMarkerComponent>(
+            waypointMarkerComponent = MonoBehaviour.Instantiate<WaypointMarkerComponent>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>()
-                .waypointMarkerTransformPrefab, GameObject.Find("WorldUICanvas").transform);
-            waypointMarkerTransform.transform.position = position;
-            waypointMarkerTransform.associatedMarkerWrapper = GetMyWrapper2<WaypointMarkerWrapper>();
+                .waypointMarkerComponentPrefab, GameObject.Find("WorldUICanvas").transform);
+            waypointMarkerComponent.transform.position = position;
+            waypointMarkerComponent.associatedMarkerWrapper = GetMyWrapper2<MapMarkerWrapper<WaypointMarker>>();
         }
 
         public override void UpdateMe()
         {
-            myPosition = waypointMarkerTransform.transform.position;
+            myPosition = waypointMarkerComponent.transform.position;
         }
 
-        private void DestroyMarkerTransform()
+        private void DestroyMarkerComponent()
         {
-            MonoBehaviour.Destroy(waypointMarkerTransform.gameObject);
+            MonoBehaviour.Destroy(waypointMarkerComponent.gameObject);
             //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearance(DestroyMarkerTransform);
             //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearanceAll();
         }

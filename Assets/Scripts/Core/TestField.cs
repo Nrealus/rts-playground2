@@ -9,6 +9,8 @@ using Core.Selection;
 using Core.Orders;
 using Core.MapMarkers;
 using Core.Helpers;
+using UnityEngine.UIElements;
+
 
 public class TestField : MonoBehaviour, IHasCameraRef
 {
@@ -50,18 +52,23 @@ public class TestField : MonoBehaviour, IHasCameraRef
         TestUnitHierarchySetup();
     }
 
+    private void OnGUI() {
+        GUI.TextArea(new Rect(10,10,196,32), Core.Handlers.TimeHandler.CurrentTimeToString());    
+    }
+
     int orderChoice = 0;
-    /*private void Update()
+    private void Update()
     {
         
-        if (Input.GetKeyDown(KeyCode.D))
+        //Debug.Log(Core.Handlers.TimeHandler.HasTimeJustPassed(new Core.Handlers.TimeHandler.TimeStruct(9,15,21)));
+        /*if (Input.GetKeyDown(KeyCode.D))
         {
             foreach (UnitWrapper uw in GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector().GetCurrentlySelectedEntities())
             {
                 uw.WrappedObject.Dismantle();
             }
-        }
+        }*/
 
-    }*/
+    }
 
 }

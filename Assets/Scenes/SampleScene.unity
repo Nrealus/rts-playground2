@@ -1567,9 +1567,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8b89fd44b57444e4ba78a064889c822d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  waypointMarkerTransformPrefab: {fileID: 4338039444517644452, guid: 7ca0aeccbeec15feca06af20dfa204cf,
+  waypointMarkerComponentPrefab: {fileID: 4338039444517644452, guid: 7ca0aeccbeec15feca06af20dfa204cf,
     type: 3}
-  orderMarkerTransformPrefab: {fileID: 5770975395609725557, guid: 13237fb76fcd0f90a8449e0dbd7c6356,
+  orderMarkerComponentPrefab: {fileID: 5770975395609725557, guid: 13237fb76fcd0f90a8449e0dbd7c6356,
+    type: 3}
+  buildingMarkerComponentPrefab: {fileID: 6731532594427990641, guid: 432ff8dd5d2d6f88598fa2f8e6978fa1,
     type: 3}
 --- !u!4 &1658649910
 Transform:
@@ -1683,6 +1685,7 @@ GameObject:
   - component: {fileID: 1803295896}
   - component: {fileID: 1803295898}
   - component: {fileID: 1803295897}
+  - component: {fileID: 1803295895}
   m_Layer: 0
   m_Name: GameHandlers
   m_TagString: Untagged
@@ -1716,6 +1719,18 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1803295895
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1803295892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d13510254032c38c9dc2dc997d21501, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!114 &1803295896
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -93,12 +93,12 @@ namespace Core.Orders
             }
         }
 
-        public void SetOrderGroupMods(OrderMods mods)
+        public void SetOrderGroupMods(OrderParams orderParams)
         {
 
         }
 
-        public bool GetConfirmationFromReceiver()
+        /*public bool GetConfirmationFromReceiver()
         {
             bool b = false;
             foreach (var ow in orderWrappersList)
@@ -106,7 +106,7 @@ namespace Core.Orders
                 b &= true && Order.GetConfirmationFromReceiver(ow);
             }
             return b;
-        }
+        }*/
 
         public bool TryStartExecution()
         {

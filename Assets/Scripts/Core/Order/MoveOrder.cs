@@ -5,6 +5,7 @@ using UnityEngine;
 using VariousUtilsExtensions;
 using NPBehave;
 using Core.MapMarkers;
+using Core.Handlers;
 
 namespace Core.Orders
 {
@@ -19,12 +20,57 @@ namespace Core.Orders
         private Clock btClock;
 
         private UnitWrapper unitWrapper;
+        private OrderParams myParameters;
 
         protected override IOrderable InstanceGetOrderReceiver()
         {
             return unitWrapper;
         }
         
+        protected override void InstanceSetOrderReceiver(IOrderable orderable)
+        {
+            if (Order.IsInPhase(GetMyWrapper(), OrderPhase.InitialState))
+            {
+                unitWrapper = orderable as UnitWrapper;
+                //orderMarkerWrapper = (new OrderMarker(_myWrapper)).GetMyWrapper<OrderMarker>();
+                //GetMyWrapper().SubscribeOnClearance(() => RemoveOrderMarkerAtClearance());
+                Order.SetPhase(GetMyWrapper(), OrderPhase.Registration);
+            }
+            else
+            {
+                Debug.LogError("should not happen");
+            }
+        }
+
+        protected override OrderParams InstanceGetOrderParams()
+        {
+            if(myParameters == null)
+                myParameters = OrderParams.DefaultParams;
+            return myParameters;
+        }
+        
+        protected override void InstanceSetOrderParams(OrderParams orderParams)
+        {
+            myParameters = orderParams;
+        }
+
+        protected override bool InstanceIsOrderApplicable()
+        {
+            //if(GetMyWrapper().AmIFirstInQueue())
+            //Debug.Log(GetOrderReceiver().GetCurrentOrderInQueue());
+            if(Order.GetReceiver(GetMyWrapper()).GetCurrentOrderInQueue() == GetMyWrapper())
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+
+            //return true;
+        }
+
+
         public MoveOrder()
         {
             btClock = new Clock();
@@ -55,7 +101,7 @@ namespace Core.Orders
                     Order.RegisterIfAppropriate(GetMyWrapper());
                 });
 
-            orderPhasesFSM.AddState(OrderPhase.NotReadyToStartExecution,
+            orderPhasesFSM.AddState(OrderPhase.NotReadyForExecution,
                 () =>
                 {
 
@@ -66,18 +112,39 @@ namespace Core.Orders
                 {
                     if (InstanceIsOrderApplicable()) // individually ?
                     {
-                        orderPhasesFSM.CurrentState = OrderPhase.AllGoodToStartExecution;
+                        orderPhasesFSM.CurrentState = OrderPhase.ReadyForExecution;
                     }
                     else
                     {
-                        orderPhasesFSM.CurrentState = OrderPhase.NotReadyToStartExecution;
+                        orderPhasesFSM.CurrentState = OrderPhase.NotReadyForExecution;
                     }
                 });
 
-            orderPhasesFSM.AddState(OrderPhase.AllGoodToStartExecution,
+            orderPhasesFSM.AddState(OrderPhase.ReadyForExecution,
                 () =>
                 {
                     //GetMyWrapper().RegisterMeIfAppropriate();
+                });
+
+            orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingToStart,
+                () =>
+                {
+                    if(!Order.GetParameters(GetMyWrapper()).startingTime.isInitialized)
+                    {
+                        Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);
+                    }
+                    else if (TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).startingTime))
+                    //    || TimeHandler.HasTimeAlreadyPassed(Order.GetParameters(GetMyWrapper()).startingTime))
+                    {
+                        Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);                
+                    }
+                },
+                () =>
+                {
+                    if(TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).startingTime))
+                    {
+                        Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);
+                    }
                 });
 
             orderPhasesFSM.AddState(OrderPhase.Execution,
@@ -123,29 +190,14 @@ namespace Core.Orders
             {
                 GetMyWrapper().DestroyWrappedReference();
 
-                if (InstanceGetOrderReceiver().GetCurrentOrderInQueue() != null
-                    && Order.GetConfirmationFromReceiver(InstanceGetOrderReceiver().GetCurrentOrderInQueue()))
+                if (InstanceGetOrderReceiver().GetCurrentOrderInQueue() != null)
+                    //&& Order.GetConfirmationFromReceiver(InstanceGetOrderReceiver().GetCurrentOrderInQueue()))
                 {
                     Order.TryStartExecution(InstanceGetOrderReceiver().GetCurrentOrderInQueue());
                 }                    
             });
                
             orderPhasesFSM.CurrentState = OrderPhase.InitialState;
-        }
-
-        protected override void InstanceSetOrderReceiver(IOrderable orderable)
-        {
-            if (Order.IsInPhase(GetMyWrapper(), OrderPhase.InitialState))
-            {
-                unitWrapper = orderable as UnitWrapper;
-                //orderMarkerWrapper = (new OrderMarker(_myWrapper)).GetMyWrapper<OrderMarker>();
-                //GetMyWrapper().SubscribeOnClearance(() => RemoveOrderMarkerAtClearance());
-                Order.SetPhase(GetMyWrapper(), OrderPhase.Registration);
-            }
-            else
-            {
-                Debug.LogError("should not happen");
-            }
         }
 
         public void AddWaypoint(MapMarkerWrapper<WaypointMarker> waypointWrapper)
@@ -213,7 +265,7 @@ namespace Core.Orders
         {
             return true;
         }
-
+        
         private bool PathFinished()
         {
             return currentWaypointIndex >= waypointMarkerWrappersList.Count;
@@ -228,22 +280,6 @@ namespace Core.Orders
                 waypointMarkerWrappersList[currentWaypointIndex].DestroyWrappedReference();
                 //currentWaypointIndex++;
             }
-        }
-
-        protected override bool InstanceIsOrderApplicable()
-        {
-            //if(GetMyWrapper().AmIFirstInQueue())
-            //Debug.Log(GetOrderReceiver().GetCurrentOrderInQueue());
-            if(Order.GetReceiver(GetMyWrapper()).GetCurrentOrderInQueue() == GetMyWrapper())
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-
-            //return true;
         }
 
     }

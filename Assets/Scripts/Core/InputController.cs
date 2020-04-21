@@ -154,7 +154,36 @@ public class InputController : MonoBehaviour,
         );
 
         controllerStateMachine.AddState(ControllerStates.MoveOrderMenu,
-            null,
+            () => {
+                controlledSelector.ActivateAndUnpause();
+
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Move",
+                    pointerInfo.pointedPositionScreen - Vector3.right * 50f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            if (CanEditMoveOrderForSelectedEntities(controlledSelector))
+                                controllerStateMachine.CurrentState = ControllerStates.MoveOrderMenu;
+                        });
+                        
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Patrol",
+                    pointerInfo.pointedPositionScreen + Vector3.right * 0f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            controllerStateMachine.CurrentState = ControllerStates.PatrolOrderMenu;
+                        });
+
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Build",
+                    pointerInfo.pointedPositionScreen + Vector3.right * 50f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            controllerStateMachine.CurrentState = ControllerStates.BuildOrderMenu;
+                        });
+
+                //PrepareButtonsForMenu(menuCurrentButtons);
+            },
             () => {
                 //if (CanEditMoveOrderForSelectedEntities(controlledSelector))
 
@@ -168,12 +197,60 @@ public class InputController : MonoBehaviour,
             new Dictionary<ControllerStates, System.Action>() {
                 { ControllerStates.OrderMenu, 
                     () => {
-                        FetchCurrentlyEditedOrderWrappersFromSelectedEntities(controlledSelector);
+                        FetchCurrentlyEditedMoveOrderWrappersFromSelectedEntities(controlledSelector);
+                    }
+                }
+            }
+        );
+
+        controllerStateMachine.AddState(ControllerStates.BuildOrderMenu,
+            () => {
+                controlledSelector.ActivateAndUnpause();
+
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "FOB",
+                    pointerInfo.pointedPositionScreen - Vector3.right * 50f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt;
+                            /*new BuildingMarker(
+                                pointerInfo.pointedPositionWorld - Vector3.right * 10 * i / c);
+                            currentlyEditedOrderWrappers[i]
+                                .GetWrappedAs<MoveOrder>()
+                                .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());*/
+                        });
+                        
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Outpost",
+                    pointerInfo.pointedPositionScreen + Vector3.right * 0f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            //dddddddddddddddddddddddddddddddddddddddddddddddd
+                        });
+
+                //PrepareButtonsForMenu(menuCurrentButtons);
+            },
+            () => {
+                //if (CanEditMoveOrderForSelectedEntities(controlledSelector))
+
+                CurrentlyEditedBuildOrdersCreateMarkersControl();
+                /*if (!CurrentlyEditedBuildOrdersCreateMarkersControl()
+                 && Input.GetMouseButtonDown(1)
+                 && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
+                    controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt*/;
+            },
+            null,
+            null,
+            new Dictionary<ControllerStates, System.Action>() {
+                { ControllerStates.OrderMenu, 
+                    () => {
+                        FetchCurrentlyEditedBuildOrderWrappersFromSelectedEntities(controlledSelector);
                     }
                 }
             }
         );
         
+        ControllerStates _previousstate = default(ControllerStates);
         controllerStateMachine.AddState(ControllerStates.OrderConfirmationPrompt,
             () => {
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Save/Confirm",
@@ -217,12 +294,18 @@ public class InputController : MonoBehaviour,
 
                 if (Input.GetMouseButtonDown(1))
                 {
-                    // To be replaced by a generic : go back to "previous order" editing menu (see "pushdown automata")
-                    controllerStateMachine.CurrentState = ControllerStates.MoveOrderMenu;
+                    //controllerStateMachine.CurrentState = ControllerStates.MoveOrderMenu;
+                    controllerStateMachine.CurrentState = _previousstate;
                 }
             },
             () => {
                 DestroyMenuButtons(menuCurrentButtons);
+            },
+            null,
+            new Dictionary<ControllerStates, System.Action>() 
+            {
+                { ControllerStates.MoveOrderMenu, () => { _previousstate = ControllerStates.MoveOrderMenu; } },
+                { ControllerStates.BuildOrderMenu, () => { _previousstate = ControllerStates.BuildOrderMenu; } }
             }
         );
 
@@ -269,7 +352,7 @@ public class InputController : MonoBehaviour,
         }
     }
     
-    private void FetchCurrentlyEditedOrderWrappersFromSelectedEntities(Selector selector)
+    private void FetchCurrentlyEditedMoveOrderWrappersFromSelectedEntities(Selector selector)
     {
         var l = selector.GetCurrentlySelectedEntities();
         foreach (var v in l)
@@ -312,16 +395,58 @@ public class InputController : MonoBehaviour,
         return false;
     }
 
+    private void FetchCurrentlyEditedBuildOrderWrappersFromSelectedEntities(Selector selector)
+    {
+        var l = selector.GetCurrentlySelectedEntities();
+        foreach (var v in l)
+        {
+            OrderFactory.CreateOrderWrapperAndSetReceiver<BuildOrder>((IOrderable<Unit>)v);                    
+            //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
+            currentlyEditedOrderWrappers.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
+        }
+    }
+
+
+    private bool CurrentlyEditedBuildOrdersCreateMarkersControl()
+    {
+        if (Input.GetMouseButtonDown(0)
+            && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
+        {
+            //wps.Add(pointedPositionInfo.pointedPositionWorld);            
+            
+            //var wpmrk = new WaypointMarker(pointedPositionInfo.pointedPositionWorld);
+            //currentlyEditedOrderWrapper.GetWrappedAs<MoveOrder>()
+            //    .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
+
+            BuildingMarker bm;
+            bm = new BuildingMarker(
+                    pointerInfo.pointedPositionWorld);
+            currentlyEditedOrderWrappers[0]
+                .GetWrappedAs<BuildOrder>().SetBuildingToBuild(bm.GetMyWrapper<BuildingMarker>());
+        }
+
+        /*if (Input.GetMouseButtonDown(1)
+            &&) 
+        {
+            return true;
+        }*/
+
+        return false;
+    }
+    
+
     private void CurrentlyEditedOrdersConfirm()
     {
         int c = currentlyEditedOrderWrappers.Count;
         for(int i = c-1; i >= 0; i--)
         {
-            if (Order.GetConfirmationFromReceiver(currentlyEditedOrderWrappers[i]))
+            /*if (Order.GetConfirmationFromReceiver(currentlyEditedOrderWrappers[i]))
             {
                 Order.TryStartExecution(currentlyEditedOrderWrappers[i]);
                 currentlyEditedOrderWrappers.RemoveAt(i);
-            }
+            }*/
+            if (Order.TryStartExecution(currentlyEditedOrderWrappers[i]))
+                currentlyEditedOrderWrappers.RemoveAt(i);
         }
     }
 
@@ -362,14 +487,14 @@ public class InputController : MonoBehaviour,
         return false;
     }
 
-    private WaypointMarkerWrapper _editedWaypointMarkerWrapper = null;
+    private MapMarkerWrapper<WaypointMarker> _editedWaypointMarkerWrapper = null;
     private void EditWaypointMarkerControl()
     {
         if (Input.GetMouseButtonDown(0))
         {
             if (_editedWaypointMarkerWrapper != null)
             {
-                WaypointMarkerWrapper.UpdateWaypointMarker(_editedWaypointMarkerWrapper, false, pointerInfo.pointedPositionScreen);
+                WaypointMarker.UpdateWaypointMarker(_editedWaypointMarkerWrapper, false, pointerInfo.pointedPositionScreen);
                 _editedWaypointMarkerWrapper = null;
             }
             else if (_editedWaypointMarkerWrapper == null)
@@ -391,7 +516,7 @@ public class InputController : MonoBehaviour,
         if (_editedWaypointMarkerWrapper != null 
             && _editedWaypointMarkerWrapper.WrappedObject != null)
         {
-            WaypointMarkerWrapper.UpdateWaypointMarker(_editedWaypointMarkerWrapper, true, pointerInfo.pointedPositionScreen);
+            WaypointMarker.UpdateWaypointMarker(_editedWaypointMarkerWrapper, true, pointerInfo.pointedPositionScreen);
         }
     }
 

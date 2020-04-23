@@ -27,9 +27,16 @@ namespace Core.Orders
             return unitWrapper;
         }
         
-        protected override void InstanceSetOrderReceiver(IOrderable orderable)
+        protected override void InstanceSetOrderReceiver(IOrderable orderable, OrderWrapper predecessor, OrderWrapper successor)
         {
-            if (Order.IsInPhase(GetMyWrapper(), OrderPhase.InitialState))
+           
+            unitWrapper = orderable as UnitWrapper;
+
+            unitWrapper.AddOrderToList(GetMyWrapper(), predecessor, successor);
+
+            SetPhase(GetMyWrapper(), OrderPhase.Staging);
+            
+            /*if (Order.IsInPhase(GetMyWrapper(), OrderPhase.Initial))
             {
                 unitWrapper = orderable as UnitWrapper;
                 //orderMarkerWrapper = (new OrderMarker(_myWrapper)).GetMyWrapper<OrderMarker>();
@@ -39,7 +46,7 @@ namespace Core.Orders
             else
             {
                 Debug.LogError("should not happen");
-            }
+            }*/
         }
 
         protected override OrderParams InstanceGetOrderParams()
@@ -54,18 +61,27 @@ namespace Core.Orders
             myParameters = orderParams;
         }
 
-        protected override bool InstanceIsOrderApplicable()
+        protected override bool InstanceIsReadyToStartExecution()
         {
+            if (IsInPhase(GetMyWrapper(), OrderPhase.Staging))
+            {
+                return true;
+            }
+            else 
+            {
+                return false;
+            }
+
             //if(GetMyWrapper().AmIFirstInQueue())
             //Debug.Log(GetOrderReceiver().GetCurrentOrderInQueue());
-            if(Order.GetReceiver(GetMyWrapper()).GetCurrentOrderInQueue() == GetMyWrapper())
+            /*if(Order.GetReceiver(GetMyWrapper()).GetCurrentOrderInQueue() == GetMyWrapper())
             {
                 return true;
             }
             else
             {
                 return false;
-            }
+            }*/
 
             //return true;
         }
@@ -93,12 +109,11 @@ namespace Core.Orders
 
         protected override void OrderPhasesFSMInit()
         {
-            orderPhasesFSM.AddState(OrderPhase.InitialState);
-
-            orderPhasesFSM.AddState(OrderPhase.Registration,
+            
+            /*orderPhasesFSM.AddState(OrderPhase.Registration,
                 () =>
                 {
-                    Order.RegisterIfAppropriate(GetMyWrapper());
+                    Order.RegisterAtOrderHandlerAndReceiver(GetMyWrapper(), null, null);
                 });
 
             orderPhasesFSM.AddState(OrderPhase.NotReadyForExecution,
@@ -124,7 +139,23 @@ namespace Core.Orders
                 () =>
                 {
                     //GetMyWrapper().RegisterMeIfAppropriate();
+                });*/
+
+            orderPhasesFSM.AddState(OrderPhase.Initial);
+
+            orderPhasesFSM.AddState(OrderPhase.Staging);
+
+            /*orderPhasesFSM.AddState(OrderPhase.NotReadyForExecution,
+                () =>
+                {
+
                 });
+
+            orderPhasesFSM.AddState(OrderPhase.ReadyForExecution,
+                () =>
+                {
+                    
+                });*/
 
             orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingToStart,
                 () =>
@@ -158,6 +189,9 @@ namespace Core.Orders
                 },
                 () =>
                 {
+                    //if (Input.GetKeyDown(KeyCode.O))
+                    //    EndExecution(GetMyWrapper());
+
                     UpdateBTClock();
                     // in other states too ? (thinking about shared blackboard and associated clock...)
                 });
@@ -197,7 +231,7 @@ namespace Core.Orders
                 }                    
             });
                
-            orderPhasesFSM.CurrentState = OrderPhase.InitialState;
+            orderPhasesFSM.CurrentState = OrderPhase.Initial;
         }
 
         public void AddWaypoint(MapMarkerWrapper<WaypointMarker> waypointWrapper)

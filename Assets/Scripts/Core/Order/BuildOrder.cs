@@ -38,24 +38,34 @@ namespace Core.Orders
         private UnitWrapper unitWrapper;
         private OrderParams myParameters;
 
+        private OrderWrapper<MoveOrder> predecessorMoveOrderWrapper = null;
+
         protected override IOrderable InstanceGetOrderReceiver()
         {
             return unitWrapper;
         }
         
-        protected override void InstanceSetOrderReceiver(IOrderable orderable)
+        protected override void InstanceSetOrderReceiver(IOrderable orderable, OrderWrapper predecessor, OrderWrapper successor)
         {
-            if (Order.IsInPhase(GetMyWrapper(), OrderPhase.InitialState))
+           
+            unitWrapper = orderable as UnitWrapper;
+
+            unitWrapper.AddOrderToList(GetMyWrapper(), predecessor, successor);
+
+            SetPhase(GetMyWrapper(), OrderPhase.Staging);
+                
+            /*if (Order.IsInPhase(GetMyWrapper(), OrderPhase.InitialState))
             {
                 unitWrapper = orderable as UnitWrapper;
+
                 //orderMarkerWrapper = (new OrderMarker(_myWrapper)).GetMyWrapper<OrderMarker>();
                 //GetMyWrapper().SubscribeOnClearance(() => RemoveOrderMarkerAtClearance());
                 Order.SetPhase(GetMyWrapper(), OrderPhase.Registration);
             }
             else
             {
-                Debug.LogError("should not happen");
-            }
+                Debug.LogError("There should be no reason for this to happen");
+            }*/
         }
 
         protected override OrderParams InstanceGetOrderParams()
@@ -70,18 +80,55 @@ namespace Core.Orders
             myParameters = orderParams;
         }
 
-        protected override bool InstanceIsOrderApplicable()
+        protected override bool InstanceIsReadyToStartExecution()
         {
-            //if(GetMyWrapper().AmIFirstInQueue())
+            if (IsInPhase(GetMyWrapper(), OrderPhase.Staging))
+            {
+                if (!CloseEnoughToBuildingMarker() && predecessorMoveOrderWrapper == null)
+                {
+                    predecessorMoveOrderWrapper = OrderFactory.CreatePredecessorOrderWrapperAndSetReceiver<MoveOrder>(unitWrapper, GetMyWrapper());
+                    
+                    predecessorMoveOrderWrapper.SubscribeOnClearance(() => predecessorMoveOrderWrapper = null);
+                    
+                    predecessorMoveOrderWrapper.GetWrappedAs<MoveOrder>().AddWaypoint(
+                        (new WaypointMarker(
+                            buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().myPosition
+                            + 2*(UnityEngine.Random.Range(-1,1)*Vector3.right+UnityEngine.Random.Range(-1,1)*Vector3.forward).normalized)
+                        ).GetMyWrapper<WaypointMarker>());
+                    
+                    TryStartExecution(predecessorMoveOrderWrapper);
+                    
+                    return false;
+                }
+                return true;
+            }
+            else 
+            {
+                return false;
+            }
+
+            /*//if(GetMyWrapper().AmIFirstInQueue())
             //Debug.Log(GetOrderReceiver().GetCurrentOrderInQueue());
             if(Order.GetReceiver(GetMyWrapper()).GetCurrentOrderInQueue() == GetMyWrapper())
             {
+                if (predecessorMoveOrderWrapper == null)
+                {
+                    predecessorMoveOrderWrapper = OrderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>(unitWrapper);
+                    predecessorMoveOrderWrapper.SubscribeOnClearance(() => predecessorMoveOrderWrapper = null);
+                    //Order.RegisterAtOrderHandlerAndReceiver(predecessorMoveOrderWrapper, GetMyWrapper(), null);
+                    predecessorMoveOrderWrapper.GetWrappedAs<MoveOrder>().AddWaypoint(
+                        (new WaypointMarker(buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().myPosition + 2*(Vector3.right+Vector3.forward).normalized)
+                            ).GetMyWrapper<WaypointMarker>());
+                    Order.TryStartExecution(predecessorMoveOrderWrapper);
+                    Debug.Log(Order.IsInPhase(predecessorMoveOrderWrapper, OrderPhase.NotReadyForExecution));
+                    return false;
+                }
                 return true;
             }
             else
             {
                 return false;
-            }
+            }*/
 
             //return true;
         }
@@ -108,38 +155,21 @@ namespace Core.Orders
 
         protected override void OrderPhasesFSMInit()
         {
-            orderPhasesFSM.AddState(OrderPhase.InitialState);
+            orderPhasesFSM.AddState(OrderPhase.Initial);
 
-            orderPhasesFSM.AddState(OrderPhase.Registration,
-                () =>
-                {
-                    Order.RegisterIfAppropriate(GetMyWrapper());
-                });
+            orderPhasesFSM.AddState(OrderPhase.Staging);
 
-            orderPhasesFSM.AddState(OrderPhase.NotReadyForExecution,
+            /*orderPhasesFSM.AddState(OrderPhase.NotReadyForExecution,
                 () =>
                 {
 
-                });
-
-            orderPhasesFSM.AddState(OrderPhase.RequestConfirmation,
-                () =>
-                {
-                    if (InstanceIsOrderApplicable()) // individually ?
-                    {
-                        orderPhasesFSM.CurrentState = OrderPhase.ReadyForExecution;
-                    }
-                    else
-                    {
-                        orderPhasesFSM.CurrentState = OrderPhase.NotReadyForExecution;
-                    }
                 });
 
             orderPhasesFSM.AddState(OrderPhase.ReadyForExecution,
                 () =>
                 {
-                    //GetMyWrapper().RegisterMeIfAppropriate();
-                });
+
+                });*/
 
             orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingToStart,
                 () =>
@@ -172,7 +202,8 @@ namespace Core.Orders
                     }
                 },
                 () =>
-                {
+                {            
+                    
                     UpdateBTClock();
                     // in other states too ? (thinking about shared blackboard and associated clock...)
                 });
@@ -212,7 +243,7 @@ namespace Core.Orders
                 }                    
             });
                
-            orderPhasesFSM.CurrentState = OrderPhase.InitialState;
+            orderPhasesFSM.CurrentState = OrderPhase.Initial;
         }
 
         public void SetBuildingToBuild(MapMarkerWrapper<BuildingMarker> buildingMarkerWrapper)
@@ -220,8 +251,9 @@ namespace Core.Orders
             buildingMarkerWrapper.SubscribeOnClearance(() => buildingMarkerWrapper = null);
             GetMyWrapper().SubscribeOnClearance(
                 () => { 
-                    if (buildingMarkerWrapper != null
+                    if (buildingMarkerWrapper != null && ((buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().builtStructureWrapper != null
                     && BuiltStructure.GetHP(buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().builtStructureWrapper) == 0)
+                        || buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().builtStructureWrapper == null))
                         buildingMarkerWrapper.DestroyWrappedReference(); 
                 });
             this.buildingMarkerWrapper = buildingMarkerWrapper;
@@ -237,7 +269,7 @@ namespace Core.Orders
             return new Root(new Blackboard(btClock), btClock,
                         new Condition(() => { return Order.IsInPhase(GetMyWrapper(), OrderPhase.Execution); },
                             new Sequence(
-                                new Condition(() => { return Order.ReceiverExists(GetMyWrapper()) && CanActuallyBuild(); }, Stops.LOWER_PRIORITY,
+                                new Condition(() => { return Order.ReceiverExists(GetMyWrapper()) && CloseEnoughToBuildingMarker() && CanActuallyBuild(); }, Stops.LOWER_PRIORITY,
                                     new Action(ActuallyBuild)),
                                 new Condition(() => { return FinishedBuilding(); },
                                     new Action(() => Order.EndExecution(GetMyWrapper()))))));
@@ -253,10 +285,23 @@ namespace Core.Orders
             }
         }
 
+        private bool CloseEnoughToBuildingMarker()
+        {
+            if (buildingMarkerWrapper != null
+                && Vector3.Distance(buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().myPosition, unitWrapper.WrappedObject.myMover.GetPosition()) <= 2)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
         private bool CanActuallyBuild()
         {
-            if (Vector3.Distance(buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().myPosition, unitWrapper.WrappedObject.myMover.GetPosition())
-                < 6 && _materials > 0)
+            if (buildingMarkerWrapper != null
+                && _materials > 0)
             {
                 return true;
             }
@@ -286,7 +331,7 @@ namespace Core.Orders
         {
             if (builtStructureWrapper == null && buildingMarkerWrapper != null)
             {
-                builtStructureWrapper = buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().CreateBuiltStructure<BuiltStructure>();
+                builtStructureWrapper = buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().CreateAndSetBuiltStructure<BuiltStructure>();
                 GetMyWrapper().SubscribeOnClearance(() => builtStructureWrapper = null);
             }
 

@@ -20,7 +20,7 @@ namespace Core.Orders
 
         Y GetOrderableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper;
 
-        bool AddOrderToList(OrderWrapper wrapper, OrderWrapper predecessor);
+        bool AddOrderToList(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor);
 
         bool RemoveOrderFromList(OrderWrapper wrapper);
 

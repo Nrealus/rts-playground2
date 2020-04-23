@@ -37,31 +37,32 @@ namespace Core.Handlers
             }
         }
 
-        public static bool IsOrderWrapperRegistered(OrderWrapper wrapper)
-        {
-            return MyInstance.orderWrappersList.Contains(wrapper);                
-        }
-
         public static bool AddToOrderWrapperList(OrderWrapper wrapper)
         {
-            if(!IsOrderWrapperRegistered(wrapper))
+            if(!MyInstance.orderWrappersList.Contains(wrapper))
             {
+                wrapper.SubscribeOnClearance(() => RemoveFromOrderWrapperList(wrapper));
                 MyInstance.orderWrappersList.Add(wrapper);
                 return true;
             }
             else
+            {
+                Debug.LogError("There should be no reason for this to happen");
                 return false;
+            }
         }
 
         public static bool RemoveFromOrderWrapperList(OrderWrapper wrapper)
         {
-            if(IsOrderWrapperRegistered(wrapper))
+            if(MyInstance.orderWrappersList.Contains(wrapper))
             {
+                wrapper.UnsubscribeOnClearance(() => RemoveFromOrderWrapperList(wrapper));
                 MyInstance.orderWrappersList.Remove(wrapper);
                 return true;
             }
             else
             {
+                Debug.LogError("There should be no reason for this to happen");
                 return false;
             }
         }

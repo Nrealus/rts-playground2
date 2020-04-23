@@ -16,16 +16,16 @@ namespace Core.Orders
         
         #region Static functions
 
-        protected static bool RegisterIfAppropriate(OrderWrapper orderWrapper)
+        /*protected static bool RegisterAtOrderHandlerAndReceiver(OrderWrapper orderWrapper, OrderWrapper predecessor, OrderWrapper successor)
         {
             if (!OrderHandler.IsOrderWrapperRegistered(orderWrapper))
             {
-                Order.GetReceiver(orderWrapper).AddOrderToList(orderWrapper, null);
+                Order.GetReceiver(orderWrapper).AddOrderToList(orderWrapper, predecessor, successor);
                 OrderHandler.AddToOrderWrapperList(orderWrapper);
                 orderWrapper.SubscribeOnClearance(() => Order.Unregister(orderWrapper));
                 return true;
             }
-            else
+            elseorderWrapper
             {
                 Debug.LogError("order was already registered");
                 return false;
@@ -39,7 +39,7 @@ namespace Core.Orders
             {
                 GetReceiver(orderWrapper).RemoveOrderFromList(orderWrapper);
                 OrderHandler.RemoveFromOrderWrapperList(orderWrapper);
-                //.RemoveFromOrderWrapperList(this);
+                //.RemoveFromOrderWrapperList(torderWrapperhis);
                 orderWrapper.UnsubscribeOnClearance(() => Order.Unregister(orderWrapper)); 
                 return true;
             }
@@ -63,14 +63,13 @@ namespace Core.Orders
             {
                 return false;
             }
-        }
+        }*/
 
         public static bool TryStartExecution(OrderWrapper orderWrapper)
         {
-            Order.GetConfirmationFromReceiver(orderWrapper);
-            if(Order.IsInPhase(orderWrapper, Order.OrderPhase.ReadyForExecution))
+            if(IsReadyToStartExecution(orderWrapper))
             {
-                Order.SetPhase(orderWrapper, Order.OrderPhase.ExecutionWaitingToStart);
+                SetPhase(orderWrapper, Order.OrderPhase.ExecutionWaitingToStart);
                 return true;
             }
             else
@@ -111,9 +110,9 @@ namespace Core.Orders
             return true;
         }
 
-        public static bool IsApplicable(OrderWrapper orderWrapper)
+        public static bool IsReadyToStartExecution(OrderWrapper orderWrapper)
         {
-            return orderWrapper.WrappedObject.InstanceIsOrderApplicable();
+            return orderWrapper.WrappedObject.InstanceIsReadyToStartExecution();
         }
 
         public static IOrderable GetReceiver(OrderWrapper orderWrapper)
@@ -121,11 +120,10 @@ namespace Core.Orders
             return orderWrapper.WrappedObject.InstanceGetOrderReceiver();
         }
 
-        public static void SetReceiver(OrderWrapper orderWrapper, IOrderable orderable)
+        public static void SetReceiver(OrderWrapper orderWrapper, OrderWrapper predecessor, OrderWrapper successor, IOrderable orderable)
         {
             // unsubscribe this if SetOrderReceiver for another orderable afterwards, potentially ?
-            orderable.GetOrderableAsReferenceWrapperNonGeneric().SubscribeOnClearance(() => orderWrapper.DestroyWrappedReference());
-            orderWrapper.WrappedObject.InstanceSetOrderReceiver(orderable);
+            orderWrapper.WrappedObject.InstanceSetOrderReceiver(orderable, predecessor, successor);
         }
 
         public static OrderParams GetParameters(OrderWrapper orderWrapper)
@@ -152,7 +150,7 @@ namespace Core.Orders
         {
             return orderWrapper.WrappedObject.InstanceIsInPhase(phase);
         }
-
+        
         public static void UpdateFSM(OrderWrapper orderWrapper)
         {
             if (orderWrapper != null && orderWrapper.WrappedObject != null)
@@ -164,8 +162,8 @@ namespace Core.Orders
         #region Variables, properties etc.
 
         public enum OrderPhase
-        {   InitialState,
-            Registration, RequestConfirmation, ReadyForExecution, NotReadyForExecution,
+        {   Initial,
+            /*Registration,*/ Staging,// ReadyForExecution, NotReadyForExecution,
             ExecutionWaitingToStart, Execution, Pause, Cancelled, End, Disposed }
         protected StateMachine<OrderPhase> orderPhasesFSM;
 
@@ -194,11 +192,11 @@ namespace Core.Orders
         
         //public abstract T GetOrderReceiverAsT<T>() where T : IOrderable;
 
-        protected abstract void InstanceSetOrderReceiver(IOrderable orderable);
+        protected abstract void InstanceSetOrderReceiver(IOrderable orderable, OrderWrapper predecessor, OrderWrapper successor);
 
         protected abstract void OrderPhasesFSMInit();
 
-        protected abstract bool InstanceIsOrderApplicable();
+        protected abstract bool InstanceIsReadyToStartExecution();
 
         #endregion
 

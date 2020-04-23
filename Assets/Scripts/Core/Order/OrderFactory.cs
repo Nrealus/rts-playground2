@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System;
 using Core.Units;
 using VariousUtilsExtensions;
+using Core.Handlers;
 
 namespace Core.Orders
 {
@@ -44,7 +45,20 @@ namespace Core.Orders
         public static OrderWrapper<T> CreateOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper) where T : Order
         {
             OrderWrapper<T> res = CreateOrderWrapper<T>();
-            Order.SetReceiver(res, receiverWrapper);
+            
+            OrderHandler.AddToOrderWrapperList(res);
+
+            Order.SetReceiver(res, null, null, receiverWrapper);
+            return res;
+        }
+
+        public static OrderWrapper<T> CreatePredecessorOrderWrapperAndSetReceiver<T>(IOrderable<Unit> receiverWrapper, OrderWrapper successor) where T : Order
+        {
+            OrderWrapper<T> res = CreateOrderWrapper<T>();
+            
+            OrderHandler.AddToOrderWrapperList(res);
+
+            Order.SetReceiver(res, null, successor, receiverWrapper);
             return res;
         }
 

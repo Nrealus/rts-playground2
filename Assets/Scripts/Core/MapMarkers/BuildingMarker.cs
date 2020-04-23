@@ -23,7 +23,7 @@ namespace Core.MapMarkers
         private BuildingMarkerComponent buildingMarkerComponent;
 
 
-        public BuiltStructureWrapper CreateBuiltStructure<T>() where T : BuiltStructure
+        public BuiltStructureWrapper CreateAndSetBuiltStructure<T>() where T : BuiltStructure
         {
             BuiltStructure bs = new BuiltStructure();
             builtStructureWrapper = bs.GetMyWrapper<BuiltStructure>();

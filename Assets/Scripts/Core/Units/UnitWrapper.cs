@@ -133,26 +133,47 @@ namespace Core.Units
         private OrderWrapper currentOrderWrapper;
         private List<MapMarkerWrapper<OrderMarker>> orderMarkersList = new List<MapMarkerWrapper<OrderMarker>>();
 
-        public bool AddOrderToList(OrderWrapper wrapper, OrderWrapper predecessor)
+        public bool AddOrderToList(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor)
         {
+            if (predecessor != null && successor != null)
+                throw new SystemException("Cannot specify both a predecessor and a successor for an order when adding it to Orderable order list");
+
             if(!orderWrappersList.Contains(wrapper))
             {
-                if(predecessor == null)
+
+                wrapper.SubscribeOnClearance(() => RemoveOrderFromList(wrapper));
+                SubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                
+                if (predecessor == null && successor == null)
                 {
                     if(currentOrderWrapper == null)
                         currentOrderWrapper = wrapper;
                     else
                         orderWrappersList.Add(wrapper);
                 }
-                else
+                else if (predecessor != null && successor == null)
                 {
-                    if(currentOrderWrapper == null)
-                        currentOrderWrapper = wrapper;
+                    if(currentOrderWrapper == predecessor)
+                        orderWrappersList.Insert(0, wrapper);
                     else
                         orderWrappersList.Insert(orderWrappersList.IndexOf(predecessor)+1, wrapper);                    
                 }
-    
-                orderMarkersList.Add((new OrderMarker(wrapper)).GetMyWrapper<OrderMarker>());
+                else if (predecessor == null && successor != null)
+                {
+                    if (currentOrderWrapper == successor)
+                    {
+                        currentOrderWrapper = wrapper;
+                        orderWrappersList.Insert(0, successor);
+                    }
+                    else
+                    {
+                        orderWrappersList.Insert(orderWrappersList.IndexOf(successor), wrapper);                    
+                    }
+                }
+
+                var om = (new OrderMarker(wrapper)).GetMyWrapper<OrderMarker>();
+                orderMarkersList.Add(om);
+
                 return true;
             }
             else
@@ -165,6 +186,9 @@ namespace Core.Units
         {
             if(currentOrderWrapper == wrapper || orderWrappersList.Contains(wrapper))
             {
+                wrapper.UnsubscribeOnClearance(() => RemoveOrderFromList(wrapper));
+                UnsubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+
                 if(currentOrderWrapper == wrapper)
                 {
                     if(orderWrappersList.Count > 0)

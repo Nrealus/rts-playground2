@@ -37,7 +37,7 @@ public class InputController : MonoBehaviour,
     /////////////
 
     private enum ControllerStates { Neutral, Menu, OrderMenu,
-        MoveOrderMenu, PatrolOrderMenu, BuildOrderMenu,
+        MoveOrderMenu, PatrolOrderMenu, BuildOrderMenu, BuildOrderMenu2,
         OrderConfirmationPrompt , OrderCancel, }
 
     private ExtendedStateMachine<ControllerStates> controllerStateMachine;
@@ -189,7 +189,7 @@ public class InputController : MonoBehaviour,
 
                 if (!CurrentlyEditedMoveOrdersCreateWaypointsControl()
                 && Input.GetMouseButtonDown(1)
-                 && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
+                && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
                     controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt;
             },
             null,
@@ -204,6 +204,53 @@ public class InputController : MonoBehaviour,
         );
 
         controllerStateMachine.AddState(ControllerStates.BuildOrderMenu,
+            () => {
+                controlledSelector.ActivateAndUnpause();
+
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "FOB",
+                    pointerInfo.pointedPositionScreen - Vector3.right * 50f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt;
+                            /*new BuildingMarker(
+                                pointerInfo.pointedPositionWorld - Vector3.right * 10 * i / c);
+                            currentlyEditedOrderWrappers[i]
+                                .GetWrappedAs<MoveOrder>()
+                                .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());*/
+                        });
+                        
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Outpost",
+                    pointerInfo.pointedPositionScreen + Vector3.right * 0f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            //dddddddddddddddddddddddddddddddddddddddddddddddd
+                        });
+
+                //PrepareButtonsForMenu(menuCurrentButtons);
+            },
+            () => {
+                //if (CanEditMoveOrderForSelectedEntities(controlledSelector))
+
+                CurrentlyEditedBuildOrdersCreateMarkersControl();
+                /*if (!CurrentlyEditedBuildOrdersCreateMarkersControl()
+                 && Input.GetMouseButtonDown(1)
+                 && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
+                    controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt*/;
+            },
+            null,
+            null,
+            new Dictionary<ControllerStates, System.Action>() {
+                { ControllerStates.OrderMenu, 
+                    () => {
+                        FetchCurrentlyEditedBuildOrderWrappersFromSelectedEntities(controlledSelector);
+                    }
+                }
+            }
+        );
+
+        controllerStateMachine.AddState(ControllerStates.BuildOrderMenu2,
             () => {
                 controlledSelector.ActivateAndUnpause();
 
@@ -337,7 +384,13 @@ public class InputController : MonoBehaviour,
 
 #region Menu Actions
 
-    private List<OrderWrapper> currentlyEditedOrderWrappers = new List<OrderWrapper>();
+    /*private struct EditedOWBunchStruct
+    {
+        public List<OrderWrapper> orderWrappersList;
+        public bool executable;
+    }*/
+
+    private List<OrderWrapper> currentlyEditedOWBunch = new List<OrderWrapper>();
 
     private bool CanEditMoveOrderForSelectedEntities(Selector selector)
     {
@@ -359,7 +412,12 @@ public class InputController : MonoBehaviour,
         {
             OrderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>((IOrderable<Unit>)v);                    
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
-            currentlyEditedOrderWrappers.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
+            /*currentlyEditedOWBunch.Add(
+                new EditedOWBunchStruct(){
+                    orderWrappersList = new List<OrderWrapper>() { v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder() },
+                    executable = true
+                });*/
         }
     }
 
@@ -374,25 +432,21 @@ public class InputController : MonoBehaviour,
             //currentlyEditedOrderWrapper.GetWrappedAs<MoveOrder>()
             //    .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
 
-            WaypointMarker wpmrk;
-            int c = currentlyEditedOrderWrappers.Count;
+            int c = currentlyEditedOWBunch.Count;
             for(int i = 0; i < c; i++)
             {
-                wpmrk = new WaypointMarker(
-                    pointerInfo.pointedPositionWorld - Vector3.right * 10 * i / c);
-                currentlyEditedOrderWrappers[i]
-                    .GetWrappedAs<MoveOrder>()
-                    .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
+                AddWaypointToMoveWrapperAtPosition(currentlyEditedOWBunch[i], pointerInfo.pointedPositionWorld - Vector3.right * 10 * i / c);
             }
         }
 
-        /*if (Input.GetMouseButtonDown(1)
-            &&) 
-        {
-            return true;
-        }*/
-
         return false;
+    }
+
+    private void AddWaypointToMoveWrapperAtPosition(OrderWrapper ow, Vector3 pos)
+    {
+        WaypointMarker wpmrk = new WaypointMarker(pos);
+        ow.GetWrappedAs<MoveOrder>().AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
+
     }
 
     private void FetchCurrentlyEditedBuildOrderWrappersFromSelectedEntities(Selector selector)
@@ -402,7 +456,7 @@ public class InputController : MonoBehaviour,
         {
             OrderFactory.CreateOrderWrapperAndSetReceiver<BuildOrder>((IOrderable<Unit>)v);                    
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
-            currentlyEditedOrderWrappers.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
         }
     }
 
@@ -419,10 +473,13 @@ public class InputController : MonoBehaviour,
             //    .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
 
             BuildingMarker bm;
-            bm = new BuildingMarker(
-                    pointerInfo.pointedPositionWorld);
-            currentlyEditedOrderWrappers[0]
-                .GetWrappedAs<BuildOrder>().SetBuildingToBuild(bm.GetMyWrapper<BuildingMarker>());
+            bm = new BuildingMarker(pointerInfo.pointedPositionWorld);
+            int c = currentlyEditedOWBunch.Count;
+            for(int i = 0; i < c; i++)
+            {
+                currentlyEditedOWBunch[i]
+                    .GetWrappedAs<BuildOrder>().SetBuildingToBuild(bm.GetMyWrapper<BuildingMarker>());
+            }
         }
 
         /*if (Input.GetMouseButtonDown(1)
@@ -437,7 +494,7 @@ public class InputController : MonoBehaviour,
 
     private void CurrentlyEditedOrdersConfirm()
     {
-        int c = currentlyEditedOrderWrappers.Count;
+        int c = currentlyEditedOWBunch.Count;
         for(int i = c-1; i >= 0; i--)
         {
             /*if (Order.GetConfirmationFromReceiver(currentlyEditedOrderWrappers[i]))
@@ -445,18 +502,19 @@ public class InputController : MonoBehaviour,
                 Order.TryStartExecution(currentlyEditedOrderWrappers[i]);
                 currentlyEditedOrderWrappers.RemoveAt(i);
             }*/
-            if (Order.TryStartExecution(currentlyEditedOrderWrappers[i]))
-                currentlyEditedOrderWrappers.RemoveAt(i);
+            //if (Order.TryStartExecution(Order.GetReceiver(currentlyEditedOWBunch[i]).GetCurrentOrderInQueue()))
+            if (Order.TryStartExecution(currentlyEditedOWBunch[i]))
+                currentlyEditedOWBunch.RemoveAt(i);
         }
     }
 
     private void CurrentlyEditedOrdersCancel()
     {
-        int c = currentlyEditedOrderWrappers.Count;
+        int c = currentlyEditedOWBunch.Count;
         for(int i = c-1; i >= 0; i--)
         {
-            currentlyEditedOrderWrappers[i].DestroyWrappedReference();
-            currentlyEditedOrderWrappers.RemoveAt(i);
+            currentlyEditedOWBunch[i].DestroyWrappedReference();
+            currentlyEditedOWBunch.RemoveAt(i);
         }
     }
 

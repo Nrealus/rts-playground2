@@ -586,7 +586,7 @@ public class InputController : MonoBehaviour,
             
             if (Input.GetKey(KeyCode.LeftShift))
             {
-                Order.GetParameters(currentlyEditedOWBunch[i]).ContainsExecutionMode(OrderParams.OrderExecutionMode.Chain);
+                Order.GetParameters(currentlyEditedOWBunch[i]).AddExecutionMode(OrderParams.OrderExecutionMode.Chain);
                 //Order.SetParameters(currentlyEditedOWBunch[i], chainparam);
             }
 

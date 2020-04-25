@@ -27,6 +27,8 @@ namespace Core.Orders
         public void AddExecutionMode(OrderExecutionMode mode) // Subject to change when this class will get more formal
         {
             _executionMode.Add(mode);
+            if (ContainsExecutionMode(OrderExecutionMode.InstantOverrideAll) && mode == OrderExecutionMode.Chain)
+                _executionMode.Remove(OrderExecutionMode.InstantOverrideAll);
         }
 
         public TimeStruct startingTime { get; /*private*/ set; }
@@ -34,11 +36,17 @@ namespace Core.Orders
         public bool isPassive { get; /*private*/ set; }
 
         
-        public static OrderParams DefaultParam() { return new OrderParams(); }
+        public static OrderParams DefaultParam()
+        { 
+            var res = new OrderParams();
+            res.AddExecutionMode(OrderExecutionMode.InstantOverrideAll);
+            return res;
+        }
 
         public static OrderParams PassiveParam()
         { 
             var res = new OrderParams();
+            res.AddExecutionMode(OrderExecutionMode.InstantOverrideAll);
             res.isPassive = true;
             return res;
         }

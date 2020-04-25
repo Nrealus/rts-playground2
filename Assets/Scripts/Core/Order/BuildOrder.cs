@@ -310,6 +310,7 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.End2,
             () =>
             {
+
                 if(Order.GetParameters(GetMyWrapper()).ContainsExecutionMode(OrderParams.OrderExecutionMode.WaitForReactionAtEnd))
                 {
                     waitForReactionAtEnd = true;
@@ -445,6 +446,8 @@ namespace Core.Orders
 
             if (_materials > 0)
             {
+                if (Mathf.Abs(_materials % 30) < 1)
+                    Debug.Log("Building structure...");
                 BuiltStructure.AddHP(builtStructureWrapper, buildingRate);
             }
 

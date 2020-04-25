@@ -11,6 +11,21 @@ using UnityEngine;
 namespace Core.BuiltStructures
 {
 
+    /// <summary>
+    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+    ///
+    /// Main class for buildings and constructibles.
+    /// Extend this class to implement building specific functionality.
+    ///
+    /// Instances of BuiltStructure are wrapped in BuiltStructureWrapper.
+    /// And the encouraged use of interacting with a BuiltStructure instance is to use static functions with a reference to its wrapper as a parameter.
+    ///
+    /// For now, this class isn't even abstract, because of testing purposes.
+    /// Most of the code is inspired by the Order class, that's why there's a lot of its code that is commented below.
+    ///    
+    /// In other words, this is still being figured out.
+    /// </summary>
+    
     public /*abstract*/ class BuiltStructure :
         IHasRefWrapper<BuiltStructureWrapper>
     {

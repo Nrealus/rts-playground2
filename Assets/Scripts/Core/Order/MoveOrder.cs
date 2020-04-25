@@ -20,7 +20,7 @@ namespace Core.Orders
         private Clock btClock;
 
         private UnitWrapper unitWrapper;
-        private OrderParams myParameters;
+        private OrderParams myParameters = OrderParams.DefaultParam();
 
         protected override IOrderable InstanceGetOrderReceiver()
         {
@@ -32,7 +32,7 @@ namespace Core.Orders
            
             unitWrapper = orderable as UnitWrapper;
 
-            unitWrapper.AddOrderToList(GetMyWrapper(), predecessor, successor);
+            unitWrapper.QueueActiveOrderToPlan(GetMyWrapper(), predecessor, successor);
 
             SetPhase(GetMyWrapper(), OrderPhase.Staging);
             
@@ -51,19 +51,66 @@ namespace Core.Orders
 
         protected override OrderParams InstanceGetOrderParams()
         {
-            if(myParameters == null)
-                myParameters = OrderParams.DefaultParams;
+            //if(myParameters == null)
+            //    myParameters = OrderParams.DefaultParams;
             return myParameters;
         }
         
-        protected override void InstanceSetOrderParams(OrderParams orderParams)
+        /*protected override void InstanceSetOrderParams(OrderParams orderParams)
         {
             myParameters = orderParams;
+        }*/
+
+        protected override bool InstanceTryStartExecution()
+        {
+            //if(IsReadyToStartExecution(orderWrapper, mode))
+            if (IsInPhase(GetMyWrapper(), OrderPhase.Staging))
+            {
+                if(GetReceiver(GetMyWrapper()).IsFirstInlineActiveOrderInPlan(GetMyWrapper()))
+                {
+                    SetPhase(GetMyWrapper(), OrderPhase.ExecutionWaitingTimeToStart);
+                    return true;
+                }
+                else
+                {
+                    if (InstanceGetOrderParams().ContainsExecutionMode(OrderParams.OrderExecutionMode.InstantOverrideAll))
+                    {
+                        // "delete" orders that start after the starting time of this order
+
+                        foreach (var ow in GetReceiver(GetMyWrapper()).GetAllActiveOrdersFromPlan())
+                        {
+                            if (ow != GetMyWrapper())
+                            {
+                                EndExecution(ow);
+                            }
+                            /*if(!Order.GetParameters(ow).startingTime.isInitialized
+                            || Order.GetParameters(ow).startingTime < TimeHandler.CurrentTime())
+                            {
+                                Order.EndExecution(ow);
+                            }*/
+                        }
+                        
+                        if (GetReceiver(GetMyWrapper()).GetFirstInlineActiveOrderInPlan() != null)
+                        {
+                            SetPhase(GetMyWrapper(), Order.OrderPhase.ExecutionWaitingTimeToStart);  
+                            return true;
+                        }
+                        
+                        return false;
+                    }
+
+                    return false;
+                }
+            }
+
+            return false;
+
         }
 
-        protected override bool InstanceIsReadyToStartExecution()
+        /*protected override bool InstanceIsReadyToStartExecution(OrderExecutionMode mode)
         {
-            if (IsInPhase(GetMyWrapper(), OrderPhase.Staging))
+            if (Order.GetReceiver(GetMyWrapper()).IsCurrentOrder(GetMyWrapper())
+            && IsInPhase(GetMyWrapper(), OrderPhase.Staging))
             {
                 return true;
             }
@@ -72,25 +119,15 @@ namespace Core.Orders
                 return false;
             }
 
-            //if(GetMyWrapper().AmIFirstInQueue())
-            //Debug.Log(GetOrderReceiver().GetCurrentOrderInQueue());
-            /*if(Order.GetReceiver(GetMyWrapper()).GetCurrentOrderInQueue() == GetMyWrapper())
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }*/
-
             //return true;
-        }
+        }*/
 
 
         public MoveOrder()
         {
             btClock = new Clock();
             _myWrapper = new OrderWrapper<MoveOrder>(this, () => {_myWrapper = null;});
+
             CreateAndInitFSM();
         }
 
@@ -157,7 +194,7 @@ namespace Core.Orders
                     
                 });*/
 
-            orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingToStart,
+            orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingTimeToStart,
                 () =>
                 {
                     if(!Order.GetParameters(GetMyWrapper()).startingTime.isInitialized)
@@ -216,19 +253,51 @@ namespace Core.Orders
                () =>
                {
                     DisposeBehaviourTree();
-                    orderPhasesFSM.CurrentState = OrderPhase.Disposed;
+                    SetPhase(GetMyWrapper(), OrderPhase.End2);
                });
+
+            bool waitForReactionAtEnd = false;
+            OrderWrapper mem = null;
+
+            orderPhasesFSM.AddState(OrderPhase.End2,
+            () =>
+            {
+                if(Order.GetParameters(GetMyWrapper()).ContainsExecutionMode(OrderParams.OrderExecutionMode.WaitForReactionAtEnd))
+                {
+                    waitForReactionAtEnd = true;
+                }
+                
+                if (GetReceiver(GetMyWrapper()).GetNextInlineActiveOrderInPlan(GetMyWrapper()) != null
+                    && GetParameters(GetReceiver(GetMyWrapper()).GetNextInlineActiveOrderInPlan(GetMyWrapper())).ContainsExecutionMode(OrderParams.OrderExecutionMode.Chain))
+                {
+                    mem = InstanceGetOrderReceiver().GetNextInlineActiveOrderInPlan(GetMyWrapper());
+                }
+                
+                /*if (InstanceGetOrderReceiver().GetNextInlineOrder(GetMyWrapper()) != null
+                && GetParameters(InstanceGetOrderReceiver().GetNextInlineOrder(GetMyWrapper())).executionMode == OrderParams.OrderExecutionMode.Chain
+                && )
+                // && and support for different policies for siblings
+                    //&& Order.GetConfirmationFromReceiver(InstanceGetOrderReceiver().GetCurrentOrderInQueue()))
+                {
+                    mem = InstanceGetOrderReceiver().GetCurrentOrdersInQueue();
+                }*/
+
+            },
+            () =>
+            {
+                if (waitForReactionAtEnd == false)
+                    SetPhase(GetMyWrapper(), OrderPhase.Disposed);
+            });
 
             orderPhasesFSM.AddState(OrderPhase.Disposed,
             () =>
             {
+            
                 GetMyWrapper().DestroyWrappedReference();
 
-                if (InstanceGetOrderReceiver().GetCurrentOrderInQueue() != null)
-                    //&& Order.GetConfirmationFromReceiver(InstanceGetOrderReceiver().GetCurrentOrderInQueue()))
-                {
-                    Order.TryStartExecution(InstanceGetOrderReceiver().GetCurrentOrderInQueue());
-                }                    
+                if (mem != null && mem.WrappedObject != null)
+                    Order.TryStartExecution(mem);
+
             });
                
             orderPhasesFSM.CurrentState = OrderPhase.Initial;
@@ -244,10 +313,10 @@ namespace Core.Orders
             }
         }
 
-        public void AddWaypoints(List<MapMarkerWrapper<WaypointMarker>> waypointWrapper)
+        /*public void AddWaypoints(List<MapMarkerWrapper<WaypointMarker>> waypointWrapper)
         {
             this.waypointMarkerWrappersList.AddRange(waypointWrapper);
-        }
+        }*/
 
         private void RemoveClearedWaypointWrapper(MapMarkerWrapper<WaypointMarker> waypointWrapper)
         {

@@ -6,6 +6,11 @@ using VariousUtilsExtensions;
 
 namespace Core.MapMarkers
 {
+    /// <summary>
+    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+    ///
+    /// A class whose subclass are intended to be representations of various marks put on the map, may it be
+    /// </summary>   
     public abstract class MapMarker : 
         IHasRefWrapper<MapMarkerWrapper>
     {

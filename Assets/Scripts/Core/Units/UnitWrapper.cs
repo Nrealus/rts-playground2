@@ -9,6 +9,7 @@ using Core.Orders;
 using GlobalManagers;
 using Core.Handlers;
 using Core.MapMarkers;
+using System.Linq;
 
 namespace Core.Units
 {
@@ -124,21 +125,127 @@ namespace Core.Units
             }
         }*/
 
-        public ReferenceWrapper<IOrderable> testFunction()
-        {
-            return null;
-        }
 
-        private List<OrderWrapper> orderWrappersList = new List<OrderWrapper>();
-        private OrderWrapper currentOrderWrapper;
+        /*private PseudoPetriNet<OrderWrapper> orderWrappersNet = new PseudoPetriNet<OrderWrapper>();
         private List<MapMarkerWrapper<OrderMarker>> orderMarkersList = new List<MapMarkerWrapper<OrderMarker>>();
 
-        public bool AddOrderToList(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor)
+        public bool AddOrderToMyPlan(OrderWrapper wrapper, OrderWrapper previous, OrderWrapper next)
+        {
+            if (previous != null && next != null)
+                throw new SystemException("Cannot specify both a predecessor and a successor for an order when adding it to Orderable order list");
+
+            if(wrapper != null && !orderWrappersNet.ContainsState(wrapper))
+            {
+
+                wrapper.SubscribeOnClearance(() => RemoveOrderFromMyPlan(wrapper));
+                SubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                                
+                if (previous == null && next == null)
+                {
+                    orderWrappersNet.AddState(wrapper, null, null, null);
+                    orderWrappersNet.AddTokenAtState(wrapper);
+                }
+                else if (previous != null && next == null)
+                {
+                    //orderWrappersList.AddAfter(orderWrappersList.Find(previous), wrapper);
+                }
+                else if (previous == null && next != null)
+                {
+                    //orderWrappersList.AddBefore(orderWrappersList.Find(next), wrapper);
+                }
+
+                var om = (new OrderMarker(wrapper)).GetMyWrapper<OrderMarker>();
+                orderMarkersList.Add(om); // TO BE CHANGED OF COURSE, SO ORDER MARKERS APPEAR FROM BOTTOM TO TOP CORRECT SUCCESSION
+
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }
+
+        public bool RemoveOrderFromMyPlan(OrderWrapper wrapper)
+        {
+            if(orderWrappersNet.ContainsState(wrapper))
+            {
+                orderWrappersNet.RemoveState(wrapper);
+
+                wrapper.UnsubscribeOnClearance(() => RemoveOrderFromMyPlan(wrapper));
+                UnsubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }*/
+        
+        //private SimplePriorityQueue<OrderWrapper, int> orderWrappersQueue = new SimplePriorityQueue<OrderWrapper, int>();
+        //private SimplePriorityQueue<MapMarkerWrapper<OrderMarker>, int> orderMarkersQueue = new SimplePriorityQueue<MapMarkerWrapper<OrderMarker>, int>();
+
+        /*private LinkedList<OrderWrapper> orderWrappersList = new LinkedList<OrderWrapper>();
+        private LinkedList<MapMarkerWrapper<OrderMarker>> orderMarkersList = new LinkedList<MapMarkerWrapper<OrderMarker>>();
+
+        public bool AddOrderToMine(OrderWrapper wrapper, OrderWrapper previous, OrderWrapper next)
+        {
+            if (previous != null && next != null)
+                throw new SystemException("Cannot specify both a predecessor and a successor for an order when adding it to Orderable order list");
+
+            if(wrapper != null && !orderWrappersList.Contains(wrapper))
+            {
+
+                wrapper.SubscribeOnClearance(() => RemoveOrderFromMine(wrapper));
+                SubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                                
+                if (previous == null && next == null)
+                {
+                    orderWrappersList.AddLast(wrapper);
+                }
+                else if (previous != null && next == null)
+                {
+                    orderWrappersList.AddAfter(orderWrappersList.Find(previous), wrapper);
+                }
+                else if (previous == null && next != null)
+                {
+                    orderWrappersList.AddBefore(orderWrappersList.Find(next), wrapper);
+                }
+
+                var om = (new OrderMarker(wrapper)).GetMyWrapper<OrderMarker>();
+                orderMarkersList.AddFirst(om); // TO BE CHANGED OF COURSE, SO ORDER MARKERS APPEAR FROM BOTTOM TO TOP CORRECT SUCCESSION
+
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }
+
+        public bool RemoveOrderFromMine(OrderWrapper wrapper)
+        {
+            if(orderWrappersList.Contains(wrapper))
+            {
+                orderWrappersList.Remove(orderWrappersList.Find(wrapper));
+
+                wrapper.UnsubscribeOnClearance(() => RemoveOrderFromMine(wrapper));
+                UnsubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }*/
+        
+        /*public bool AddOrderToQueue(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor)
         {
             if (predecessor != null && successor != null)
                 throw new SystemException("Cannot specify both a predecessor and a successor for an order when adding it to Orderable order list");
 
-            if(!orderWrappersList.Contains(wrapper))
+            if(!orderWrappersQueue.Contains(wrapper))
             {
 
                 wrapper.SubscribeOnClearance(() => RemoveOrderFromList(wrapper));
@@ -149,25 +256,25 @@ namespace Core.Units
                     if(currentOrderWrapper == null)
                         currentOrderWrapper = wrapper;
                     else
-                        orderWrappersList.Add(wrapper);
+                        orderWrappersQueue.Add(wrapper);
                 }
                 else if (predecessor != null && successor == null)
                 {
                     if(currentOrderWrapper == predecessor)
-                        orderWrappersList.Insert(0, wrapper);
+                        orderWrappersQueue.Insert(0, wrapper);
                     else
-                        orderWrappersList.Insert(orderWrappersList.IndexOf(predecessor)+1, wrapper);                    
+                        orderWrappersQueue.Insert(orderWrappersQueue.IndexOf(predecessor)+1, wrapper);                    
                 }
                 else if (predecessor == null && successor != null)
                 {
                     if (currentOrderWrapper == successor)
                     {
                         currentOrderWrapper = wrapper;
-                        orderWrappersList.Insert(0, successor);
+                        orderWrappersQueue.Insert(0, successor);
                     }
                     else
                     {
-                        orderWrappersList.Insert(orderWrappersList.IndexOf(successor), wrapper);                    
+                        orderWrappersQueue.Insert(orderWrappersQueue.IndexOf(successor), wrapper);                    
                     }
                 }
 
@@ -184,23 +291,23 @@ namespace Core.Units
 
         public bool RemoveOrderFromList(OrderWrapper wrapper)
         {
-            if(currentOrderWrapper == wrapper || orderWrappersList.Contains(wrapper))
+            if(currentOrderWrapper == wrapper || orderWrappersQueue.Contains(wrapper))
             {
                 wrapper.UnsubscribeOnClearance(() => RemoveOrderFromList(wrapper));
                 UnsubscribeOnClearance(() => wrapper.DestroyWrappedReference());
 
                 if(currentOrderWrapper == wrapper)
                 {
-                    if(orderWrappersList.Count > 0)
+                    if(orderWrappersQueue.Count > 0)
                     {
-                        currentOrderWrapper = orderWrappersList[0];
-                        orderWrappersList.RemoveAt(0);
+                        currentOrderWrapper = orderWrappersQueue[0];
+                        orderWrappersQueue.RemoveAt(0);
                     }
                     else
                         currentOrderWrapper = null;
                 }
                 else
-                    orderWrappersList.Remove(wrapper);
+                    orderWrappersQueue.Remove(wrapper);
                 
                 int c = orderMarkersList.Count;
                 for (int i=c-1; i>=0; i--)
@@ -219,37 +326,111 @@ namespace Core.Units
             {
                 return false;    
             }
-        }
+        }*/
 
 
-        public OrderWrapper GetCurrentOrderInQueue()
+        /*public OrderWrapper GetCurrentOrderInQueue()
         {
             return currentOrderWrapper;
+        }*/
+
+        /*public OrderWrapper GetFirstInlineActiveOrderInPlan()
+        {
+            if (linearOrderPlan.First != null)
+                return linearOrderPlan.First.Value.activeOrder;
+            else
+                return null;
         }
 
-        /*public OrderWrapper GetNextOrderInQueue()
+        public IEnumerable<OrderWrapper> GetFirstInlinePassiveOrdersInPlan()
         {
-            if(orderWrappersList.Count > 0)
-                return orderWrappersList[0];
+            return GetPlanNodePassives(linearOrderPlan.First.Value);
+        }
+
+        private IEnumerable<OrderWrapper> GetPlanNodePassives(InlineOrdersPlanNode inlineOrdersPlanNode)
+        {
+            List<OrderWrapper> res = new List<OrderWrapper>();
+            foreach (var v in inlineOrdersPlanNode.passiveOrdersTree.ChildNodes)
+                res.Add(v.obj);
+            return res;
+        }
+
+        public bool IsFirstInlineActiveOrderInPlan(OrderWrapper wrapper)
+        {
+            return GetFirstInlineActiveOrderInPlan() == wrapper;
+        }
+
+        public OrderWrapper GetLastInlineActiveOrderInPlan()
+        {
+            if (linearOrderPlan.Last != null)
+                return linearOrderPlan.Last.Value.activeOrder;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetNextInlineActiveOrderInPlan(OrderWrapper wrapper)
+        {
+            if (Order.GetParameters(wrapper).isPassive)
+                throw new System.Exception("Order should not be passive to be a parameter of this method");
+
+            var v = linearOrderPlan.Where((_) => { return _.activeOrder == wrapper; }).First();
+            if (linearOrderPlan.Find(v) != null && linearOrderPlan.Find(v).Next != null)
+                return linearOrderPlan.Find(v).Next.Value.activeOrder;//.Next;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetPreviousInlinePassiveOrderInPlan(OrderWrapper wrapper)
+        {
+            if (!Order.GetParameters(wrapper).isPassive)
+                throw new System.Exception("Order should be passive to be a parameter of this method");
+
+            //var v = linearOrderPlan.Where((_) => { return _.passiveOrdersTree.BFSFindNode(wrapper).ChildNodes[0].obj != null; }).First();
+
+            OrderWrapper res = null;
+            foreach (var v in linearOrderPlan)
+            {
+                var temp = v.passiveOrdersTree.BFSFindNode(wrapper).GetParent();
+                if (temp != null)
+                    res=temp.obj;
+                if (res != null)
+                    return res;
+            }
+            return null;
+        }
+
+        public OrderWrapper GetNextInlinePassiveOrderInPlan(OrderWrapper wrapper)
+        {
+            if (!Order.GetParameters(wrapper).isPassive)
+                throw new System.Exception("Order should be passive to be a parameter of this method");
+
+            //var v = linearOrderPlan.Where((_) => { return _.passiveOrdersTree.BFSFindNode(wrapper).ChildNodes[0].obj != null; }).First();
+
+            OrderWrapper res;
+            foreach (var v in linearOrderPlan)
+            {
+                res = v.passiveOrdersTree.BFSFindNode(wrapper).ChildNodes[0].obj;
+                if (res != null)
+                    return res;
+            }
+            return null;
+        }
+
+        private void TransferPassivesFromOneInlineToOther(InlineOrdersPlanNode source, InlineOrdersPlanNode destination)
+        {
+            var temp = source.passiveOrdersTree;
+            source.passiveOrdersTree = null;
+            destination.passiveOrdersTree = temp;
+            // different joining policies ? (union, intersect...)
+        }
+
+        /*public OrderWrapper<Z> GetNextOrderInQueueSpecific<Z>() where Z : Order
+        {
+            if(orderWrappersQueue.Count > 0)
+                return orderWrappersQueue[0].GetWrappedAs<Z>().GetMyWrapper<Z>();
             else
                 return null;
         }*/
-
-        public OrderWrapper GetMostRecentAddedOrder()
-        {
-            if(orderWrappersList.Count > 0)
-                return orderWrappersList[orderWrappersList.Count-1];
-            else
-                return currentOrderWrapper;
-        }
-
-        public OrderWrapper<Z> GetNextOrderInQueueSpecific<Z>() where Z : Order
-        {
-            if(orderWrappersList.Count > 0)
-                return orderWrappersList[0].GetWrappedAs<Z>().GetMyWrapper<Z>();
-            else
-                return null;
-        }
 
         /*
         public bool IsOrderApplicable(OrderWrapper orderWrapper)
@@ -264,5 +445,320 @@ namespace Core.Units
             }
         }
         */
+
+        public OrderWrapper GetFirstInlineActiveOrderInPlan()
+        {
+            var v = activeOrderPlan.First;
+            if (v != null)
+                return v.Value;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetPreviousInlineActiveOrderInPlan(OrderWrapper orderWrapper)
+        {
+            var v = activeOrderPlan.Find(orderWrapper);
+            if (v != null && v.Previous != null)
+                return v.Previous.Value;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetNextInlineActiveOrderInPlan(OrderWrapper orderWrapper)
+        {
+            var v = activeOrderPlan.Find(orderWrapper);
+            if (v != null && v.Next != null)
+                return v.Next.Value;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetLastInlineActiveOrderInPlan()
+        {
+            var v = activeOrderPlan.Last;
+            if (v != null)
+                return v.Value;
+            else
+                return null;
+        }
+
+        public bool IsFirstInlineActiveOrderInPlan(OrderWrapper wrapper)
+        {
+            return GetFirstInlineActiveOrderInPlan() == wrapper;
+        }
+
+        public IEnumerable<OrderWrapper> GetAllActiveOrdersFromPlan()
+        {
+            return passiveOrderPlan.ToList();
+        }
+
+        public OrderWrapper GetFirstInlinePassiveOrderInPlan()
+        {
+            var v = passiveOrderPlan.First;
+            if (v != null)
+                return v.Value;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetPreviousInlinePassiveOrderInPlan(OrderWrapper orderWrapper)
+        {
+            var v = passiveOrderPlan.Find(orderWrapper);
+            if (v != null && v.Previous != null)
+                return v.Previous.Value;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetNextInlinePassiveOrderInPlan(OrderWrapper orderWrapper)
+        {
+            var v = passiveOrderPlan.Find(orderWrapper);
+            if (v != null && v.Next != null)
+                return v.Next.Value;
+            else
+                return null;
+        }
+
+        public OrderWrapper GetLastInlinePassiveOrderInPlan()
+        {
+            var v = passiveOrderPlan.Last;
+            if (v != null)
+                return v.Value;
+            else
+                return null;
+        }
+
+        public bool IsFirstInlinePassiveOrderInPlan(OrderWrapper wrapper)
+        {
+            return GetFirstInlinePassiveOrderInPlan() == wrapper;
+        }
+
+        public IEnumerable<OrderWrapper> GetAllPassiveOrdersFromPlan()
+        {
+            return passiveOrderPlan.ToList();
+        }
+
+
+        public OrderWrapper GetLastInlineAnyOrderInPlan()
+        {
+            LinkedListNode<OrderWrapper> v;
+            if (lastAddedActiveOrPassive)
+                v = activeOrderPlan.Last;
+            else
+                v = passiveOrderPlan.Last;
+            if (v != null)
+                return v.Value;
+            else
+                return null;
+        }
+
+        private bool lastAddedActiveOrPassive = true;
+
+        private LinkedList<OrderWrapper> activeOrderPlan = new LinkedList<OrderWrapper>();
+
+        //private PseudoPetriNet<OrderWrapper> orderWrappersNet = new PseudoPetriNet<OrderWrapper>();
+        private List<MapMarkerWrapper<OrderMarker>> orderMarkersList = new List<MapMarkerWrapper<OrderMarker>>();
+
+        public bool QueueActiveOrderToPlan(OrderWrapper wrapper, OrderWrapper previous, OrderWrapper next)
+        {
+            if (previous != null && next != null)
+                throw new SystemException("Cannot specify both a predecessor and a successor at the same time for an order when queueing it !");
+
+            if(wrapper != null && activeOrderPlan.Find(wrapper) == null)
+            {
+                if (Order.GetParameters(wrapper).isPassive)
+                    throw new SystemException("Only active (non passive) orders allowed");
+
+                wrapper.SubscribeOnClearance(() => RemoveActiveOrderFromPlan(wrapper));
+                SubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                                
+                if (previous == null && next == null)
+                {
+                    lastAddedActiveOrPassive = true;
+
+                    activeOrderPlan.AddLast(wrapper);
+                    //orderWrappersNet.AddState(wrapper, null, null, null);
+                    //orderWrappersNet.AddTokenAtState(wrapper);
+                }
+                else if (previous != null && activeOrderPlan.Find(previous) != null)
+                {
+                    if (Order.GetParameters(wrapper).isPassive || Order.GetParameters(previous).isPassive)
+                        throw new SystemException("Only active (non passive) orders allowed");
+            
+                    activeOrderPlan.AddAfter(activeOrderPlan.Find(previous), wrapper);
+                    //orderWrappersList.AddAfter(orderWrappersList.Find(previous), wrapper);
+                }
+                else if (next != null && activeOrderPlan.Find(next) != null)
+                {
+                    if (Order.GetParameters(wrapper).isPassive || Order.GetParameters(next).isPassive)
+                        throw new SystemException("Only active (non passive) orders allowed");
+            
+                    activeOrderPlan.AddBefore(activeOrderPlan.Find(next), wrapper);
+                    //orderWrappersList.AddBefore(orderWrappersList.Find(next), wrapper);
+                }
+
+                var om = (new OrderMarker(wrapper)).GetMyWrapper<OrderMarker>();
+                orderMarkersList.Add(om); // TO BE CHANGED OF COURSE, SO ORDER MARKERS APPEAR FROM BOTTOM TO TOP CORRECT SUCCESSION
+
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }
+
+        private LinkedList<OrderWrapper> passiveOrderPlan = new LinkedList<OrderWrapper>();
+
+        public bool QueuePassiveOrderToPlan(OrderWrapper wrapper, OrderWrapper previous, OrderWrapper next)
+        {
+            if (previous != null && next != null)
+                throw new SystemException("Cannot specify both a predecessor and a successor at the same time for an order when queueing it !");
+
+            if(wrapper != null && passiveOrderPlan.Find(wrapper) == null)
+            {
+                if (!Order.GetParameters(wrapper).isPassive)
+                    throw new SystemException("Only passive orders allowed");
+
+                wrapper.SubscribeOnClearance(() => RemovePassiveOrderFromPlan(wrapper));
+                SubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                                
+                if (previous == null && next == null)
+                {
+                    lastAddedActiveOrPassive = false;
+
+                    passiveOrderPlan.AddLast(wrapper);
+                    //orderWrappersNet.AddState(wrapper, null, null, null);
+                    //orderWrappersNet.AddTokenAtState(wrapper);
+                }
+                else if (previous != null && passiveOrderPlan.Find(previous) != null)
+                {
+                    if (!Order.GetParameters(wrapper).isPassive || !Order.GetParameters(previous).isPassive)
+                        throw new SystemException("Only passive orders allowed");
+            
+                    passiveOrderPlan.AddAfter(passiveOrderPlan.Find(previous), wrapper);
+                    //orderWrappersList.AddAfter(orderWrappersList.Find(previous), wrapper);
+                }
+                else if (next != null && activeOrderPlan.Find(next) != null)
+                {
+                    if (!Order.GetParameters(wrapper).isPassive || !Order.GetParameters(next).isPassive)
+                        throw new SystemException("Only passive orders allowed");
+        
+                    passiveOrderPlan.AddBefore(passiveOrderPlan.Find(next), wrapper);
+                    //orderWrappersList.AddBefore(orderWrappersList.Find(next), wrapper);
+                }
+
+                var om = (new OrderMarker(wrapper)).GetMyWrapper<OrderMarker>();
+                orderMarkersList.Add(om); // TO BE CHANGED OF COURSE, SO ORDER MARKERS APPEAR FROM BOTTOM TO TOP CORRECT SUCCESSION
+
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }
+
+        /*public bool AddPassiveOrderToPlan(OrderWrapper wrapper, OrderWrapper previous, OrderWrapper next)
+        {
+            if (previous != null && next != null)
+                throw new SystemException("Cannot specify both a predecessor and a successor for an order when adding it to Orderable order list");
+
+            if(wrapper != null && !linearOrderPlan.Any((_) => { return _.activeOrder == wrapper; }))
+            {
+
+                wrapper.SubscribeOnClearance(() => RemoveActiveOrderFromPlan(wrapper));
+                SubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                                
+                if (previous == null && next == null)
+                {
+                    
+                    if (!Order.GetParameters(wrapper).isPassive)
+                        throw new SystemException("Only passive orders allowed");
+
+                    if (linearOrderPlan.First != null)
+                    {
+                        linearOrderPlan.First.Value.passiveOrdersTree.AddChild(new SimpleTreeNode<OrderWrapper>(wrapper));
+                    }
+                    else
+                    {
+                        var iop = new InlineOrdersPlanNode();
+                        iop.passiveOrdersTree.AddChild(new SimpleTreeNode<OrderWrapper>(wrapper));
+                        linearOrderPlan.AddLast(iop);
+                    }
+                }
+                else if (previous != null && next == null)
+                {
+                    
+                    if (!Order.GetParameters(wrapper).isPassive || !Order.GetParameters(previous).isPassive)
+                        throw new SystemException("Only passive orders allowed");
+
+                    var prevInlineNode = linearOrderPlan.Where((_) => { return _.passiveOrdersTree.BFSFindNode(previous) != null; }).First();
+                    var trn = prevInlineNode.passiveOrdersTree.BFSFindNode(previous);
+                    if (trn != null)
+                    {
+                        var toAdd = new SimpleTreeNode<OrderWrapper>(wrapper);
+                        prev.passiveOrdersTree.BFSFindNode(previous)
+                        prev.Value.passiveOrdersTree.AddChild(new SimpleTreeNode<OrderWrapper>(wrapper));
+                    }
+                    else
+                    {
+                        var iop = new InlineOrdersPlanNode();
+                        iop.passiveOrdersTree.AddChild(new SimpleTreeNode<OrderWrapper>(wrapper));
+                        linearOrderPlan.AddLast(iop);
+                    }
+                }
+                else if (previous == null && next != null)
+                {
+                    //orderWrappersList.AddBefore(orderWrappersList.Find(next), wrapper);
+                }
+
+                var om = (new OrderMarker(wrapper)).GetMyWrapper<OrderMarker>();
+                orderMarkersList.Add(om); // TO BE CHANGED OF COURSE, SO ORDER MARKERS APPEAR FROM BOTTOM TO TOP CORRECT SUCCESSION
+
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }*/
+
+        private bool RemoveActiveOrderFromPlan(OrderWrapper wrapper)
+        {
+            if(activeOrderPlan.Find(wrapper) != null)
+            {
+                activeOrderPlan.Remove(activeOrderPlan.Find(wrapper));
+                //orderWrappersNet.RemoveState(wrapper);
+
+                wrapper.UnsubscribeOnClearance(() => RemoveActiveOrderFromPlan(wrapper));
+                UnsubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }
+
+        private bool RemovePassiveOrderFromPlan(OrderWrapper wrapper)
+        {
+            if(passiveOrderPlan.Find(wrapper) != null)
+            {
+                passiveOrderPlan.Remove(passiveOrderPlan.Find(wrapper));
+                //orderWrappersNet.RemoveState(wrapper);
+
+                wrapper.UnsubscribeOnClearance(() => RemovePassiveOrderFromPlan(wrapper));
+                UnsubscribeOnClearance(() => wrapper.DestroyWrappedReference());
+                
+                return true;
+            }
+            else
+            {
+                return false;    
+            }
+        }
+
     }
 }

@@ -8,6 +8,13 @@ namespace Core.Handlers
     public class SelectionHandler : MonoBehaviour
     {
 
+        /// <summary>
+        /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+        ///
+        /// Singleton used to oversee selectors and other general selection related things the scale of the game.
+        /// For now, its only use is to return an appropriate selector instance on request.
+        /// Criteria for a selector to return could include a faction or a player, for example.
+        /// </summary>    
         private static SelectionHandler _instance;
         private static SelectionHandler MyInstance
         {

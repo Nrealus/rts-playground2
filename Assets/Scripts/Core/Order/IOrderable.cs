@@ -20,11 +20,33 @@ namespace Core.Orders
 
         Y GetOrderableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper;
 
-        bool AddOrderToList(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor);
+        bool QueueActiveOrderToPlan(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor);
 
-        bool RemoveOrderFromList(OrderWrapper wrapper);
+        //bool RemoveActiveOrderFromMyPlan(OrderWrapper wrapper);
 
-        OrderWrapper GetCurrentOrderInQueue();
+        OrderWrapper GetFirstInlineActiveOrderInPlan();
+
+        OrderWrapper GetNextInlineActiveOrderInPlan(OrderWrapper orderWrapper);        
+
+        OrderWrapper GetPreviousInlineActiveOrderInPlan(OrderWrapper orderWrapper);        
+
+        IEnumerable<OrderWrapper> GetAllActiveOrdersFromPlan();
+
+        bool IsFirstInlineActiveOrderInPlan(OrderWrapper wrapper);
+
+        bool QueuePassiveOrderToPlan(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor);
+
+        //bool RemoveActiveOrderFromMyPlan(OrderWrapper wrapper);
+
+        OrderWrapper GetFirstInlinePassiveOrderInPlan();
+
+        OrderWrapper GetNextInlinePassiveOrderInPlan(OrderWrapper orderWrapper);        
+
+        OrderWrapper GetPreviousInlinePassiveOrderInPlan(OrderWrapper orderWrapper);        
+
+        IEnumerable<OrderWrapper> GetAllPassiveOrdersFromPlan();
+
+        bool IsFirstInlinePassiveOrderInPlan(OrderWrapper wrapper);
 
         //OrderWrapper GetNextOrderInQueue();
 

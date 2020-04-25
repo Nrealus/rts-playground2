@@ -5,8 +5,11 @@ using UnityEngine;
 namespace Core.Faction
 {
     /// <summary>
+    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+    ///
     /// Contains defining data and information about a faction. An object's field can be set to it to communicate that belongs to this certain faction.
-    /// </summary>
+    /// Not really used too much for now, just a placeholder for an eventual further use
+    /// </summary>    
     [CreateAssetMenu(fileName = "FactionData", menuName = "Faction Data")]
     public class FactionData : ScriptableObject
     {

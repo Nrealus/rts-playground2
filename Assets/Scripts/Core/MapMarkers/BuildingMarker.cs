@@ -5,6 +5,11 @@ using UnityEngine;
 
 namespace Core.MapMarkers
 {
+    /// <summary>
+    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+    ///
+    /// A MapMarker subclass, used to map buildings or constructibles on the map, linked to a BuiltStructure (through a BuiltStructureWrapper)
+    /// </summary>   
     public class BuildingMarker : MapMarker
     {
 

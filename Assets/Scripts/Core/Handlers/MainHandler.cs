@@ -5,6 +5,13 @@ using UnityEngine;
 namespace Core.Handlers
 {
 
+    /// <summary>
+    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+    ///
+    /// Main singleton overseeing all the other ones.
+    /// Its use should not be too extensive, it is easy to fall to the temptation of abusing the singleton pattern.
+    /// For now, it isn't really used.
+    /// </summary>    
     //[RequireComponent(typeof(ParticularHandler1), typeof(ParticularHandler2), typeof(ParticularHandler3))]
     public class MainHandler : MonoBehaviour
     {

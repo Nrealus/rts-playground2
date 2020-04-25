@@ -18,11 +18,12 @@ namespace Core.MapMarkers
         public OrderMarker(OrderWrapper ordWrapper)
         {
             this.ordWrapper = ordWrapper;
-            uw = (UnitWrapper)Order.GetReceiver(ordWrapper);
+            ordWrapper.SubscribeOnClearance(() => DestroyMarkerTransform());
 
             _myWrapper = new MapMarkerWrapper<OrderMarker>(this, () => {_myWrapper = null;});
             GetMyWrapper<OrderMarker>().SubscribeOnClearance(DestroyMarkerTransform);
 
+            uw = (UnitWrapper)Order.GetReceiver(ordWrapper);
             orderMarkerComponent = MonoBehaviour.Instantiate<OrderMarkerComponent>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().orderMarkerComponentPrefab,
                 GameObject.Find("WorldUICanvas").transform);
@@ -37,10 +38,10 @@ namespace Core.MapMarkers
                 orderMarkerComponent.transform.position = uw.WrappedObject.transform.position;
             //else
             //    GetMyWrapper<OrderMarker>().WrappedObject.ClearWrapper();
-            if(Input.GetKeyDown(KeyCode.T))
+            /*if(Input.GetKeyDown(KeyCode.T))
             {
                 Order.EndExecution(ordWrapper);
-            }
+            }*/
         }
 
         private void DestroyMarkerTransform()

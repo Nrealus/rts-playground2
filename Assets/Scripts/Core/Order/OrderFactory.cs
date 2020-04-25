@@ -30,6 +30,12 @@ namespace Core.Orders
                     OrderWrapper<BuildOrder> wrapper = mo.GetMyWrapper<BuildOrder>();
                     return wrapper as OrderWrapper<T>;
                 }
+                case Type moType when moType == typeof(EngageAtPositionsOrder):
+                {
+                    EngageAtPositionsOrder mo = new EngageAtPositionsOrder();
+                    OrderWrapper<EngageAtPositionsOrder> wrapper = mo.GetMyWrapper<EngageAtPositionsOrder>();
+                    return wrapper as OrderWrapper<T>;
+                }
                 /*case Type MoveOrderType 
                 when MoveOrderType == typeof(MoveOrder) :
                     bool j = true;
@@ -46,7 +52,7 @@ namespace Core.Orders
         {
             OrderWrapper<T> res = CreateOrderWrapper<T>();
             
-            OrderHandler.AddToOrderWrapperList(res);
+            OrderHandler.AddToGlobalOrderWrapperList(res);
 
             Order.SetReceiver(res, null, null, receiverWrapper);
             return res;
@@ -56,7 +62,7 @@ namespace Core.Orders
         {
             OrderWrapper<T> res = CreateOrderWrapper<T>();
             
-            OrderHandler.AddToOrderWrapperList(res);
+            OrderHandler.AddToGlobalOrderWrapperList(res);
 
             Order.SetReceiver(res, null, successor, receiverWrapper);
             return res;

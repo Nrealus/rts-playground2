@@ -11,6 +11,13 @@ using Core.MapMarkers;
 namespace Core.BuiltStructures
 {
 
+    /// <summary>
+    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+    ///
+    /// The wrapper class for BuiltStructures. Used as an isolating container for a BuiltStructure instance.
+    /// It is also linked with a BuildingMarker through a MapMarkerWrapper
+    /// Just as with BuiltStructure, this is still being figured out.
+    /// </summary>
     public class BuiltStructureWrapper<T> : BuiltStructureWrapper where T : BuiltStructure
     {
         public BuiltStructureWrapper(BuiltStructure wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)

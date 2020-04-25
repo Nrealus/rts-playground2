@@ -8,20 +8,43 @@ namespace Core.Orders
     public class OrderParams
     {
         
-        public TimeStruct startingTime;
+        public enum OrderExecutionMode
+        {
+            InstantOverrideAll,
+            Chain,
+            WaitForReactionAtEnd,
+            AskForConfirmationRightBeforeStart,
+            
+        }
 
-        /*public static OrderParams DefaultParams
+        private List<OrderExecutionMode> _executionMode = new List<OrderExecutionMode>();
+
+        public bool ContainsExecutionMode(OrderExecutionMode mode)
+        {
+            return _executionMode.Contains(mode);
+        }
+
+        public void AddExecutionMode(OrderExecutionMode mode) // Subject to change when this class will get more formal
+        {
+            _executionMode.Add(mode);
+        }
+
+        public TimeStruct startingTime { get; /*private*/ set; }
+
+        public bool isPassive { get; /*private*/ set; }
+
+        
+        public static OrderParams DefaultParam() { return new OrderParams(); }
+
+        public static OrderParams PassiveParam()
         { 
-            get 
-            {
-                var res = new OrderParams();
-                res.startingTime = new TimeStruct(9,15,21);
-                return res;
-            } 
-        }*/
+            var res = new OrderParams();
+            res.isPassive = true;
+            return res;
+        }
 
-        public static OrderParams DefaultParams = new OrderParams();
 
+        
         public OrderParams()
         {
             

@@ -7,6 +7,13 @@ using Core.Orders;
 
 namespace Core.Handlers
 {
+    /// <summary>
+    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
+    ///
+    /// Singleton registering all Orders (or rather, OrderWrappers) - they are added to this singleton's list when created and and given a receiver, using the OrderFactory class.
+    /// Of course, they are unregistered from the list when they are cleared.
+    /// For now, its only use is to update all the Orders (OrderWrappers) in the game loop, by updating their main finite state machine.
+    /// </summary>    
     public class OrderHandler : MonoBehaviour
     {
         
@@ -37,11 +44,11 @@ namespace Core.Handlers
             }
         }
 
-        public static bool AddToOrderWrapperList(OrderWrapper wrapper)
+        public static bool AddToGlobalOrderWrapperList(OrderWrapper wrapper)
         {
             if(!MyInstance.orderWrappersList.Contains(wrapper))
             {
-                wrapper.SubscribeOnClearance(() => RemoveFromOrderWrapperList(wrapper));
+                wrapper.SubscribeOnClearance(() => RemoveFromGlobalOrderWrapperList(wrapper));
                 MyInstance.orderWrappersList.Add(wrapper);
                 return true;
             }
@@ -52,11 +59,11 @@ namespace Core.Handlers
             }
         }
 
-        public static bool RemoveFromOrderWrapperList(OrderWrapper wrapper)
+        public static bool RemoveFromGlobalOrderWrapperList(OrderWrapper wrapper)
         {
             if(MyInstance.orderWrappersList.Contains(wrapper))
             {
-                wrapper.UnsubscribeOnClearance(() => RemoveFromOrderWrapperList(wrapper));
+                wrapper.UnsubscribeOnClearance(() => RemoveFromGlobalOrderWrapperList(wrapper));
                 MyInstance.orderWrappersList.Remove(wrapper);
                 return true;
             }

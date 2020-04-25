@@ -67,15 +67,7 @@ namespace Core.Orders
 
         public static bool TryStartExecution(OrderWrapper orderWrapper)
         {
-            if(IsReadyToStartExecution(orderWrapper))
-            {
-                SetPhase(orderWrapper, Order.OrderPhase.ExecutionWaitingToStart);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return orderWrapper.WrappedObject.InstanceTryStartExecution();
         }
 
         public static bool PauseExecution(OrderWrapper orderWrapper)
@@ -110,10 +102,17 @@ namespace Core.Orders
             return true;
         }
 
-        public static bool IsReadyToStartExecution(OrderWrapper orderWrapper)
+        public static bool EndExecution(IEnumerable<OrderWrapper> orderWrappers)
         {
-            return orderWrapper.WrappedObject.InstanceIsReadyToStartExecution();
+            foreach (var ow in orderWrappers)
+                EndExecution(ow);
+            return true;
         }
+
+        /*public static bool IsReadyToStartExecution(OrderWrapper orderWrapper, OrderExecutionMode mode)
+        {
+            return orderWrapper.WrappedObject.InstanceIsReadyToStartExecution(mode);
+        }*/
 
         public static IOrderable GetReceiver(OrderWrapper orderWrapper)
         {
@@ -131,10 +130,10 @@ namespace Core.Orders
             return orderWrapper.WrappedObject.InstanceGetOrderParams();
         }
 
-        public static void SetParameters(OrderWrapper orderWrapper, OrderParams orderParams)
+        /*public static void SetParameters(OrderWrapper orderWrapper, OrderParams orderParams)
         {
             orderWrapper.WrappedObject.InstanceSetOrderParams(orderParams);
-        }
+        }*/
 
         public static bool ReceiverExists(OrderWrapper orderWrapper)
         {
@@ -164,7 +163,8 @@ namespace Core.Orders
         public enum OrderPhase
         {   Initial,
             /*Registration,*/ Staging,// ReadyForExecution, NotReadyForExecution,
-            ExecutionWaitingToStart, Execution, Pause, Cancelled, End, Disposed }
+            ExecutionWaitingTimeToStart, Execution, Pause, Cancelled, End, End2, Disposed,  
+        }
         protected StateMachine<OrderPhase> orderPhasesFSM;
 
         /*--------*/
@@ -186,7 +186,7 @@ namespace Core.Orders
 
         protected abstract OrderParams InstanceGetOrderParams();
 
-        protected abstract void InstanceSetOrderParams(OrderParams orderParams);
+        //protected abstract void InstanceSetOrderParams(OrderParams orderParams);
 
         protected abstract IOrderable InstanceGetOrderReceiver();
         
@@ -196,8 +196,10 @@ namespace Core.Orders
 
         protected abstract void OrderPhasesFSMInit();
 
-        protected abstract bool InstanceIsReadyToStartExecution();
+        //protected abstract bool InstanceIsReadyToStartExecution(OrderExecutionMode mode);
 
+        protected abstract bool InstanceTryStartExecution();
+        
         #endregion
 
         #region Protected/Private instance methods

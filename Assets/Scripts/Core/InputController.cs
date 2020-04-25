@@ -37,7 +37,7 @@ public class InputController : MonoBehaviour,
     /////////////
 
     private enum ControllerStates { Neutral, Menu, OrderMenu,
-        MoveOrderMenu, PatrolOrderMenu, BuildOrderMenu, BuildOrderMenu2,
+        MoveOrderMenu, PatrolOrderMenu, BuildOrderMenu, BuildOrderMenu2, EngageAtPositionsMenu,
         OrderConfirmationPrompt , OrderCancel, }
 
     private ExtendedStateMachine<ControllerStates> controllerStateMachine;
@@ -129,8 +129,16 @@ public class InputController : MonoBehaviour,
                             controllerStateMachine.CurrentState = ControllerStates.PatrolOrderMenu;
                         });
 
-                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Build",
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Engage at positions",
                     pointerInfo.pointedPositionScreen + Vector3.right * 50f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            controllerStateMachine.CurrentState = ControllerStates.EngageAtPositionsMenu;
+                        });
+
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Build",
+                    pointerInfo.pointedPositionScreen + Vector3.right * 100f,
                     GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
@@ -174,8 +182,16 @@ public class InputController : MonoBehaviour,
                             controllerStateMachine.CurrentState = ControllerStates.PatrolOrderMenu;
                         });
 
-                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Build",
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Engage at positions",
                     pointerInfo.pointedPositionScreen + Vector3.right * 50f,
+                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GetMyCamera()).onClick.AddListener(
+                        () => {
+                            controllerStateMachine.CurrentState = ControllerStates.EngageAtPositionsMenu;
+                        });
+
+                CreateButton(menuCurrentButtons, sampleButtonPrefab, "Build",
+                    pointerInfo.pointedPositionScreen + Vector3.right * 100f,
                     GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
@@ -297,6 +313,30 @@ public class InputController : MonoBehaviour,
             }
         );
         
+        controllerStateMachine.AddState(ControllerStates.EngageAtPositionsMenu,
+             () => {
+                
+            },
+            () => {
+                //if (CanEditMoveOrderForSelectedEntities(controlledSelector))
+
+                if (!CurrentlyEditedEngageAtPositionsControl()
+                && Input.GetMouseButtonDown(1)
+                && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
+                    controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt;
+            },
+            null,
+            null,
+            new Dictionary<ControllerStates, System.Action>() {
+                { ControllerStates.OrderMenu, 
+                    () => {
+                        FetchCurrentlyEditedEngageAtPositionsWrappersFromSelectedEntities(controlledSelector);
+                    }
+                }
+            }
+        );
+
+
         ControllerStates _previousstate = default(ControllerStates);
         controllerStateMachine.AddState(ControllerStates.OrderConfirmationPrompt,
             () => {
@@ -352,7 +392,8 @@ public class InputController : MonoBehaviour,
             new Dictionary<ControllerStates, System.Action>() 
             {
                 { ControllerStates.MoveOrderMenu, () => { _previousstate = ControllerStates.MoveOrderMenu; } },
-                { ControllerStates.BuildOrderMenu, () => { _previousstate = ControllerStates.BuildOrderMenu; } }
+                { ControllerStates.BuildOrderMenu, () => { _previousstate = ControllerStates.BuildOrderMenu; } },
+                { ControllerStates.EngageAtPositionsMenu, () => { _previousstate = ControllerStates.EngageAtPositionsMenu; } }
             }
         );
 
@@ -412,7 +453,7 @@ public class InputController : MonoBehaviour,
         {
             OrderFactory.CreateOrderWrapperAndSetReceiver<MoveOrder>((IOrderable<Unit>)v);                    
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
-            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlineActiveOrderInPlan());
             /*currentlyEditedOWBunch.Add(
                 new EditedOWBunchStruct(){
                     orderWrappersList = new List<OrderWrapper>() { v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder() },
@@ -456,7 +497,7 @@ public class InputController : MonoBehaviour,
         {
             OrderFactory.CreateOrderWrapperAndSetReceiver<BuildOrder>((IOrderable<Unit>)v);                    
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
-            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder());
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlineActiveOrderInPlan());
         }
     }
 
@@ -491,6 +532,44 @@ public class InputController : MonoBehaviour,
         return false;
     }
     
+    private void AddPositionToEngageAtPositionsWrapper(OrderWrapper ow, Vector3 pos, float radius)
+    {
+        FirePositionMarker fpmrk = new FirePositionMarker(pos, radius);
+        ow.GetWrappedAs<EngageAtPositionsOrder>().AddFirePosition(fpmrk.GetMyWrapper<FirePositionMarker>());
+    }
+
+    private void FetchCurrentlyEditedEngageAtPositionsWrappersFromSelectedEntities(Selector selector)
+    {
+        var l = selector.GetCurrentlySelectedEntities();
+        foreach (var v in l)
+        {
+            OrderFactory.CreateOrderWrapperAndSetReceiver<EngageAtPositionsOrder>((IOrderable<Unit>)v);                    
+            //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlinePassiveOrderInPlan());
+        }
+    }
+
+    private bool CurrentlyEditedEngageAtPositionsControl()
+    {
+        if (Input.GetMouseButtonDown(0)
+            && NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 2))
+        {
+            //wps.Add(pointedPositionInfo.pointedPositionWorld);            
+            
+            //var wpmrk = new WaypointMarker(pointedPositionInfo.pointedPositionWorld);
+            //currentlyEditedOrderWrapper.GetWrappedAs<MoveOrder>()
+            //    .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
+
+            int c = currentlyEditedOWBunch.Count;
+            for(int i = 0; i < c; i++)
+            {
+                AddPositionToEngageAtPositionsWrapper(currentlyEditedOWBunch[i], pointerInfo.pointedPositionWorld, 5f);
+            }
+        }
+
+        return false;
+    }
+
 
     private void CurrentlyEditedOrdersConfirm()
     {
@@ -503,8 +582,16 @@ public class InputController : MonoBehaviour,
                 currentlyEditedOrderWrappers.RemoveAt(i);
             }*/
             //if (Order.TryStartExecution(Order.GetReceiver(currentlyEditedOWBunch[i]).GetCurrentOrderInQueue()))
-            if (Order.TryStartExecution(currentlyEditedOWBunch[i]))
-                currentlyEditedOWBunch.RemoveAt(i);
+            //if (Order.TryStartExecution(currentlyEditedOWBunch[i]))
+            
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                Order.GetParameters(currentlyEditedOWBunch[i]).ContainsExecutionMode(OrderParams.OrderExecutionMode.Chain);
+                //Order.SetParameters(currentlyEditedOWBunch[i], chainparam);
+            }
+
+            Order.TryStartExecution(currentlyEditedOWBunch[i]);
+            currentlyEditedOWBunch.RemoveAt(i);
         }
     }
 

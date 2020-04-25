@@ -31,7 +31,7 @@ namespace Core.Orders
                 _executionMode.Remove(OrderExecutionMode.InstantOverrideAll);
         }
 
-        public TimeStruct startingTime { get; /*private*/ set; }
+        public TimeStruct plannedStartingTime { get; /*private*/ set; }
 
         public bool isPassive { get; /*private*/ set; }
 

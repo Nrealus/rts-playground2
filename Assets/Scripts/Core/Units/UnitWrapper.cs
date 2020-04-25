@@ -489,8 +489,38 @@ namespace Core.Units
 
         public IEnumerable<OrderWrapper> GetAllActiveOrdersFromPlan()
         {
-            return passiveOrderPlan.ToList();
+            return activeOrderPlan;
         }
+
+        public bool IsActiveOrderBeforeOtherInPlan(OrderWrapper wrapper, OrderWrapper beforeWhich)
+        {
+            var node = activeOrderPlan.Find(beforeWhich);
+
+            while (node.Previous != null)
+            {
+                if (node.Previous.Value == wrapper)
+                    return true;
+                node = node.Previous;
+            }
+
+            return false;
+        }
+
+        public bool IsActiveOrderAfterOtherInPlan(OrderWrapper wrapper, OrderWrapper afterWhich)
+        {
+            var node = activeOrderPlan.Find(afterWhich);
+
+            while (node.Next != null)
+            {
+                if (node.Next.Value == wrapper)
+                    return true;
+                node = node.Next;
+            }
+
+            return false;
+        }
+
+        ///////////////////////
 
         public OrderWrapper GetFirstInlinePassiveOrderInPlan()
         {

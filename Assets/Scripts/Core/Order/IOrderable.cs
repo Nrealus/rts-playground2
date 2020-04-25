@@ -34,6 +34,10 @@ namespace Core.Orders
 
         bool IsFirstInlineActiveOrderInPlan(OrderWrapper wrapper);
 
+        bool IsActiveOrderBeforeOtherInPlan(OrderWrapper wrapper, OrderWrapper beforeWhich);
+
+        bool IsActiveOrderAfterOtherInPlan(OrderWrapper wrapper, OrderWrapper afterWhich);
+
         bool QueuePassiveOrderToPlan(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor);
 
         //bool RemoveActiveOrderFromMyPlan(OrderWrapper wrapper);

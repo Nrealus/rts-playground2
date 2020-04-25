@@ -166,11 +166,11 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingTimeToStart,
                 () =>
                 {
-                    if(!Order.GetParameters(GetMyWrapper()).startingTime.isInitialized)
+                    if(!Order.GetParameters(GetMyWrapper()).plannedStartingTime.isInitialized)
                     {
                         Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);
                     }
-                    else if (TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).startingTime))
+                    else if (TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).plannedStartingTime))
                     //    || TimeHandler.HasTimeAlreadyPassed(Order.GetParameters(GetMyWrapper()).startingTime))
                     {
                         Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);                
@@ -178,7 +178,7 @@ namespace Core.Orders
                 },
                 () =>
                 {
-                    if(TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).startingTime))
+                    if(TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).plannedStartingTime))
                     {
                         Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);
                     }
@@ -187,6 +187,8 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.Execution,
                 () =>
                 {
+                    GetParameters(GetMyWrapper()).plannedStartingTime = TimeHandler.CurrentTime();
+                
                     if (behaviourTree == null)
                     {
                         behaviourTree = CreateBehaviourTree();

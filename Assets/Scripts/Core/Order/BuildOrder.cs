@@ -124,9 +124,13 @@ namespace Core.Orders
 
                         foreach (var ow in GetReceiver(GetMyWrapper()).GetAllActiveOrdersFromPlan())
                         {
-                            if (ow != GetMyWrapper())
+                            if (ow != GetMyWrapper() && GetReceiver(GetMyWrapper()).IsActiveOrderAfterOtherInPlan(GetMyWrapper(), ow))
                             {
                                 EndExecution(ow);
+                            }
+                            else
+                            {
+                                break;
                             }
                             /*if(!Order.GetParameters(ow).startingTime.isInitialized
                             || Order.GetParameters(ow).startingTime < TimeHandler.CurrentTime())
@@ -137,9 +141,9 @@ namespace Core.Orders
                         
                         if (GetReceiver(GetMyWrapper()).GetFirstInlineActiveOrderInPlan() != null)
                         {
-                            if(!GetParameters(GetMyWrapper()).isPassive)
-                                    Order.EndExecution(Order.GetReceiver(GetMyWrapper()).GetFirstInlineActiveOrderInPlan());
-                                return CreateAndExecuteIntermediateMoveOrder();
+                            //if(!GetParameters(GetMyWrapper()).isPassive)
+                            Order.EndExecution(Order.GetReceiver(GetMyWrapper()).GetFirstInlineActiveOrderInPlan());
+                            return CreateAndExecuteIntermediateMoveOrder();
                         }
                         
                         return false;
@@ -246,11 +250,11 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingTimeToStart,
                 () =>
                 {
-                    if(!Order.GetParameters(GetMyWrapper()).startingTime.isInitialized)
+                    if(!Order.GetParameters(GetMyWrapper()).plannedStartingTime.isInitialized)
                     {
                         Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);
                     }
-                    else if (TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).startingTime))
+                    else if (TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).plannedStartingTime))
                     //    || TimeHandler.HasTimeAlreadyPassed(Order.GetParameters(GetMyWrapper()).startingTime))
                     {
                         Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);                
@@ -258,7 +262,7 @@ namespace Core.Orders
                 },
                 () =>
                 {
-                    if(TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).startingTime))
+                    if(TimeHandler.HasTimeJustPassed(Order.GetParameters(GetMyWrapper()).plannedStartingTime))
                     {
                         Order.SetPhase(GetMyWrapper(), Order.OrderPhase.Execution);
                     }
@@ -267,6 +271,8 @@ namespace Core.Orders
             orderPhasesFSM.AddState(OrderPhase.Execution,
                 () =>
                 {
+                    GetParameters(GetMyWrapper()).plannedStartingTime = TimeHandler.CurrentTime();
+                    
                     if (behaviourTree == null)
                     {
                         behaviourTree = CreateBehaviourTree();
@@ -352,17 +358,17 @@ namespace Core.Orders
             orderPhasesFSM.CurrentState = OrderPhase.Initial;
         }
 
-        public void SetBuildingToBuild(MapMarkerWrapper<BuildingMarker> buildingMarkerWrapper)
+        public void SetBuildingToBuild(MapMarkerWrapper<BuildingMarker> buildingMarkerWrapperArg)
         {
-            buildingMarkerWrapper.SubscribeOnClearance(() => buildingMarkerWrapper = null);
             GetMyWrapper().SubscribeOnClearance(
                 () => { 
-                    if (buildingMarkerWrapper != null && ((buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().builtStructureWrapper != null
-                    && BuiltStructure.GetHP(buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().builtStructureWrapper) == 0)
-                        || buildingMarkerWrapper.GetWrappedAs<BuildingMarker>().builtStructureWrapper == null))
-                        buildingMarkerWrapper.DestroyWrappedReference(); 
+                    if (buildingMarkerWrapperArg != null && ((buildingMarkerWrapperArg.GetWrappedAs<BuildingMarker>().builtStructureWrapper != null
+                    && BuiltStructure.GetHP(buildingMarkerWrapperArg.GetWrappedAs<BuildingMarker>().builtStructureWrapper) == 0)
+                        || buildingMarkerWrapperArg.GetWrappedAs<BuildingMarker>().builtStructureWrapper == null))
+                        buildingMarkerWrapperArg.DestroyWrappedReference(); 
                 });
-            this.buildingMarkerWrapper = buildingMarkerWrapper;
+            this.buildingMarkerWrapper = buildingMarkerWrapperArg;
+            this.buildingMarkerWrapper.SubscribeOnClearance(() => this.buildingMarkerWrapper = null);
         }
 
         private void UpdateBTClock()

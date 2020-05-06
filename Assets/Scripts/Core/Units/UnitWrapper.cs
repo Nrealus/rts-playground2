@@ -69,8 +69,7 @@ namespace Core.Units
         {
             return this as Y;
         }
-
-        Y IOrderable<Unit>.GetOrderableAsReferenceWrapperSpecific<Y>()
+         Y IOrderable<Unit>.GetOrderableAsReferenceWrapperSpecific<Y>()
         {
             return this as Y;
         }

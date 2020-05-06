@@ -1573,6 +1573,8 @@ MonoBehaviour:
     type: 3}
   buildingMarkerComponentPrefab: {fileID: 6731532594427990641, guid: 432ff8dd5d2d6f88598fa2f8e6978fa1,
     type: 3}
+  firePositionMarkerComponentPrefab: {fileID: 1693508131594296690, guid: f5fd7289760db9bc18f4a6d7e370bb4a,
+    type: 3}
 --- !u!4 &1658649910
 Transform:
   m_ObjectHideFlags: 0

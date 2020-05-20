@@ -10,7 +10,15 @@ using Gamelogic.Extensions;
 namespace Core.Selection
 {
 
-    public class Selector : MonoBehaviour, IHasCameraRef
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    
+    /// <summary>
+    /// An important class which deals with "selection" of instances that implemented ISelectable, which are mainly intended to be game units.
+    /// An instance of this class selects, stores, deselects ISelectables (units) in and out of it. Boolean functions that act like queries can be called externally to check the selection state
+    /// of an object in this selector. In a way, it is both a "database" and the terminal needed to interact with it.
+    /// It also has a bit of gameplay logic surrounding selection (see finite state machine) that can be activated from another class when dispatching input.
+    /// </summary>   
+    public class Selector : MonoBehaviour, IHasRefToCamera
     {
         public FactionData selectorFaction;
 
@@ -23,48 +31,13 @@ namespace Core.Selection
             return _cam;
         }
 
+        #region Basic functions and direct interaction methods (usable both here and from somewhere else if needed)
+
         private UnitsRoot unitsRoot;
         private Vector3 myPointerPreviousScreenPosition, myPointerCurrentScreenPostion;
 
         public enum SelectionModes { Default, Additive, Subtractive };
         public SelectionModes selectionMode = SelectionModes.Default;
-
-        /*
-        private List<ISelectable<Unit>> selectedUnits = new List<ISelectable<Unit>>();
-
-        public bool IsSelected(ISelectable<Unit> unitWrapper)
-        {
-            return selectedUnits.Contains(unitWrapper);
-        }
-        public bool IsHighlighted(ISelectable<Unit> unitWrapper)
-        {
-            return false;
-            //return selectedUnits.Contains(unitWrapper);
-        }
-
-        public ISelectable<Unit>[] GetCurrentlySelectedUnits()
-        {
-            return selectedUnits.ToArray();
-        }
-
-        public void SelectUnit(ISelectable<Unit> selectableUnit)
-        {
-            if (!selectedUnits.Contains(selectableUnit))
-            {
-                selectedUnits.Add(selectableUnit);
-                selectableUnit.GetMyInstanceType().SubscribeOnClearance(() => DeselectUnit(selectableUnit));
-            }
-        }
-
-        public void DeselectUnit(ISelectable<Unit> selectable)
-        {
-            if (selectedUnits.Contains(selectable))
-            {
-                selectable.GetMyInstanceType().UnsubscribeOnClearance(() => DeselectUnit(selectable));
-                selectedUnits.Remove(selectable);
-            }
-        }
-        */
 
         private List<ISelectable> selectedEntities = new List<ISelectable>();
         private List<ISelectable> preselectedEntities = new List<ISelectable>();
@@ -84,7 +57,7 @@ namespace Core.Selection
             return new List<ISelectable>(selectedEntities);
         }
 
-        public List<T> GetCurrentlySelectedEntitiesAs<T>() where T : ReferenceWrapper
+        public List<T> GetCurrentlySelectedEntitiesAs<T>() where T : RefWrapper
         {
             var res = new List<T>();
             foreach(var v in selectedEntities)
@@ -153,7 +126,9 @@ namespace Core.Selection
             }
         }
 
-        //-----------------------------------------------------------------------------------------------------//
+        #endregion
+
+        #region Finite State Machine definition and methods for interacting with this selector and "commanding" it (input/output)
         
         public bool isUsed;
 
@@ -201,7 +176,11 @@ namespace Core.Selection
             if(GetHighState() == HighStates.Active)
                 myPointerCurrentScreenPostion = position;
         }
+
+        #endregion
         
+        #region MonoBehaviour methods
+
         private void Awake()
         {
             unitsRoot = FindObjectOfType<UnitsRoot>();
@@ -246,7 +225,9 @@ namespace Core.Selection
             }
         }
 
-        //-----------------------------------------------------------------------------------------------------//
+        #endregion
+
+        #region Actual selection actions behaviours
 
         private void ShapeSelecting()
         {
@@ -311,7 +292,9 @@ namespace Core.Selection
             }
         }
 
-        //-----------------------------------------------------------------------------------------------------//
+        #endregion
+
+        #region Auxiliary functions
 
         private bool IsInViewportBounds(ISelectable selectable, Vector3 selectablePosition, Bounds viewportBounds)
         {
@@ -370,6 +353,8 @@ namespace Core.Selection
             return pointed;
         }
         */
+
+        #endregion
 
     }
 }

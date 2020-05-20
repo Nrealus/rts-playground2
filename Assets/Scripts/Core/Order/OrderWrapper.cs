@@ -10,6 +10,12 @@ using System;
 namespace Core.Orders
 {
 
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
+    /// <summary>
+    /// Subclass of OrderWrapper
+    /// </summary>
+    /// <typeparamref name="T">Specific type of wrapped Order</typeparamref>
     public class OrderWrapper<T> : OrderWrapper where T : Order
     {
         public OrderWrapper(Order wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
@@ -17,13 +23,12 @@ namespace Core.Orders
         }
         
     }
-
-    public abstract class OrderWrapper : ReferenceWrapper<Order>
+        
+    /// <summary>
+    /// The RefWrapper for Order.
+    /// </summary>      
+    public abstract class OrderWrapper : RefWrapper<Order>
     {
-        private static OrderHandler GetOrderHandler()
-        {
-            return GameManager.Instance.currentMainHandler.orderHandler;
-        }
     
         public OrderWrapper(Order wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
         {

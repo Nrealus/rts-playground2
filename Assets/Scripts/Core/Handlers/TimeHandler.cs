@@ -6,9 +6,9 @@ using Gamelogic.Extensions;
 
 namespace Core.Handlers
 {
+    /****** Author : nrealus ****** Last documentation update : 23-04-2020 ******/
+
     /// <summary>
-    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
-    ///
     /// Singleton used to oversee time related things on the scale of the game, effectively acting as a global clock.
     /// For now, it runs a day:hour:minute format clock at a rate 200x faster than real time.
     /// In the future, other handlers updates (which update other stuff themselves) should depend on the updates of this clock.

@@ -10,8 +10,8 @@ namespace NPBehave
 
         public Selector(params Node[] children) : base("Selector", children)
         {
-        }
 
+        }
 
         protected override void DoStart()
         {

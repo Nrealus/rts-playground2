@@ -16,7 +16,7 @@ namespace Core.MapMarkers
 
     }
 
-    public abstract class MapMarkerWrapper : ReferenceWrapper<MapMarker>
+    public abstract class MapMarkerWrapper : RefWrapper<MapMarker>
     {
         
         public MapMarkerWrapper(MapMarker wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)

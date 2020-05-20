@@ -8,7 +8,7 @@ using VariousUtilsExtensions;
 /// 
 /// </summary>
 //------------------------------------------------------------------------------
-public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
+/*public class ExampleTreeNode<T> : ITreeNodeBase<ExampleTreeNode<T>>
 {
 
     private ReferenceWrapper<T> exampleWrapper;
@@ -18,11 +18,11 @@ public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
         return "name";
     }
 
-    public override ExampleTreeNode<T> MySelf() { return this; }
+    public override ExampleTreeNode<T> GetThisNode() { return this; }
 
-    public override ExampleTreeNode<T> GetParent() { return _parent; }
+    public override ExampleTreeNode<T> GetParentNode() { return _parent; }
 
-    protected override void SetParent(ExampleTreeNode<T> newParent)
+    protected override void SetParentNode(ExampleTreeNode<T> newParent)
     {
         _parent = newParent;
     }
@@ -41,7 +41,7 @@ public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
 
     public override bool IsRoot()
     {
-        return GetParent() == null;
+        return GetParentNode() == null;
     }
 
     public override List<ExampleTreeNode<T>> GetLeafChildren()
@@ -56,17 +56,17 @@ public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
 
     public override ExampleTreeNode<T> GetRootNode()
     {
-        if (GetParent() == null)
-            return MySelf();
+        if (GetParentNode() == null)
+            return GetThisNode();
 
-        return GetParent().GetRootNode();
+        return GetParentNode().GetRootNode();
     }
 
     public override void AddChild(ExampleTreeNode<T> child)
     {
-        if (child.GetParent() != null)
-            child.GetParent().RemoveChild(child);
-        child.SetParent(MySelf());
+        if (child.GetParentNode() != null)
+            child.GetParentNode().RemoveChild(child);
+        child.SetParentNode(GetThisNode());
         ChildNodes.Add(child);
     }
 
@@ -78,7 +78,7 @@ public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
 
     public override void RemoveChild(ExampleTreeNode<T> child)
     {
-        child.SetParent(null);
+        child.SetParentNode(null);
         ChildNodes.Remove(child);
     }
 
@@ -93,13 +93,13 @@ public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
         if(newParent != null)
         {
             if (newParent != null)
-                newParent.AddChild(MySelf());
+                newParent.AddChild(GetThisNode());
             //unitWrapper.WrappedObject.transform.SetParent(newParent.unitWrapper.WrappedObject.transform);
         }
         else
         {
-            if (GetParent() != null)
-                GetParent().RemoveChild(MySelf());
+            if (GetParentNode() != null)
+                GetParentNode().RemoveChild(GetThisNode());
             //unitWrapper.WrappedObject.transform.SetParent(null);
         }
     }
@@ -111,7 +111,7 @@ public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
         int c = 1;
         List<ExampleTreeNode<T>> temp = new List<ExampleTreeNode<T>>();
 
-        result.Add(MySelf());
+        result.Add(GetThisNode());
 
         while (i<c)
         {
@@ -127,4 +127,4 @@ public class ExampleTreeNode<T> : TreeNodeBase<ExampleTreeNode<T>>
     }
     
 
-}
+}*/

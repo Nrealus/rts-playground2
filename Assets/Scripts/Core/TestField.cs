@@ -12,16 +12,10 @@ using Core.Helpers;
 using UnityEngine.UIElements;
 
 
-public class TestField : MonoBehaviour, IHasCameraRef
+public class TestField : MonoBehaviour
 {
 
-    public List<ReferenceWrapper<Unit>> unitsList;
-
-    [SerializeField] private Camera _cam;
-    public Camera GetMyCamera()
-    {
-        return _cam;
-    }
+    public List<RefWrapper<Unit>> unitsList;
 
     //private OrderFactory orderFactory = new OrderFactory();
 
@@ -44,7 +38,7 @@ public class TestField : MonoBehaviour, IHasCameraRef
     private void Awake()
     {
         //testSelector = GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
-        unitsList = new List<ReferenceWrapper<Unit>>();
+        unitsList = new List<RefWrapper<Unit>>();
     }
 
     private void Start()

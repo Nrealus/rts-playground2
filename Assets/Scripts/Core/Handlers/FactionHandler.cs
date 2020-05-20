@@ -6,9 +6,9 @@ using Gamelogic.Extensions;
 
 namespace Core.Handlers
 {
+    /****** Author : nrealus ****** Last documentation update : 23-04-2020 ******/
+
     /// <summary>
-    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
-    ///
     /// Not really used too much for now, just a placeholder for an eventual further use
     /// Further use could be to allow access and handling of various things on a faction-wide level.
     /// </summary>    

@@ -1,44 +1,98 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using VariousUtilsExtensions;
 
 namespace Core.MapMarkers
 {
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
+    /// <summary>
+    /// A MapMarker subclass, currently used as a waypoint for MoveOrders. They are manually entered on the map by the player,
+    /// or automatically created by the game logic at some position. They can also be dragged on the screen (map) with a cursor (mouse)
+    /// </summary>   
     public class WaypointMarker : MapMarker
     {
+
+        private static Camera _cam;
+        public Camera GetMyCamera()
+        {
+            if(_cam == null)
+                _cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+
+            return _cam;
+        }
+
+        public static WaypointMarker CreateInstance(Vector3 position)
+        {
+            WaypointMarker res = Instantiate<WaypointMarker>(
+                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().waypointMarkerPrefab,
+                GameObject.Find("WorldUICanvas").transform);
+            
+            res.Init(position);
+            
+            return res;
+        }
 
         public static void UpdateWaypointMarker(MapMarkerWrapper<WaypointMarker> waypointMarkerWrapper, bool following, Vector3 screenPositionToFollow)
         {
             if(waypointMarkerWrapper.WrappedObject != null)
-                waypointMarkerWrapper.GetWrappedAs<WaypointMarker>().waypointMarkerComponent.FollowScreenPosition(following, screenPositionToFollow);
+                waypointMarkerWrapper.GetWrappedAs<WaypointMarker>().FollowScreenPosition(following, screenPositionToFollow);
         }
-
-        public Vector3 myPosition { get; private set; }
         
-        private WaypointMarkerComponent waypointMarkerComponent;
+        public float moveSpeed = 0.5f;
+        public float offset = 5f;
+        public bool following;
 
-        public WaypointMarker(Vector3 position)
+        
+        private void Init(Vector3 position)
         {
-            this.myPosition = position;
-            
+            transform.position = position;
+
             _myWrapper = new MapMarkerWrapper<WaypointMarker>(this, () => {_myWrapper = null;});
-            GetMyWrapper<WaypointMarker>().SubscribeOnClearance(DestroyMarkerComponent);
+            GetMyWrapper<WaypointMarker>().SubscribeOnClearance(DestroyMe);
 
-            waypointMarkerComponent = MonoBehaviour.Instantiate<WaypointMarkerComponent>(
-                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>()
-                .waypointMarkerComponentPrefab, GameObject.Find("WorldUICanvas").transform);
-            waypointMarkerComponent.transform.position = position;
-            waypointMarkerComponent.associatedMarkerWrapper = GetMyWrapper2<MapMarkerWrapper<WaypointMarker>>();
+            following = false;
         }
 
-        public override void UpdateMe()
+        private Vector3 sp, wp;
+        private void Update() 
         {
-            myPosition = waypointMarkerComponent.transform.position;
+
+            if (GetMyCamera().GetWorldPosCloseToScreenPos(transform.position, Input.mousePosition, offset))
+            {
+                /*if(Input.GetMouseButtonDown(0))
+                {
+                    if (following)
+                    {
+                        following = false;
+                    }
+                    else
+                    {
+                        following = true;
+                    }
+                }
+                if(Input.GetMouseButtonDown(1))
+                {
+                    associatedMarkerWrapper.DestroyWrappedReference();
+                }*/
+            }
         }
 
-        private void DestroyMarkerComponent()
+        private void FollowScreenPosition(bool following, Vector3 screenPositionToFollow)
         {
-            MonoBehaviour.Destroy(waypointMarkerComponent.gameObject);
+            this.following = following;
+            if (following)
+            {
+                transform.position = Vector3.Lerp(transform.position, 
+                    GetMyCamera().GetPointedPositionPhysRaycast(screenPositionToFollow), moveSpeed);
+                //transform.position.Set(wp.x, wp.y, wp.z);
+            }
+        }
+
+        private void DestroyMe()
+        {
+            Destroy(gameObject);
             //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearance(DestroyMarkerTransform);
             //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearanceAll();
         }

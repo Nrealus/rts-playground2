@@ -5,9 +5,9 @@ using UnityEngine;
 
 namespace Core.MapMarkers
 {
+    /****** Author : nrealus ****** Last documentation update : 23-04-2020 ******/
+
     /// <summary>
-    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
-    ///
     /// A MapMarker subclass, used to map buildings or constructibles on the map, linked to a BuiltStructure (through a BuiltStructureWrapper)
     /// </summary>   
     public class BuildingMarker : MapMarker
@@ -21,13 +21,19 @@ namespace Core.MapMarkers
         }
         */
 
+        public static BuildingMarker CreateInstance(Vector3 position)
+        {
+            BuildingMarker res = Instantiate<BuildingMarker>(
+                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().buildingMarkerPrefab,
+                GameObject.Find("WorldUICanvas").transform);
+            
+            res.Init(position);
+
+            return res;
+        }
+
         public BuiltStructureWrapper builtStructureWrapper { get; private set; }
-
-        public Vector3 myPosition { get; private set; }
         
-        private BuildingMarkerComponent buildingMarkerComponent;
-
-
         public BuiltStructureWrapper CreateAndSetBuiltStructure<T>() where T : BuiltStructure
         {
             BuiltStructure bs = new BuiltStructure();
@@ -40,30 +46,22 @@ namespace Core.MapMarkers
         }
 
 
-        public BuildingMarker(Vector3 position)
+        private void Init(Vector3 position)
         {
-            this.myPosition = position;
-            
+            transform.position = position;
+
             _myWrapper = new MapMarkerWrapper<BuildingMarker>(this, () => {_myWrapper = null;});
-            GetMyWrapper<BuildingMarker>().SubscribeOnClearance(DestroyMarkerComponent);
-
-            buildingMarkerComponent = MonoBehaviour.Instantiate<BuildingMarkerComponent>(
-                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>()
-                .buildingMarkerComponentPrefab, GameObject.Find("WorldUICanvas").transform);
-            buildingMarkerComponent.transform.position = position;
-            buildingMarkerComponent.associatedMarkerWrapper = GetMyWrapper2<MapMarkerWrapper<BuildingMarker>>();
+            GetMyWrapper<BuildingMarker>().SubscribeOnClearance(DestroyMe);            
         }
 
-        public override void UpdateMe()
+        private void Update()
         {
-            myPosition = buildingMarkerComponent.transform.position;
+
         }
 
-        private void DestroyMarkerComponent()
+        private void DestroyMe()
         {
-            MonoBehaviour.Destroy(buildingMarkerComponent.gameObject);
-            //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearance(DestroyMarkerTransform);
-            //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearanceAll();
+            Destroy(gameObject);
         }
     }
 

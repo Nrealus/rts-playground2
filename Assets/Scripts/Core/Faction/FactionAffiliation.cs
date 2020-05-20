@@ -4,9 +4,9 @@ using UnityEngine;
 
 namespace Core.Faction
 { 
+    /****** Author : nrealus ****** Last documentation update : 23-04-2020 ******/
+
     /// <summary>
-    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
-    ///
     /// Allows us to "tag" an object with affiliation to a certain faction, via its FactionData scriptable object asset.
     /// Not really used too much for now, just a placeholder for an eventual further use
     /// </summary>    

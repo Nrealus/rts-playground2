@@ -5,9 +5,9 @@ using UnityEngine;
 namespace Core.Handlers
 {
 
+    /****** Author : nrealus ****** Last documentation update : 23-04-2020 ******/
+
     /// <summary>
-    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
-    ///
     /// Main singleton overseeing all the other ones.
     /// Its use should not be too extensive, it is easy to fall to the temptation of abusing the singleton pattern.
     /// For now, it isn't really used.
@@ -29,18 +29,19 @@ namespace Core.Handlers
 
         public UnitsRoot unitsRoot { get; private set; }
 
-        public SelectionHandler selectionHandler { get; private set; }
-        public OrderHandler orderHandler { get; private set; }
-        public TimeHandler timeHandler { get; private set; }
+        //public SelectionHandler selectionHandler { get; private set; }
+        //public OrderHandler orderHandler { get; private set; }
+        //public TimeHandler timeHandler { get; private set; }
+        
         ///<summary>
         /// Called from the monobehaviour awake of the GameManager singleton.
         /// There needs to be a stable order in initializations, which is why we use this instead of Start and Awake to initialize stuff.
         /// </summary>
         public void Init()
         {
-            selectionHandler = GetComponent<SelectionHandler>();
-            orderHandler = GetComponent<OrderHandler>();
-            timeHandler = GetComponent<TimeHandler>();
+            //selectionHandler = GetComponent<SelectionHandler>();
+            //orderHandler = GetComponent<OrderHandler>();
+            //timeHandler = GetComponent<TimeHandler>();
 
             unitsRoot = FindObjectOfType<UnitsRoot>();
         }

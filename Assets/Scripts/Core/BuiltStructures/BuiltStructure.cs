@@ -11,9 +11,9 @@ using UnityEngine;
 namespace Core.BuiltStructures
 {
 
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
     /// <summary>
-    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
-    ///
     /// Main class for buildings and constructibles.
     /// Extend this class to implement building specific functionality.
     ///
@@ -25,9 +25,8 @@ namespace Core.BuiltStructures
     ///    
     /// In other words, this is still being figured out.
     /// </summary>
-    
     public /*abstract*/ class BuiltStructure :
-        IHasRefWrapper<BuiltStructureWrapper>
+        IHasRefToRefWrapper<BuiltStructureWrapper>
     {
         
         #region Static functions

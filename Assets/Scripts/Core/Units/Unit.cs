@@ -12,8 +12,14 @@ using Core.Helpers;
 
 namespace Core.Units
 {
+
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
+    ///<summary>
+    /// The base class/component for in-game units.
+    ///</summary>
     public class Unit : MonoBehaviour,
-        IHasRefWrapper<UnitWrapper>
+        IHasRefToRefWrapper<UnitWrapper>
         //IHasRefWrapperAndTree<UnitWrapper>
     {
 
@@ -32,7 +38,7 @@ namespace Core.Units
 
         private SpriteRenderer mySprRenderer;
 
-        private UnitTreeNode unitTreeNode;
+        //private UnitTreeNode unitTreeNode;
 
         /*--------*/
 
@@ -55,13 +61,13 @@ namespace Core.Units
 
         public static bool IsThereAnyParentHighlightedOrSelected(UnitWrapper unitWrapper, Selector selector)
         {
-            if (unitWrapper != null && Unit.GetParentWrapper(unitWrapper) != null)
+            /*if (unitWrapper != null && Unit.GetParentWrapper(unitWrapper) != null)
             {
                 bool b = Unit.IsSelected(Unit.GetParentWrapper(unitWrapper), selector)
                     || Unit.IsHighlighted(Unit.GetParentWrapper(unitWrapper), selector);
                 return b || Unit.IsThereAnyParentHighlightedOrSelected(Unit.GetParentWrapper(unitWrapper), selector);
             }
-            else
+            else*/
             {
                 return false;
             }
@@ -76,35 +82,31 @@ namespace Core.Units
         // Public for testing
         public static void SetAsSubordinateOf(UnitWrapper unitWrapper, UnitWrapper newSuperior)
         {
-            unitWrapper.WrappedObject.unitTreeNode.ChangeParentTo(newSuperior.WrappedObject.unitTreeNode);
+            Debug.Log("Being changed - not useful anyway");
+            //unitWrapper.WrappedObject.unitTreeNode.ChangeParentTo(newSuperior.WrappedObject.unitTreeNode);
         }
 
         /*List<Unit>*/
-        public static List<UnitWrapper> GetAllSubordinateUnitsList(UnitWrapper unitWrapper)
+        /*public static List<UnitWrapper> GetAllSubordinateUnitsList(UnitWrapper unitWrapper)
         {
-            //List<Unit> res = new List<Unit>();
             List<UnitWrapper> tns = unitWrapper.WrappedObject.unitTreeNode.BFSListMeAndAllChildrenWrappers();
-            /*float c = tns.Count;
-            for (int o = 0; o < c; o++)
-                res.Add(tns[o].WrappedObject);
-            return res;*/
             return tns;
-        }
+        }*/
 
-        public static List<UnitWrapper> GetMeAndAllChildrenWrappersList(UnitWrapper unitWrapper)
+        /*public static List<UnitWrapper> GetMeAndAllChildrenWrappersList(UnitWrapper unitWrapper)
         {
             return unitWrapper.WrappedObject.unitTreeNode.BFSListMeAndAllChildrenWrappers();
-        }
+        }*/
 
-        public static UnitWrapper GetParentWrapper(UnitWrapper unitWrapper)
+        /*public static UnitWrapper GetParentWrapper(UnitWrapper unitWrapper)
         {
             return unitWrapper.WrappedObject.unitTreeNode.GetParentWrapper();
-        }
+        }*/
 
-        public static List<UnitWrapper> GetChildrenWrappers(UnitWrapper unitWrapper)
+        /*public static List<UnitWrapper> GetChildrenWrappers(UnitWrapper unitWrapper)
         {
             return unitWrapper.WrappedObject.unitTreeNode.ListChildrenWrappers();
-        }
+        }*/
 
 
         private Selector GetUsedSelector()
@@ -115,7 +117,7 @@ namespace Core.Units
         private void Init()
         {
             _myWrapper = new UnitWrapper(this, () => {_myWrapper = null;});
-            unitTreeNode = new UnitTreeNode(GetMyWrapper());
+            //unitTreeNode = new UnitTreeNode(GetMyWrapper());
             myMover = GetComponent<UnitMover>();
             mySprRenderer = GetComponent<SpriteRenderer>();
         }
@@ -127,12 +129,21 @@ namespace Core.Units
         }
 
         public bool subTesting = false;
+        private static UnitWrapper _toaddtest = null;
         private void Update()
         {
-            if (IsSelected(GetMyWrapper(), GetUsedSelector())
+            /*if (IsSelected(GetMyWrapper(), GetUsedSelector())
                 && Input.GetKeyDown(KeyCode.K))
             {
                 Dismantle(GetMyWrapper());
+            }*/
+            if (subTesting)
+                Unit._toaddtest = GetMyWrapper();
+
+            if (IsSelected(GetMyWrapper(), GetUsedSelector())
+                && Input.GetKeyDown(KeyCode.K))
+            {
+                GetMyWrapper().ChangeUnitsFormation(_toaddtest.unitsGroupWrapper);
             }
 
             DrawUpdate();

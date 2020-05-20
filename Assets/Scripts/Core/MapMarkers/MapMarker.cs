@@ -6,13 +6,12 @@ using VariousUtilsExtensions;
 
 namespace Core.MapMarkers
 {
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
     /// <summary>
-    /// ---- General Description, by nrealus, last update : 23-04-2020 ----
-    ///
     /// A class whose subclass are intended to be representations of various marks put on the map, may it be
     /// </summary>   
-    public abstract class MapMarker : 
-        IHasRefWrapper<MapMarkerWrapper>
+    public abstract class MapMarker : MonoBehaviour, IHasRefToRefWrapper<MapMarkerWrapper>
     {
 
         protected MapMarkerWrapper _myWrapper;
@@ -25,8 +24,6 @@ namespace Core.MapMarkers
         {
             GetMyWrapper().DestroyWrappedReference();
         }*/
-
-        public abstract void UpdateMe();
 
     }
 }

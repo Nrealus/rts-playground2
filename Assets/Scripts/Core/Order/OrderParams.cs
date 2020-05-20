@@ -5,6 +5,11 @@ using VariousUtilsExtensions;
 
 namespace Core.Orders
 {
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
+    /// <summary>
+    /// This class is basically a container for various parameters, and "arguments" for orders.
+    /// </summary>
     public class OrderParams
     {
         

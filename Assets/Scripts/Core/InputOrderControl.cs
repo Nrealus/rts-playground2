@@ -15,17 +15,16 @@ using UnityEngine.InputSystem.UI;
 using Core.Handlers;
 
 public class InputOrderControl : MonoBehaviour, 
-    IHasCameraRef
+    IHasRefToCamera
 {
 
-    public List<ReferenceWrapper<Unit>> unitsList;
+    public List<RefWrapper<Unit>> unitsList;
 
     [SerializeField] private Camera _cam;
     public Camera GetMyCamera()
     {
         return _cam;
     }
-
 
     private struct PointedPositionInfo
     {
@@ -52,7 +51,7 @@ public class InputOrderControl : MonoBehaviour,
     private void Awake()
     {
         testSelector = SelectionHandler.GetUsedSelector();//GameManager.Instance.currentMainHandler.selectionHandler.GetUsedSelector();
-        unitsList = new List<ReferenceWrapper<Unit>>();
+        unitsList = new List<RefWrapper<Unit>>();
     }
 
 

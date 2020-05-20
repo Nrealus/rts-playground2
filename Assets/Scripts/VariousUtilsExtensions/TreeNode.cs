@@ -4,114 +4,135 @@ using System.Linq;
 namespace VariousUtilsExtensions
 {
 
-    //------------------------------------------------------------------------------
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
     /// <summary>
-    /// Generic Tree Node base class
+    /// This is an interface which allows us to implement a recursive tree structure for a class.
+    /// (See SimpleTreeNode<T> for a default example of an implementation of this interface)
     /// </summary>
-    /// <typeparam name="T"></typeparam>
-    //------------------------------------------------------------------------------
-    public abstract class TreeNodeBase<T> where T : TreeNodeBase<T>
+    /// <typeparam name="T">The type for the nodes of the tree. They must implement ITreeNodeBase<T> too.</typeparam>
+    public interface ITreeNodeBase<T> where T : ITreeNodeBase<T>
     {
 
-        public abstract T MySelf();
+        T GetThisNode();
 
-        protected T _parent;
+        T GetParentNode();
 
-        public abstract T GetParent();
+        void SetParentNode(T newParent);
 
-        protected abstract void SetParent(T newParent);
+        bool IsLeaf();
 
-        public List<T> ChildNodes { get; protected set; }
+        bool IsRoot();
 
-        public abstract bool IsLeaf();
+        List<T> GetChildNodes();
+        
+        void SetChildNodes(List<T> nodes);
+        
+        List<T> GetLeafChildren();
 
-        public abstract bool IsRoot();
+        List<T> GetNonLeafChildren();
 
-        public abstract List<T> GetLeafChildren();
+        T GetRootNode();
 
-        public abstract List<T> GetNonLeafChildren();
+        void AddChild(T child);
 
-        public abstract T GetRootNode();
+        void AddChildren(IEnumerable<T> children);
 
-        public abstract void AddChild(T child);
+        void RemoveChild(T child);
 
-        public abstract void AddChildren(IEnumerable<T> children);
-
-        public abstract void RemoveChild(T child);
-
-        public abstract void RemoveChildren(IEnumerable<T> children);
+        void RemoveChildren(IEnumerable<T> children);
 
     }
 
-    public class SimpleTreeNode<T> : TreeNodeBase<SimpleTreeNode<T>>
+    /// <summary>
+    /// An example of implementation of the ITreeNodeBase interface.
+    /// </summary>
+    /// <typeparam name="T">The type of the arbitrary example "obj" data that the nodes hold.</typeparam>
+    public class SimpleTreeNode<T> : ITreeNodeBase<SimpleTreeNode<T>>
     {
+
+        private SimpleTreeNode<T> _parent;
+
+        private List<SimpleTreeNode<T>> _childNodes;
+
+
         public T obj { get; private set; }
 
-        public override SimpleTreeNode<T> MySelf() { return this; }
+        public SimpleTreeNode<T> GetThisNode() { return this; }
 
-        public override SimpleTreeNode<T> GetParent() { return _parent; }
+        public SimpleTreeNode<T> GetParentNode() { return _parent; }
 
-        protected override void SetParent(SimpleTreeNode<T> newParent)
+        public void SetParentNode(SimpleTreeNode<T> newParent)
         {
             _parent = newParent;
         }
 
         public SimpleTreeNode(T obj)
         {
-            ChildNodes = new List<SimpleTreeNode<T>>();
+            _childNodes = new List<SimpleTreeNode<T>>();
 
             this.obj = obj;
         }
 
-        public override bool IsLeaf()
+        public bool IsLeaf()
         {
-            return ChildNodes.Count == 0;
+            return GetChildNodes().Count == 0;
         }
 
-        public override bool IsRoot()
+        public bool IsRoot()
         {
-            return GetParent() == null;
+            return GetParentNode() == null;
         }
 
-        public override List<SimpleTreeNode<T>> GetLeafChildren()
+        public List<SimpleTreeNode<T>> GetChildNodes()
         {
-            return ChildNodes.Where(x => x.IsLeaf()).ToList();
+            return _childNodes;
+        }
+        
+        public void SetChildNodes(List<SimpleTreeNode<T>> childNodes)
+        {
+            _childNodes = childNodes;
         }
 
-        public override List<SimpleTreeNode<T>> GetNonLeafChildren()
+        public List<SimpleTreeNode<T>> GetLeafChildren()
         {
-            return ChildNodes.Where(x => !x.IsLeaf()).ToList();
+            return GetChildNodes().Where(x => x.IsLeaf()).ToList();
         }
 
-        public override SimpleTreeNode<T> GetRootNode()
+        public List<SimpleTreeNode<T>> GetNonLeafChildren()
         {
-            if (GetParent() == null)
-                return MySelf();
-
-            return GetParent().GetRootNode();
+            return GetChildNodes().Where(x => !x.IsLeaf()).ToList();
         }
 
-        public override void AddChild(SimpleTreeNode<T> child)
+        public SimpleTreeNode<T> GetRootNode()
         {
-            if (child.GetParent() != null)
-                child.GetParent().RemoveChild(child);
-            child.SetParent(MySelf());
-            ChildNodes.Add(child);
+            if (GetParentNode() == null)
+                return GetThisNode();
+
+            return GetParentNode().GetRootNode();
         }
 
-        public override void AddChildren(IEnumerable<SimpleTreeNode<T>> children)
+        public void AddChild(SimpleTreeNode<T> child)
+        {
+            if (child.GetParentNode() != null)
+                child.GetParentNode().RemoveChild(child);
+            child.SetParentNode(GetThisNode());
+            GetChildNodes().Add(child);
+        }
+
+        public void AddChildren(IEnumerable<SimpleTreeNode<T>> children)
         {
             foreach (SimpleTreeNode<T> child in children)
                 AddChild(child);
         }
 
-        public override void RemoveChild(SimpleTreeNode<T> child)
+        public void RemoveChild(SimpleTreeNode<T> child)
         {
-            child.SetParent(null);
-            ChildNodes.Remove(child);
+            child.SetParentNode(null);
+            GetChildNodes().Remove(child);
         }
 
-        public override void RemoveChildren(IEnumerable<SimpleTreeNode<T>> children)
+        public void RemoveChildren(IEnumerable<SimpleTreeNode<T>> children)
         {
             foreach (SimpleTreeNode<T> child in children)
                 RemoveChild(child);
@@ -122,13 +143,13 @@ namespace VariousUtilsExtensions
             if (newParent != null)
             {
                 if (newParent != null)
-                    newParent.AddChild(MySelf());
+                    newParent.AddChild(GetThisNode());
                 //unitWrapper.WrappedObject.transform.SetParent(newParent.unitWrapper.WrappedObject.transform);
             }
             else
             {
-                if (GetParent() != null)
-                    GetParent().RemoveChild(MySelf());
+                if (GetParentNode() != null)
+                    GetParentNode().RemoveChild(GetThisNode());
                 //unitWrapper.WrappedObject.transform.SetParent(null);
             }
         }
@@ -138,13 +159,13 @@ namespace VariousUtilsExtensions
         {
             List<T> result = new List<T>();
 
-            _bfsqueue.Enqueue(MySelf());
+            _bfsqueue.Enqueue(GetThisNode());
 
             while (_bfsqueue.Count > 0)
             {
                 result.Add(_bfsqueue.Peek().obj);
 
-                var a = _bfsqueue.Dequeue().ChildNodes;
+                var a = _bfsqueue.Dequeue().GetChildNodes();
                 var c = a.Count;
                 for (int k = 0; k < c; k++)
                     _bfsqueue.Enqueue(a[k]);
@@ -158,14 +179,14 @@ namespace VariousUtilsExtensions
 
         public SimpleTreeNode<T> BFSFindNode(T toFind)
         {
-            _bfsqueue.Enqueue(MySelf());
+            _bfsqueue.Enqueue(GetThisNode());
 
             while (_bfsqueue.Count > 0)
             {
                 if (_bfsqueue.Peek().obj.Equals(toFind))
                     return _bfsqueue.Peek();
 
-                var a = _bfsqueue.Dequeue().ChildNodes;
+                var a = _bfsqueue.Dequeue().GetChildNodes();
                 var c = a.Count;
                 for (int k = 0; k < c; k++)
                     _bfsqueue.Enqueue(a[k]);

@@ -5,6 +5,11 @@ using System.Collections.Generic;
 
 namespace VariousUtilsExtensions
 {
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+
+    ///<summary>
+    /// A minimal structure representing and storing time in a Day:Hour:Minute format.
+    ///</summary>
     public struct TimeStruct
     {
         public static TimeStruct OneMinute = new TimeStruct(0,0,1);
@@ -170,6 +175,10 @@ namespace VariousUtilsExtensions
 
     }
 
+    ///<summary>
+    /// A clock class for TimeStruct type time, which can be updated at any rate.!--
+    /// It is also able to tell if a certain time (TimeStruct : day-hour-minute) has just passed, even if it was paused and then manually set to another time.
+    ///</summary>
     public class TimeClock
     {
         private Clock minuteTimer;
@@ -206,15 +215,15 @@ namespace VariousUtilsExtensions
 
         public TimeClock()
         {
-            Constructor(TimeStruct.Zero);
+            BaseConstructor(TimeStruct.Zero);
         }
 
         public TimeClock(TimeStruct initialTime)
         {
-            Constructor(initialTime);
+            BaseConstructor(initialTime);
         }
 
-        private void Constructor(TimeStruct initialTime)
+        private void BaseConstructor(TimeStruct initialTime)
         {
             minuteTimer = new Clock();
             timeObserver = new ObservedValue<TimeStruct>(initialTime);

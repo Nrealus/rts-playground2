@@ -6,36 +6,56 @@ using Core.Units;
 
 namespace Core.MapMarkers
 {
+    /****** Author : nrealus ****** Last documentation update : 14-05-2020 ******/
+
+    /// <summary>
+    /// A MapMarker subclass, used as "widgets" for Orders, or information windows about them.
+    /// They are linked to an OrderWrapper. By default, they follow the position of the order's receiver.
+    /// For a UnitGroup receiver, the default position is the mean position of all the units in the group.
+    /// </summary>   
     public class OrderMarker : MapMarker
     {
 
-        public OrderWrapper ordWrapper;
-        
-        private OrderMarkerComponent orderMarkerComponent;        
-
-        private UnitWrapper uw;
-
-        public OrderMarker(OrderWrapper ordWrapper)
+        /*private static Camera _cam;
+        public Camera GetMyCamera()
         {
-            this.ordWrapper = ordWrapper;
-            ordWrapper.SubscribeOnClearance(() => DestroyMarkerTransform());
+            if(_cam == null)
+                _cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+
+            return _cam;
+        }*/
+
+        public static OrderMarker CreateInstance(OrderWrapper orderWrapper)
+        {
+            OrderMarker res = Instantiate<OrderMarker>(
+                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().orderMarkerPrefab,
+                GameObject.Find("WorldUICanvas").transform);
+
+            res.Init(orderWrapper);
+
+            return res;
+        }
+        
+        private OrderWrapper orderWrapper;
+
+        private void Init(OrderWrapper orderWrapper)
+        {
+
+            this.orderWrapper = orderWrapper;
+            orderWrapper.SubscribeOnClearance(DestroyMe);
 
             _myWrapper = new MapMarkerWrapper<OrderMarker>(this, () => {_myWrapper = null;});
-            GetMyWrapper<OrderMarker>().SubscribeOnClearance(DestroyMarkerTransform);
+            GetMyWrapper<OrderMarker>().SubscribeOnClearance(DestroyMe);
 
-            uw = (UnitWrapper)Order.GetReceiver(ordWrapper);
-            orderMarkerComponent = MonoBehaviour.Instantiate<OrderMarkerComponent>(
-                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().orderMarkerComponentPrefab,
-                GameObject.Find("WorldUICanvas").transform);
-            orderMarkerComponent.associatedMarkerWrapper = GetMyWrapper<OrderMarker>();
-            orderMarkerComponent.transform.position = uw.WrappedObject.transform.position;
-            
+            transform.position = Order.GetReceiverWorldPosition(orderWrapper);
         }
 
-        public override void UpdateMe()
+        private void Update()
         {
-            if(uw != null && uw.WrappedObject != null)
-                orderMarkerComponent.transform.position = uw.WrappedObject.transform.position;
+            if(Order.GetReceiver(orderWrapper) != null)
+            {
+                transform.position = Order.GetReceiverWorldPosition(orderWrapper);
+            }
             //else
             //    GetMyWrapper<OrderMarker>().WrappedObject.ClearWrapper();
             /*if(Input.GetKeyDown(KeyCode.T))
@@ -44,11 +64,9 @@ namespace Core.MapMarkers
             }*/
         }
 
-        private void DestroyMarkerTransform()
+        private void DestroyMe()
         {
-            MonoBehaviour.Destroy(orderMarkerComponent.gameObject);
-            //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearance(DestroyMarkerTransform);
-            //GetMyWrapper<OrderMarker>().UnsubscribeOnClearanceAll();
+            Destroy(gameObject);
         }
     }
 }

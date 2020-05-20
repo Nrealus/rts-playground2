@@ -7,7 +7,7 @@ using VariousUtilsExtensions;
 /// 
 /// </summary>
 //------------------------------------------------------------------------------
-namespace Core.Units
+/*namespace Core.Units
 {
     public class UnitTreeNode : TreeNodeBase<UnitTreeNode>
     {
@@ -142,4 +142,4 @@ namespace Core.Units
         }
 
     }
-}
+}*/

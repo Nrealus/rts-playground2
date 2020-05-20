@@ -10,60 +10,21 @@ using UnityEngine;
 namespace Core.Orders
 {
 
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    
+    /// <summary>
+    /// The base class for all orders. It works with IOrderable "receivers" of orders, to which the order is given.
+    /// It provides the structure for orders, mostly in the form of protected abstract or virtual methods to be implemented by "concrete" subclasses.
+    /// It also provides static methods and functions which call the appropriate instance methods or functions, given a IOrderable as a parameter.
+    /// This allows to limit accessing .WrappedObject for common things, and has shown to be a nice approach improving clarity and encapsulation aswell as decoupling.   
+    /// An Order subclass should be instanciated from the static class OrderFactory.
+    /// With time, some things that may become very common subclasses may be bundled into an "intermediate" abstract subclass, or even into this one.
+    /// </summary>      
     public abstract class Order :
-        IHasRefWrapper<OrderWrapper>
+        IHasRefToRefWrapper<OrderWrapper>
     {
         
         #region Static functions
-
-        /*protected static bool RegisterAtOrderHandlerAndReceiver(OrderWrapper orderWrapper, OrderWrapper predecessor, OrderWrapper successor)
-        {
-            if (!OrderHandler.IsOrderWrapperRegistered(orderWrapper))
-            {
-                Order.GetReceiver(orderWrapper).AddOrderToList(orderWrapper, predecessor, successor);
-                OrderHandler.AddToOrderWrapperList(orderWrapper);
-                orderWrapper.SubscribeOnClearance(() => Order.Unregister(orderWrapper));
-                return true;
-            }
-            elseorderWrapper
-            {
-                Debug.LogError("order was already registered");
-                return false;
-            }
-
-        }
-
-        private static bool Unregister(OrderWrapper orderWrapper)
-        {
-            if (OrderHandler.IsOrderWrapperRegistered(orderWrapper))
-            {
-                GetReceiver(orderWrapper).RemoveOrderFromList(orderWrapper);
-                OrderHandler.RemoveFromOrderWrapperList(orderWrapper);
-                //.RemoveFromOrderWrapperList(torderWrapperhis);
-                orderWrapper.UnsubscribeOnClearance(() => Order.Unregister(orderWrapper)); 
-                return true;
-            }
-            else
-            {
-                Debug.LogError("order is not registered");
-                return false;
-            }
-        }
-
-        private static bool GetConfirmationFromReceiver(OrderWrapper orderWrapper)
-        {
-            if (orderWrapper.WrappedObject != null
-                && (Order.IsInPhase(orderWrapper, Order.OrderPhase.Registration)
-                || Order.IsInPhase(orderWrapper, Order.OrderPhase.NotReadyForExecution)))
-            {
-                Order.SetPhase(orderWrapper, Order.OrderPhase.RequestConfirmation);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }*/
 
         public static bool TryStartExecution(OrderWrapper orderWrapper)
         {
@@ -109,14 +70,17 @@ namespace Core.Orders
             return true;
         }
 
-        /*public static bool IsReadyToStartExecution(OrderWrapper orderWrapper, OrderExecutionMode mode)
-        {
-            return orderWrapper.WrappedObject.InstanceIsReadyToStartExecution(mode);
-        }*/
-
         public static IOrderable GetReceiver(OrderWrapper orderWrapper)
         {
             return orderWrapper.WrappedObject.InstanceGetOrderReceiver();
+        }
+
+        public static Vector3 GetReceiverWorldPosition(OrderWrapper orderWrapper)
+        {
+            if (GetReceiver(orderWrapper) is UnitGroupWrapper)
+                return ((UnitGroupWrapper)GetReceiver(orderWrapper)).WrappedObject.GetPosition();
+            else
+                return Vector3.zero;
         }
 
         public static void SetReceiver(OrderWrapper orderWrapper, OrderWrapper predecessor, OrderWrapper successor, IOrderable orderable)
@@ -137,7 +101,7 @@ namespace Core.Orders
 
         public static bool ReceiverExists(OrderWrapper orderWrapper)
         {
-            return GetReceiver(orderWrapper) != null && GetReceiver(orderWrapper).AmIStillUsed();
+            return GetReceiver(orderWrapper) != null && GetReceiver(orderWrapper).IsWrappedObjectNotNull();
         }
 
         public static void SetPhase(OrderWrapper orderWrapper, OrderPhase phase)

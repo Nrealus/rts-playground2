@@ -6,72 +6,43 @@ using VariousUtilsExtensions;
 
 namespace Core.Orders
 {
+    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    
+    /// <summary>
+    /// This interface is implemented by classes whose instances can be given orders and passed to Orders and OrderWrappers.
+    /// </summary>   
     public interface IOrderableBase
     {
-        bool AmIStillUsed();        
+        bool IsWrappedObjectNotNull();        
 
         //bool IsOrderApplicable(OrderWrapper order);
 
     }
 
-    public interface IOrderable : IOrderableBase
-    {
-        ReferenceWrapper GetOrderableAsReferenceWrapperNonGeneric();
-
-        Y GetOrderableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper;
-
-        bool QueueActiveOrderToPlan(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor);
-
-        //bool RemoveActiveOrderFromMyPlan(OrderWrapper wrapper);
-
-        OrderWrapper GetFirstInlineActiveOrderInPlan();
-
-        OrderWrapper GetNextInlineActiveOrderInPlan(OrderWrapper orderWrapper);        
-
-        OrderWrapper GetPreviousInlineActiveOrderInPlan(OrderWrapper orderWrapper);        
-
-        IEnumerable<OrderWrapper> GetAllActiveOrdersFromPlan();
-
-        bool IsFirstInlineActiveOrderInPlan(OrderWrapper wrapper);
-
-        bool IsActiveOrderBeforeOtherInPlan(OrderWrapper wrapper, OrderWrapper beforeWhich);
-
-        bool IsActiveOrderAfterOtherInPlan(OrderWrapper wrapper, OrderWrapper afterWhich);
-
-        bool QueuePassiveOrderToPlan(OrderWrapper wrapper, OrderWrapper predecessor, OrderWrapper successor);
-
-        //bool RemoveActiveOrderFromMyPlan(OrderWrapper wrapper);
-
-        OrderWrapper GetFirstInlinePassiveOrderInPlan();
-
-        OrderWrapper GetNextInlinePassiveOrderInPlan(OrderWrapper orderWrapper);        
-
-        OrderWrapper GetPreviousInlinePassiveOrderInPlan(OrderWrapper orderWrapper);        
-
-        IEnumerable<OrderWrapper> GetAllPassiveOrdersFromPlan();
-
-        bool IsFirstInlinePassiveOrderInPlan(OrderWrapper wrapper);
-
-        //OrderWrapper GetNextOrderInQueue();
-
-        /*OrderWrapper GetMostRecentAddedOrder();
-
-        OrderWrapper<Z> GetNextOrderInQueueSpecific<Z>() where Z : Order;*/     
-
-    }
-
-
+    /// <summary>
+    /// See IOrderableBase
+    /// </summary>   
     public interface IOrderable<T> : IOrderable
     {
-        ReferenceWrapper<T> GetOrderableAsReferenceWrapperGeneric();
+        RefWrapper<T> GetOrderableAsReferenceWrapperGeneric();
 
-        new Y GetOrderableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper<T>;
+        //new Y GetOrderableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper<T>;
 
     }
 
-    public interface IOrderable<T, Y> : IOrderable<T> where Y : ReferenceWrapper<T>
+
+    /// <summary>
+    /// See IOrderableBase
+    /// </summary>   
+    public interface IOrderable : IOrderableBase
     {
-        Y GetOrderableAsReferenceWrapperSpecific();
+
+        RefWrapper GetOrderableAsReferenceWrapperNonGeneric();
+
+        Y GetOrderableAsReferenceWrapperSpecific<Y>() where Y : RefWrapper;
+     
+        OrderPlan GetOrdersPlan();
+
     }
     
 }

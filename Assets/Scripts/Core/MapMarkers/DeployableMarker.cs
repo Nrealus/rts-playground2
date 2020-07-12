@@ -11,21 +11,13 @@ namespace Core.MapMarkers
     /// <summary>
     /// A MapMarker subclass, used to map buildings or constructibles on the map, linked to a DeployableStructure (through a DeployableStructureWrapper)
     /// </summary>   
-    public sealed class DeployableMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<DeployableMarker>>
+    public class DeployableMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<DeployableMarker>>
     {
 
         public new MapMarkerWrapper<DeployableMarker> GetRefWrapper()
         {
             return _myWrapper as MapMarkerWrapper<DeployableMarker>;
         }
-
-        /*
-        public static void UpdateWaypointMarker(MapMarkerWrapper<WaypointMarker> waypointMarkerWrapper, bool following, Vector3 screenPositionToFollow)
-        {
-            if(waypointMarkerWrapper.WrappedObject != null)
-                waypointMarkerWrapper.GetWrappedAs<WaypointMarker>().waypointMarkerTransform.FollowScreenPosition(following, screenPositionToFollow);
-        }
-        */
 
         public static DeployableMarker CreateInstance(Vector3 position)
         {

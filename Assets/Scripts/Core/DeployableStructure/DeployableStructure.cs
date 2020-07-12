@@ -20,9 +20,6 @@ namespace Core.Deployables
     /// Instances of DeployableStructure are wrapped in DeployableStructureWrapper.
     /// And the encouraged use of interacting with a DeployableStructure instance is to use static functions with a reference to its wrapper as a parameter.
     ///
-    /// For now, this class isn't even abstract, because of testing purposes.
-    /// Most of the code is inspired by the Order class, that's why there's a lot of its code that is commented below.
-    ///    
     /// In other words, this is still being figured out.
     /// </summary>
     public /*abstract*/ class DeployableStructure :

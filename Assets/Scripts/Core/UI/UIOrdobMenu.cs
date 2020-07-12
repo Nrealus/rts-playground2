@@ -6,11 +6,18 @@ using Core.Selection;
 using Core.Units;
 using Michsky.UI.ModernUIPack;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using System.Linq;
+using Nrealus.Extensions.Observer;
 
 namespace Core.UI
 {
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+
+    /// <summary>
+    /// Main UI class for the "Units under command" UI panel, allowing to see the commanded units structure (Order of Battle)
+    /// as a tree of buttons (UIOrdobTreeViewElement) that can be used to select or deselect units. The selection state of the buttons is in sync with that of the units.
+    /// </summary>   
     public class UIOrdobMenu : MonoBehaviour
     {
 
@@ -133,7 +140,7 @@ namespace Core.UI
         {
             if (!trackedUnitWrappersBinders.ContainsKey(uw))
             {
-                var id = binder.AddEventAndSubscribeToIt(action);
+                var id = binder.AddNewEventAndSubscribeToIt(action);
                 uw.GetOnSelectionStateChangeObserver().SubscribeToEvent("doactiontreeview",
                     (_) => binder.InvokeEvent(id, uw, null));
                 trackedUnitWrappersBinders.Add(uw, binder);

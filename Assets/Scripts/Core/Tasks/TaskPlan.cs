@@ -5,7 +5,8 @@ using System.Linq;
 using System.Text;
 using Core.MapMarkers;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
+using Nrealus.Extensions.Observer;
 
 namespace Core.Tasks
 {
@@ -13,6 +14,7 @@ namespace Core.Tasks
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     /// <summary>
+    /// OUTDATED
     /// Instances of this class store a "plan" of Task.
     /// Two types of them are maintained here : active and passive ones.
     /// Passive orders are supposed not to have a "distinct end", and multiple passive orders could be active executed in this plan at the same time.

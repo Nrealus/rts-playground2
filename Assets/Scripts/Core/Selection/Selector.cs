@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using Core.Faction;
 using Core.Units;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using Core.Helpers;
 using Gamelogic.Extensions;
 using System;
+using Nrealus.Extensions.ReferenceWrapper;
 
 namespace Core.Selection
 {

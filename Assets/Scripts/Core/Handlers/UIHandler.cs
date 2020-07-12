@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using Core.Selection;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using Core.Units;
 using Core.UI;
 using Gamelogic.Extensions;
@@ -9,6 +9,7 @@ using Michsky.UI.ModernUIPack;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using Nrealus.Extensions.Observer;
 
 namespace Core.Handlers
 {

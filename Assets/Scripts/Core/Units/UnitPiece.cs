@@ -4,7 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using Core.Selection;
 using Core.Faction;
 using Core.Handlers;
@@ -13,7 +13,7 @@ using Core.Helpers;
 namespace Core.Units
 {
 
-    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
 
     ///<summary>
     /// The base class/component for in-game "concrete unit pieces" Tanks, infantry squads...

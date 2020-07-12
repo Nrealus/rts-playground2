@@ -4,10 +4,10 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Michsky.UI.ModernUIPack;
 
-namespace Michsky.UI.ModernUIPack
+namespace Nrealus.Extensions
 {
-
     public interface ITreeViewSelectable
     {
         GameObject GetGameObject();

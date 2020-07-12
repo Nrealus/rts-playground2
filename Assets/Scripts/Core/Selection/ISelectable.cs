@@ -3,27 +3,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
+using Nrealus.Extensions.ReferenceWrapper;
+using Nrealus.Extensions.Observer;
 
 namespace Core.Selection
 {
 
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
-    
+
     /// <summary>
     /// This interface is implemented by classes whose instances must be able to be "selected" by a Selector object.
     /// </summary>   
-    public interface ISelectableBase
-    {
-        //bool IsSelected(Selector selector);
-
-        //bool IsHighlighted(Selector selector);
-    }
-
-    /// <summary>
-    /// An extension of the ISelectable interface.
-    /// </summary>   
-    public interface ISelectable : ISelectableBase
+    public interface ISelectable
     {
         RefWrapper GetSelectableAsReferenceWrapperNonGeneric();
 

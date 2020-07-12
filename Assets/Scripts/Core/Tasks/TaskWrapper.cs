@@ -2,12 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using Core.Handlers;
 using GlobalManagers;
 using System;
 using Core.Selection;
 using Core.Tasks;
+using Nrealus.Extensions.ReferenceWrapper;
 //using TaskWrapper = Core.Tasks.TaskWrapper<Core.Tasks.Task>;
 
 namespace Core.Tasks
@@ -19,7 +20,7 @@ namespace Core.Tasks
     /// Subclass of TaskWrapper
     /// </summary>
     /// <typeparamref name="T">Specific type of wrapped Task</typeparamref>
-    public class TaskWrapper<T> : TaskWrapper/*, IRefWrapperInterf2<T>*/ where T : Task
+    public class TaskWrapper<T> : TaskWrapper where T : Task
     {
         
         public new T GetWrappedReference()

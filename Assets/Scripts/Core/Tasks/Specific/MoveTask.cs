@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using NPBehave;
 using Core.MapMarkers;
 using Core.Handlers;
@@ -11,9 +11,10 @@ using Core.Helpers;
 namespace Core.Tasks
 {
 
-    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
 
     /// <summary>
+    /// CURRENTLY BEING SLIGHTLY REDESIGNED.
     /// This "active" order (See OrderPlan) allows units to move on the map, given waypoints. It's the most basic and "important" order.
     /// </summary>
     public class MoveTask : Task2, IHasRefWrapper<TaskWrapper<MoveTask>>

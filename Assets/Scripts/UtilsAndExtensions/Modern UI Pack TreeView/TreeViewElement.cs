@@ -3,11 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using VariousUtilsExtensions;
+using Michsky.UI.ModernUIPack;
 
-namespace Michsky.UI.ModernUIPack
+namespace Nrealus.Extensions
 {
-
     public abstract class TreeViewElement : UIBehaviour
     {
         

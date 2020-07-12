@@ -11,14 +11,14 @@ using UnityEngine;
 namespace Core.Tasks
 {
 
-    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
     
     /// <summary>
-    /// The base class for all orders. It works with IOrderable "receivers" of orders, to which the order is given.
-    /// It provides the structure for orders, mostly in the form of protected abstract or virtual methods to be implemented by "concrete" subclasses.
-    /// It also provides static methods and functions which call the appropriate instance methods or functions, given a IOrderable as a parameter.
-    /// This allows to limit accessing .WrappedObject for common things, and has shown to be a nice approach improving clarity and encapsulation aswell as decoupling.   
-    /// An Order subclass should be instanciated from the static class OrderFactory.
+    /// The base class for all tasks. It works with ITaskSubject "subjects", which are the "executors" of the task. For now there can only be one. This may still changed in the future.
+    /// It provides the structure for tasks, mostly in the form of protected abstract or virtual methods to be implemented by "concrete" subclasses.
+    /// It also provides static methods and functions which call the appropriate instance methods or functions, given a TaskWrapper as a parameter.
+    /// This allows to limit accessing .GetWrappedReference() for common things, and has shown to be a nice approach improving clarity and encapsulation aswell as decoupling.   
+    /// A Task subclass should be instaciated from the "factory" generic function "CreateTaskWrapper".
     /// With time, some things that may become very common subclasses may be bundled into an "intermediate" abstract subclass, or even into this one.
     /// </summary>      
     public abstract class Task :

@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using Core.MapMarkers;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
+using Nrealus.Extensions.ReferenceWrapper;
 
 namespace Core.Tasks
 {

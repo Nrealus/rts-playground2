@@ -4,11 +4,14 @@ using System.Collections.Generic;
 using Core.Selection;
 using Core.Tasks;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 
 namespace Core.MapMarkers
 {
     
+    /// <summary>
+    /// The generic RefWrapper for specific types of TaskMarkers.
+    /// </summary>      
     public class TaskMarkerWrapper<T> : TaskMarkerWrapper where T : TaskMarker
     {
 
@@ -35,7 +38,7 @@ namespace Core.MapMarkers
     }
     
     /// <summary>
-    /// The RefWrapper for Task.
+    /// The RefWrapper for TaskMarker. (Subclass of MapMarkerWrapper<TaskMarker>)
     /// </summary>      
     public abstract class TaskMarkerWrapper : MapMarkerWrapper<TaskMarker>//, ISelectable<Task>
     {

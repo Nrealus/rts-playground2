@@ -3,7 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace VariousUtilsExtensions
+namespace Nrealus.Extensions
 {
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 

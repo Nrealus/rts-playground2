@@ -2,7 +2,7 @@ using Core.Units;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using NPBehave;
 using Core.MapMarkers;
 using Core.Handlers;
@@ -14,9 +14,10 @@ namespace Core.Tasks
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     /// <summary>
+    /// OUTDATED.
     /// This "active" order allows units to build structures. As most orders, it isn't really finished but the necessary outline is there.
     /// It needs a BuildingMarker (or rather its MapMarkerWrapper)
-    /// The BuildOrder is actually the first test of "internalized OrderPlans". It can create and run a MoveOrder to get closer to the building marker "inside of itself".
+    /// The BuildOrder is actually the first test of "internalized OrderPlans". It can create and run a MoveTask to get closer to the building marker "inside of itself".
     /// See OrderPlan summary for more details.
     /// </summary>
     public class BuildTask : Task2, IHasRefWrapper<TaskWrapper<BuildTask>>

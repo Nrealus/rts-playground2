@@ -12,7 +12,7 @@ namespace Core.Units
     /// They will have values given by and from various things like unit type, but probably mostly the Order that the unit is currently following,
     /// possibly overriding (part of) its default ROE
     /// In-game editing (scaling distance and angles for arcs of fire etc) will probably override all. But a quick switch to default/previous values should be possible.(->preset?)
-    ///</summary>0
+    ///</summary>
     public class UnitROE
     {
         

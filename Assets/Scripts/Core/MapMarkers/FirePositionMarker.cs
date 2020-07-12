@@ -9,30 +9,15 @@ namespace Core.MapMarkers
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     /// <summary>
-    /// A MapMarker subclass, used to map positions for attack orders, rules of engagements etc.    
+    /// A MapMarker subclass, used to map positions for attack tasks, rules of engagements etc.    
     /// </summary>   
-    public sealed class FirePositionMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<FirePositionMarker>>
+    public class FirePositionMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<FirePositionMarker>>
     {
 
         public new MapMarkerWrapper<FirePositionMarker> GetRefWrapper()
         {
             return _myWrapper as MapMarkerWrapper<FirePositionMarker>;
         }
-
-        /*private static Camera _cam;
-        public Camera GetMyCamera()
-        {
-            if(_cam == null)
-                _cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
-
-            return _cam;
-        }*/
-        
-        /*public static void UpdateWaypointMarker(MapMarkerWrapper<FirePositionMarker> firePositionMarkerWrapper, bool following, Vector3 screenPositionToFollow)
-        {
-            if(firePositionMarkerWrapper.WrappedObject != null)
-                firePositionMarkerWrapper.GetWrappedAs<FirePositionMarker>().firePositionMarkerComponent.FollowScreenPosition(following, screenPositionToFollow);
-        }*/
 
         public static FirePositionMarker CreateInstance(Vector3 position, float radius)
         {

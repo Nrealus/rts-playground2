@@ -5,7 +5,7 @@ using Core.Selection;
 using Core.Units;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using UnityEngine.InputSystem;
 using Gamelogic.Extensions;
 using Core.Tasks;

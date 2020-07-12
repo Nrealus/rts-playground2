@@ -1,14 +1,16 @@
 using System;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
-using VariousUtilsExtensions;
-using Michsky.UI.ModernUIPack;
+using Nrealus.Extensions;
 using Core.Units;
+using Nrealus.Extensions.Observer;
 
 namespace Core.UI
 {
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+
+    /// <summary>
+    /// Component for UI objects that represent an element of the tree view Order of Battle panel. Subclass of TreeViewElement.
+    /// </summary>   
     public class UIOrdobTreeViewElement : TreeViewElement
     {
 
@@ -80,7 +82,7 @@ namespace Core.UI
 
         public void BindPressEvent(MultiEventObserver binder, Action<object, EventArgs> action)
         {
-            var id = binder.AddEventAndSubscribeToIt(action);
+            var id = binder.AddNewEventAndSubscribeToIt(action);
             onPressedInBind.SubscribeToEvent("bindpress", (_) => binder.InvokeEvent(id, this, new SimpleEventArgs(_)));
             onUnbind += () => UnbindPressEvent(binder, id);
         }

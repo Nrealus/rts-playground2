@@ -3,23 +3,25 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using Core.Selection;
 using Core.Tasks;
 using GlobalManagers;
 using Core.Handlers;
 using Core.MapMarkers;
 using System.Linq;
+using Nrealus.Extensions.ReferenceWrapper;
+using Nrealus.Extensions.Observer;
 
 namespace Core.Units
 {
-    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
 
     ///<summary>
     /// The RefWrapper for UnitPiece.
     ///</summary>
     public class UnitPieceWrapper : RefWrapper<UnitPiece>, 
-        ISelectable//, ITaskSubject<Unit>
+        ISelectable
     {
 
         public UnitWrapper unitWrapper;

@@ -1,34 +1,20 @@
 using System;
 using System.Collections.Generic;
 
-namespace VariousUtilsExtensions
+namespace Nrealus.Extensions.Observer
 {
 
-    /*
-    public class Source1Example
-    {
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
 
-        private event Action onSomethingHappened;
-
-        private void SubscribeToMultieventObserver(MultiEventObserver obs, Action<object, EventArgs> callback)
-        {
-            var lstn = obs.AddEventAndSubscribeToIt(callback);
-            onSomethingHappened += () => obs.InvokeEvent(lstn, this, null);
-        }
-
-    }
-    */
-
-    public class SimpleEventArgs : EventArgs
-    {
-        public object[] args;
-
-        public SimpleEventArgs(params object[] args)
-        {
-            this.args = args;
-        }
-    }
-
+    ///<summary>
+    /// This class implements a "custom variant" of the Observer pattern.
+    /// In this version, there are several "events" that are all linked together. When one of them is triggered, all of the others follow.
+    /// Each one of them can be triggered by different "initial triggers" (or "senders").
+    /// However, if one of the events is triggered and, in their turn, a following event triggers it again during its invocation, cyclic calls appear.
+    /// To prevent this, we only allow an event to be actually invoked if it is triggered by a different sender.
+    /// A typical situation where this class can be used is data binding.
+    /// In fact, the initial idea behind this class was to implement data binding with a ui element.
+    ///</summary>
     public class MultiEventObserver// : IDisposable
     {
 
@@ -101,7 +87,7 @@ namespace VariousUtilsExtensions
             }
         }
     
-        public int AddEventAndSubscribeToIt(Action<object, EventArgs> callback)
+        public int AddNewEventAndSubscribeToIt(Action<object, EventArgs> callback)
         {
             var r = new EventWrapper();
 
@@ -114,5 +100,31 @@ namespace VariousUtilsExtensions
         }
     
     }
+
+    /*
+    public class Source1Example
+    {
+
+        private event Action onSomethingHappened;
+
+        private void SubscribeToMultieventObserver(MultiEventObserver obs, Action<object, EventArgs> callback)
+        {
+            var lstn = obs.AddEventAndSubscribeToIt(callback);
+            onSomethingHappened += () => obs.InvokeEvent(lstn, this, null);
+        }
+
+    }
+    */
+
+    public class SimpleEventArgs : EventArgs
+    {
+        public object[] args;
+
+        public SimpleEventArgs(params object[] args)
+        {
+            this.args = args;
+        }
+    }
+
 
 }

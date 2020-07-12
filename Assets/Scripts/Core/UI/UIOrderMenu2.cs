@@ -7,11 +7,16 @@ using Core.Selection;
 using Core.Tasks;
 using Core.Units;
 using System.Linq;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using System;
 
 namespace Core.UI
 {
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+
+    /// <summary>
+    /// Main UI class for the "Order" UI panel, allowing to "give orders". (i.e. spawn and place TaskMarkers on the map)
+    /// </summary>   
     public class UIOrderMenu2 : MonoBehaviour
     {
     

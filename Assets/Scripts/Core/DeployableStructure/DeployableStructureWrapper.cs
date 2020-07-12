@@ -2,11 +2,12 @@ using Core.Units;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using Core.Handlers;
 using GlobalManagers;
 using System;
 using Core.MapMarkers;
+using Nrealus.Extensions.ReferenceWrapper;
 
 namespace Core.Deployables
 {

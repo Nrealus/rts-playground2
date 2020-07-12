@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using UnityEngine;
 using System;
 using Core.Tasks;
@@ -9,6 +9,9 @@ using Core.MapMarkers;
 using Core.Handlers;
 using Gamelogic.Extensions;
 using Core.Selection;
+using Nrealus.Extensions.ReferenceWrapper;
+using Nrealus.Extensions.Tree;
+using Nrealus.Extensions.Observer;
 
 namespace Core.Units
 {
@@ -18,7 +21,6 @@ namespace Core.Units
     ///<summary>
     /// The RefWrapper for Unit.
     /// Follows a tree structure (implements ITreeNodeBase<UnitGroupWrapper>).
-    /// TO BE UPDATED
     ///</summary>
     public class UnitWrapper : RefWrapper<Unit>, ITreeNodeBase<UnitWrapper>, ITaskSubject, ISelectable
     {
@@ -29,11 +31,6 @@ namespace Core.Units
         {
             return this;
         }
-
-        /*RefWrapper<Unit> ITaskSubject<Unit>.GetOrderableAsReferenceWrapperGeneric()
-        {
-            return this;
-        }*/
 
         Y ITaskSubject.GetTaskSubjectAsReferenceWrapperSpecific<Y>()
         {
@@ -60,11 +57,6 @@ namespace Core.Units
         {
             return this;
         }
-
-        /*RefWrapper<Unit> ISelectable<Unit>.GetSelectableAsReferenceWrapperGeneric()
-        {
-            return this;
-        }*/
 
         Y ISelectable.GetSelectableAsReferenceWrapperSpecific<Y>()
         {
@@ -124,11 +116,6 @@ namespace Core.Units
             });*/
 
             _childNodes = new List<UnitWrapper>();
-        }
-
-        public T GetWrappedAs<T>() where T : Unit
-        {
-            return GetWrappedReference() as T;
         }
 
         #region Tree Structure

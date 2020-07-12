@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VariousUtilsExtensions
+namespace Nrealus.Extensions
 {
     public static class RectTransformExtension
     {

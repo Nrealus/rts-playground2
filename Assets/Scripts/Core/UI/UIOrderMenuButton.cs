@@ -8,10 +8,16 @@ using Core.Units;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
+using Nrealus.Extensions.Observer;
 
 namespace Core.UI
 {
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+
+    /// <summary>
+    /// Component for buttons in the "Orders" panel allowing to spawn and place TaskMarkers.
+    /// </summary>   
     public class UIOrderMenuButton : MonoBehaviour
     {
         
@@ -71,7 +77,7 @@ namespace Core.UI
 
         private void BindTaskWrapperSelectionEvent(MultiEventObserver binder, Action<object, EventArgs> action, TaskMarkerWrapper tmw)
         {
-            var id = binder.AddEventAndSubscribeToIt(action);
+            var id = binder.AddNewEventAndSubscribeToIt(action);
             tmw.GetOnSelectionStateChangeObserver().SubscribeToEvent("key",
                 (_) => 
                 {   

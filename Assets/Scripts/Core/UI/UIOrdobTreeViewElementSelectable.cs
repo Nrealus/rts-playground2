@@ -4,10 +4,16 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Nrealus.Extensions;
 
 namespace Core.UI
 {
 
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+
+    /// <summary>
+    /// A Helper component for UIOrdobTreeViewElement. Used to link the Unity UI aspect (callbacks, graphics) with the UI logic.
+    /// </summary>   
     public class UIOrdobTreeViewElementSelectable : UIBehaviour, ITreeViewSelectable,
             IBeginDragHandler, IDragHandler, IEndDragHandler,
             IPointerDownHandler, IPointerEnterHandler, IPointerExitHandler

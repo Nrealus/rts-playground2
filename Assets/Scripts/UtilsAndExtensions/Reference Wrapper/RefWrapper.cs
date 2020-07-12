@@ -1,9 +1,7 @@
-﻿using Gamelogic.Extensions;
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 
-namespace VariousUtilsExtensions
+namespace Nrealus.Extensions.ReferenceWrapper
 {
 
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
@@ -24,22 +22,6 @@ namespace VariousUtilsExtensions
         public abstract void DestroyWrappedReference();
 
     }
-
-    /*public interface IRefWrapperInterf1
-    {                
-        void SubscribeOnClearance(Action action);
-
-        //public abstract void UnsubscribeOnClearance(Action action);
-
-        void SubscribeOnClearance(string key, Action action);
-
-        void UnsubscribeOnClearance(string key);
-
-        void UnsubscribeOnClearanceAll();
-
-        void DestroyWrappedReference();
-
-    }*/
 
     /// <summary>
     /// A wrapper class whose initial purpose is to remove any direct references to the wrapped object.
@@ -190,4 +172,5 @@ namespace VariousUtilsExtensions
 
     }
 
+    
 }

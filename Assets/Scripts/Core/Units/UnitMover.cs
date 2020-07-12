@@ -4,12 +4,11 @@ using UnityEngine;
 
 namespace Core.Units
 {
-    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
 
     ///<summary>
     /// The locomotion component for unit pieces.
     ///</summary>
-    
     public class UnitMover : MonoBehaviour
     {
         

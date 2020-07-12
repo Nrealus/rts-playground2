@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VariousUtilsExtensions
+namespace Nrealus.Extensions
 {
     //https://answers.unity.com/questions/526058/addcomponent-passing-variable-before-startawake.html
     // /!\ This approach involves Deactivating and Reactivating (if the object was active before) the gameObject.

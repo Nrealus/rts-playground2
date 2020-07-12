@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using Core.Helpers;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 
 namespace Core.MapMarkers
 {
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     /// <summary>
-    /// A MapMarker subclass, currently used as a waypoint for MoveOrders. They are manually entered on the map by the player,
+    /// A MapMarker subclass, currently used as a waypoint for MoveTasks. They are manually entered on the map by the player,
     /// or automatically created by the game logic at some position. They can also be dragged on the screen (map) with a cursor (mouse)
     /// </summary>   
     public class WaypointMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<WaypointMarker>>

@@ -5,7 +5,7 @@ using Core.Tasks;
 using Core.Units;
 using Core.Selection;
 using Core.Handlers;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using UnityEngine.EventSystems;
 using System.Text;
 using Core.Helpers;
@@ -13,12 +13,13 @@ using Core.MapMarkers;
 
 namespace Core.MapMarkers
 {
-    /****** Author : nrealus ****** Last documentation update : 14-05-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
 
     /// <summary>
-    /// A MapMarker subclass, used as "widgets" for Orders, or information windows about them.
-    /// They are linked to an OrderWrapper. By default, they follow the position of the order's receiver.
-    /// For a UnitGroup receiver, the default position is the mean position of all the units in the group.
+    /// A MapMarker subclass, that serve as a means of communication with an associated Task. It has both a pure game logic and UI role.
+    /// For now, a Task is spawned from a TaskMarker, and the settings of a TaskMarker can be used to influence the parameters or behaviour of a Task.
+    /// That includes the position of the marker on the map.
+    /// There also is a TaskPlan associated to this marker, and the associated Task (again, via its TaskWrapper of course) is expected to be part of the TaskPlan.
     /// </summary>   
     public abstract class TaskMarker : MapMarker, IHasRefWrapper<TaskMarkerWrapper>
     {

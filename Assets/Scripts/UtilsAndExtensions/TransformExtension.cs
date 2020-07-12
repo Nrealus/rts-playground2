@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace VariousUtilsExtensions
+namespace Nrealus.Extensions
 {
     public static class TransformExtension
     {

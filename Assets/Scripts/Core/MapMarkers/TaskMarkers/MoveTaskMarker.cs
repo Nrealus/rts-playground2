@@ -6,15 +6,20 @@ using Core.MapMarkers;
 using Core.Units;
 using Core.Selection;
 using Core.Handlers;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using UnityEngine.EventSystems;
 using System.Text;
 using Core.Helpers;
 
-namespace Core.Tasks
+namespace Core.MapMarkers
 {
 
-    public sealed class MoveTaskMarker : TaskMarker, IHasRefWrapper<TaskMarkerWrapper<MoveTaskMarker>>
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+
+    /// <summary>
+    /// A subclass of TaskMarker, specific to MoveTask tasks. (NEEDS MORE DETAILS)
+    /// </summary>   
+    public class MoveTaskMarker : TaskMarker, IHasRefWrapper<TaskMarkerWrapper<MoveTaskMarker>>
     {
 
         public new TaskMarkerWrapper<MoveTaskMarker> GetRefWrapper()

@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using UnityEngine;
 using Core.Helpers;
 using System;
@@ -12,11 +12,10 @@ using Core.Handlers;
 namespace Core.Units
 {
 
-    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
 
     ///<summary>
-    /// This class represents a unit.
-    /// There can be real and virtual units. Virtual units are just a way to group/bundle other units into one group.
+    /// Main Unity component for units.
     ///</summary>
     public class Unit : MonoBehaviour, IHasRefWrapper<UnitWrapper>
     {

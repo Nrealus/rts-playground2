@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using Core.Selection;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
 using Core.Units;
 using Gamelogic.Extensions;
 

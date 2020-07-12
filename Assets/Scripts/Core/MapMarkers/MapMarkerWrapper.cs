@@ -3,11 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using Core.Selection;
 using UnityEngine;
-using VariousUtilsExtensions;
+using Nrealus.Extensions;
+using Nrealus.Extensions.ReferenceWrapper;
+using Nrealus.Extensions.Observer;
 
 namespace Core.MapMarkers
 {
 
+    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+
+    /// <summary>
+    /// The generic RefWrapper for specific types of MapMarkers.
+    /// </summary>      
     public class MapMarkerWrapper<T> : MapMarkerWrapper where T : MapMarker
     {
 
@@ -34,9 +41,9 @@ namespace Core.MapMarkers
     }
     
     /// <summary>
-    /// The RefWrapper for Task.
+    /// The RefWrapper for MapMarker.
     /// </summary>      
-    public abstract class MapMarkerWrapper : RefWrapper2<MapMarker>, ISelectable//, ISelectable<Task>
+    public abstract class MapMarkerWrapper : RefWrapper2<MapMarker>, ISelectable
     {
         
         public MapMarkerWrapper<T> CastWrapper<T>() where T : MapMarker
@@ -66,11 +73,6 @@ namespace Core.MapMarkers
         {
             return this;
         }
-
-        /*RefWrapper<Unit> ISelectable<Unit>.GetSelectableAsReferenceWrapperGeneric()
-        {
-            return this;
-        }*/
 
         Y ISelectable.GetSelectableAsReferenceWrapperSpecific<Y>()
         {

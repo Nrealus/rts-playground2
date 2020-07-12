@@ -7,7 +7,7 @@ namespace Core.Units
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     ///<summary>
-    /// The locomotion component for units.
+    /// The locomotion component for unit pieces.
     ///</summary>
     
     public class UnitMover : MonoBehaviour

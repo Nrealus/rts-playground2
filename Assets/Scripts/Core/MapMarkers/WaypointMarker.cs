@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Core.Helpers;
 using UnityEngine;
 using VariousUtilsExtensions;
 
@@ -11,8 +12,13 @@ namespace Core.MapMarkers
     /// A MapMarker subclass, currently used as a waypoint for MoveOrders. They are manually entered on the map by the player,
     /// or automatically created by the game logic at some position. They can also be dragged on the screen (map) with a cursor (mouse)
     /// </summary>   
-    public class WaypointMarker : MapMarker
+    public class WaypointMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<WaypointMarker>>
     {
+
+        public new MapMarkerWrapper<WaypointMarker> GetRefWrapper()
+        {
+            return _myWrapper as MapMarkerWrapper<WaypointMarker>;
+        }
 
         private static Camera _cam;
         public Camera GetMyCamera()
@@ -27,7 +33,7 @@ namespace Core.MapMarkers
         {
             WaypointMarker res = Instantiate<WaypointMarker>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().waypointMarkerPrefab,
-                GameObject.Find("WorldUICanvas").transform);
+                GameObject.Find("UI World Canvas").transform);
             
             res.Init(position);
             
@@ -36,8 +42,8 @@ namespace Core.MapMarkers
 
         public static void UpdateWaypointMarker(MapMarkerWrapper<WaypointMarker> waypointMarkerWrapper, bool following, Vector3 screenPositionToFollow)
         {
-            if(waypointMarkerWrapper.WrappedObject != null)
-                waypointMarkerWrapper.GetWrappedAs<WaypointMarker>().FollowScreenPosition(following, screenPositionToFollow);
+            if(waypointMarkerWrapper.GetWrappedReference() != null)
+                waypointMarkerWrapper.GetWrappedReference().FollowScreenPosition(following, screenPositionToFollow);
         }
         
         public float moveSpeed = 0.5f;
@@ -50,7 +56,7 @@ namespace Core.MapMarkers
             transform.position = position;
 
             _myWrapper = new MapMarkerWrapper<WaypointMarker>(this, () => {_myWrapper = null;});
-            GetMyWrapper<WaypointMarker>().SubscribeOnClearance(DestroyMe);
+            GetRefWrapper().SubscribeOnClearance(DestroyMe);
 
             following = false;
         }

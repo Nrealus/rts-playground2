@@ -18,7 +18,7 @@ namespace VariousUtilsExtensions
 
         T GetParentNode();
 
-        void SetParentNode(T newParent);
+        void Internal_SetParentNode(T newParent);
 
         bool IsLeaf();
 
@@ -62,7 +62,7 @@ namespace VariousUtilsExtensions
 
         public SimpleTreeNode<T> GetParentNode() { return _parent; }
 
-        public void SetParentNode(SimpleTreeNode<T> newParent)
+        public void Internal_SetParentNode(SimpleTreeNode<T> newParent)
         {
             _parent = newParent;
         }
@@ -116,7 +116,7 @@ namespace VariousUtilsExtensions
         {
             if (child.GetParentNode() != null)
                 child.GetParentNode().RemoveChild(child);
-            child.SetParentNode(GetThisNode());
+            child.Internal_SetParentNode(GetThisNode());
             GetChildNodes().Add(child);
         }
 
@@ -128,7 +128,7 @@ namespace VariousUtilsExtensions
 
         public void RemoveChild(SimpleTreeNode<T> child)
         {
-            child.SetParentNode(null);
+            child.Internal_SetParentNode(null);
             GetChildNodes().Remove(child);
         }
 

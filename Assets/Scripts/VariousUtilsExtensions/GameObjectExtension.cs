@@ -25,6 +25,32 @@ namespace VariousUtilsExtensions
 
     public static class GameObjectExtension
     {
+
+        public static GameObject FindInactiveObjectByName(string name)
+        {
+            Transform[] objs = Resources.FindObjectsOfTypeAll<Transform>() as Transform[];
+            for (int i = 0; i < objs.Length; i++)
+            {
+                if (objs[i].hideFlags == HideFlags.None)
+                {
+                    if (objs[i].name == name)
+                    {
+                        return objs[i].gameObject;
+                    }
+                }
+            }
+            return null;
+        }
+
+        public static void SetActiveRecursivelyExt(this GameObject obj, bool state)
+        {
+            obj.SetActive(state);
+            foreach (Transform child in obj.transform)
+            {
+                SetActiveRecursivelyExt(child.gameObject, state);
+            }
+        }
+
         public static IDisposable Deactivate(this GameObject obj)
         {
             return new GameObjectDeactivateSection(obj);

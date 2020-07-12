@@ -8,7 +8,7 @@ using UnityEngine.EventSystems;
 using VariousUtilsExtensions;
 using UnityEngine.InputSystem;
 using Gamelogic.Extensions;
-using Core.Orders;
+using Core.Tasks;
 using UnityEngine.UI;
 using Core.MapMarkers;
 
@@ -78,7 +78,7 @@ public class InputController : MonoBehaviour,
             
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Other",
                     pointerInfo.pointedPositionScreen - Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             //controllerStateMachine.CurrentState = ControllerStates.OrderEditing;
@@ -86,7 +86,7 @@ public class InputController : MonoBehaviour,
             
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Orders",
                     pointerInfo.pointedPositionScreen + Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             controllerStateMachine.CurrentState = ControllerStates.OrderMenu;
@@ -114,7 +114,7 @@ public class InputController : MonoBehaviour,
 
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Move",
                     pointerInfo.pointedPositionScreen - Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             if (CanEditMoveOrderForSelectedEntities(controlledSelector))
@@ -123,7 +123,7 @@ public class InputController : MonoBehaviour,
                 
                 /*CreateButton(menuCurrentButtons, sampleButtonPrefab, "MoveForm",
                     pointerInfo.pointedPositionScreen - Vector3.right * 100f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             if (CanEditMoveOrderForSelectedEntities(controlledSelector))
@@ -132,7 +132,7 @@ public class InputController : MonoBehaviour,
                         
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Patrol",
                     pointerInfo.pointedPositionScreen + Vector3.right * 0f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             controllerStateMachine.CurrentState = ControllerStates.PatrolOrderMenu;
@@ -140,7 +140,7 @@ public class InputController : MonoBehaviour,
 
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Engage at positions",
                     pointerInfo.pointedPositionScreen + Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             controllerStateMachine.CurrentState = ControllerStates.EngageAtPositionsMenu;
@@ -148,7 +148,7 @@ public class InputController : MonoBehaviour,
 
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Build",
                     pointerInfo.pointedPositionScreen + Vector3.right * 100f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             controllerStateMachine.CurrentState = ControllerStates.BuildOrderMenu;
@@ -226,7 +226,7 @@ public class InputController : MonoBehaviour,
 
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "FOB",
                     pointerInfo.pointedPositionScreen - Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt;
@@ -239,7 +239,7 @@ public class InputController : MonoBehaviour,
                         
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Outpost",
                     pointerInfo.pointedPositionScreen + Vector3.right * 0f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             //dddddddddddddddddddddddddddddddddddddddddddddddd
@@ -273,7 +273,7 @@ public class InputController : MonoBehaviour,
 
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "FOB",
                     pointerInfo.pointedPositionScreen - Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             controllerStateMachine.CurrentState = ControllerStates.OrderConfirmationPrompt;
@@ -286,7 +286,7 @@ public class InputController : MonoBehaviour,
                         
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Outpost",
                     pointerInfo.pointedPositionScreen + Vector3.right * 0f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             //dddddddddddddddddddddddddddddddddddddddddddddddd
@@ -343,7 +343,7 @@ public class InputController : MonoBehaviour,
             () => {
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Save/Confirm",
                     pointerInfo.pointedPositionScreen - Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             CurrentlyEditedOrdersConfirm();
@@ -352,7 +352,7 @@ public class InputController : MonoBehaviour,
                         
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Start Hour",
                     pointerInfo.pointedPositionScreen - Vector3.right * 25f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             // example, this is a placeholder
@@ -360,7 +360,7 @@ public class InputController : MonoBehaviour,
 
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Other options",
                     pointerInfo.pointedPositionScreen + Vector3.right * 25f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             // example, this is a placeholder 
@@ -368,7 +368,7 @@ public class InputController : MonoBehaviour,
 
                 CreateButton(menuCurrentButtons, sampleButtonPrefab, "Cancel",
                     pointerInfo.pointedPositionScreen + Vector3.right * 50f,
-                    GameObject.Find("ScreenUICanvas").GetComponent<RectTransform>(),
+                    GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>(),
                     GetMyCamera()).onClick.AddListener(
                         () => {
                             CurrentlyEditedOrdersCancel();
@@ -432,7 +432,7 @@ public class InputController : MonoBehaviour,
         public bool executable;
     }*/
 
-    private List<OrderWrapper> currentlyEditedOWBunch = new List<OrderWrapper>();
+    private List<TaskWrapper> currentlyEditedOWBunch = new List<TaskWrapper>();
 
     private bool CanEditMoveOrderForSelectedEntities(Selector selector)
     {
@@ -452,10 +452,10 @@ public class InputController : MonoBehaviour,
         var l = selector.GetCurrentlySelectedEntities();
         foreach (var v in l)
         {
-            OrderFactory.CreateOrderWrapperAndSetReceiver<MoveOrderNew>((IOrderable<UnitGroup>)v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().unitsGroupWrapper);
+            Task.CreateTaskWrapperAndSetReceiver<MoveTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
             //currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlineActiveOrderInPlan());
-            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().unitsGroupWrapper.GetOrdersPlan().GetLastInlineActiveOrderInPlan());
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetTaskPlan().GetLastInlineActiveTaskInPlan());
             /*currentlyEditedOWBunch.Add(
                 new EditedOWBunchStruct(){
                     orderWrappersList = new List<OrderWrapper>() { v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder() },
@@ -508,10 +508,10 @@ public class InputController : MonoBehaviour,
         //ow.GetWrappedAs<MoveOrderFormation>().AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
     }*/
 
-    private void AddWaypointToMoveWrapperAtPosition(OrderWrapper ow, Vector3 pos)
+    private void AddWaypointToMoveWrapperAtPosition(TaskWrapper ow, Vector3 pos)
     {
         WaypointMarker wpmrk = WaypointMarker.CreateInstance(pos);
-        ow.GetWrappedAs<MoveOrderNew>().AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
+        ow.GetCastReference<MoveTask>().AddWaypoint(wpmrk.GetRefWrapper());
         //ow.GetWrappedAs<MoveOrderFormation>().AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
     }
 
@@ -520,10 +520,10 @@ public class InputController : MonoBehaviour,
         var l = selector.GetCurrentlySelectedEntities();
         foreach (var v in l)
         {
-            OrderFactory.CreateOrderWrapperAndSetReceiver<BuildOrderNew>((IOrderable<UnitGroup>)v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().unitsGroupWrapper);
+            Task.CreateTaskWrapperAndSetReceiver<BuildTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
             //currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlineActiveOrderInPlan());
-            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().unitsGroupWrapper.GetOrdersPlan().GetLastInlineActiveOrderInPlan());
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetTaskPlan().GetLastInlineActiveTaskInPlan());
         }
     }
 
@@ -539,13 +539,12 @@ public class InputController : MonoBehaviour,
             //currentlyEditedOrderWrapper.GetWrappedAs<MoveOrder>()
             //    .AddWaypoint(wpmrk.GetMyWrapper<WaypointMarker>());
 
-            BuildingMarker bm;
-            bm = BuildingMarker.CreateInstance(pointerInfo.pointedPositionWorld);
+            DeployableMarker bm;
+            bm = DeployableMarker.CreateInstance(pointerInfo.pointedPositionWorld);
             int c = currentlyEditedOWBunch.Count;
             for(int i = 0; i < c; i++)
             {
-                currentlyEditedOWBunch[i]
-                    .GetWrappedAs<BuildOrderNew>().SetBuildingToBuild(bm.GetMyWrapper<BuildingMarker>());
+                currentlyEditedOWBunch[i].GetCastReference<BuildTask>().SetBuildingToBuild(bm.GetRefWrapper());
             }
         }
 
@@ -558,10 +557,10 @@ public class InputController : MonoBehaviour,
         return false;
     }
     
-    private void AddPositionToEngageAtPositionsWrapper(OrderWrapper ow, Vector3 pos, float radius)
+    private void AddPositionToEngageAtPositionsWrapper(TaskWrapper ow, Vector3 pos, float radius)
     {
         FirePositionMarker fpmrk = FirePositionMarker.CreateInstance(pos, radius);
-        ow.GetWrappedAs<EngageAtPositionsOrderNew>().AddFirePosition(fpmrk.GetMyWrapper<FirePositionMarker>());
+        ow.GetCastReference<EngageAtPositionsTask>().AddFirePosition(fpmrk.GetRefWrapper());
     }
 
     private void FetchCurrentlyEditedEngageAtPositionsWrappersFromSelectedEntities(Selector selector)
@@ -569,10 +568,10 @@ public class InputController : MonoBehaviour,
         var l = selector.GetCurrentlySelectedEntities();
         foreach (var v in l)
         {
-            OrderFactory.CreateOrderWrapperAndSetReceiver<EngageAtPositionsOrderNew>((IOrderable<UnitGroup>)v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>()/*.formationWrapper*/);                    
+            Task.CreateTaskWrapperAndSetReceiver<EngageAtPositionsTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>()/*.formationWrapper*/);                    
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
             //currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlinePassiveOrderInPlan());
-            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().unitsGroupWrapper.GetOrdersPlan().GetLastInlinePassiveOrderInPlan());
+            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetTaskPlan().GetLastInlinePassiveOrderInPlan());
         }
     }
 
@@ -613,11 +612,11 @@ public class InputController : MonoBehaviour,
             
             if (Input.GetKey(KeyCode.LeftShift))
             {
-                Order.GetParameters(currentlyEditedOWBunch[i]).AddExecutionMode(OrderParams.OrderExecutionMode.Chain);
+                Task.GetParameters(currentlyEditedOWBunch[i]).AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
                 //Order.SetParameters(currentlyEditedOWBunch[i], chainparam);
             }
 
-            Order.TryStartExecution(currentlyEditedOWBunch[i]);
+            Task.TryStartExecution(currentlyEditedOWBunch[i]);
             currentlyEditedOWBunch.RemoveAt(i);
         }
     }
@@ -673,7 +672,7 @@ public class InputController : MonoBehaviour,
             {
                 var ewp = GetUICloseToScreenPosition<WaypointMarker>(GetMyCamera(), pointerInfo.pointedPositionScreen, 7f);
                 if(ewp != null)
-                    _editedWaypointMarkerWrapper = ewp.GetMyWrapper<WaypointMarker>();
+                    _editedWaypointMarkerWrapper = ewp.GetRefWrapper();
                 else if (NoUIAtScreenPositionExceptCanvas(pointerInfo.pointedPositionScreen, 0)) 
                 {
                     
@@ -682,7 +681,7 @@ public class InputController : MonoBehaviour,
         }
 
         if (_editedWaypointMarkerWrapper != null 
-            && _editedWaypointMarkerWrapper.WrappedObject != null)
+            && _editedWaypointMarkerWrapper.GetWrappedReference() != null)
         {
             WaypointMarker.UpdateWaypointMarker(_editedWaypointMarkerWrapper, true, pointerInfo.pointedPositionScreen);
         }
@@ -700,8 +699,8 @@ public class InputController : MonoBehaviour,
 
     private void InitCanvasRaycastingStuff()
     {
-        graphicRaycasterScreenUI = GameObject.Find("ScreenUICanvas").GetComponent<GraphicRaycaster>();
-        graphicRaycasterWorldUI = GameObject.Find("WorldUICanvas").GetComponent<GraphicRaycaster>();
+        graphicRaycasterScreenUI = GameObject.Find("UI Screen Canvas").GetComponent<GraphicRaycaster>();
+        graphicRaycasterWorldUI = GameObject.Find("UI World Canvas").GetComponent<GraphicRaycaster>();
         eventSystem = GameObject.Find("EventSystem").GetComponent<EventSystem>();
     }
 
@@ -723,7 +722,7 @@ public class InputController : MonoBehaviour,
 
         graphicRaycasterWorldUI.Raycast(pointerEventData, _raycastresults);
         hitcount += _raycastresults.Count;
-
+        
         return hitcount == 0;
     }
 

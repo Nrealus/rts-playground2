@@ -1,14 +1,13 @@
-﻿using Core.Orders;
-using Gamelogic.Extensions;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
-using UnityEngine;
+using System.Linq;
 using VariousUtilsExtensions;
-using Core.Selection;
-using Core.Faction;
-using Core.Handlers;
+using UnityEngine;
 using Core.Helpers;
+using System;
+using Core.Faction;
+using Core.Selection;
+using Core.Handlers;
 
 namespace Core.Units
 {
@@ -16,13 +15,14 @@ namespace Core.Units
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     ///<summary>
-    /// The base class/component for in-game units.
+    /// This class represents a unit.
+    /// There can be real and virtual units. Virtual units are just a way to group/bundle other units into one group.
     ///</summary>
-    public class Unit : MonoBehaviour,
-        IHasRefToRefWrapper<UnitWrapper>
-        //IHasRefWrapperAndTree<UnitWrapper>
+    public class Unit : MonoBehaviour, IHasRefWrapper<UnitWrapper>
     {
-
+    
+        private SpriteRenderer mySprRenderer;
+        
         [HideInInspector] public FactionAffiliation factionAffiliation;
 
         public enum UnitLevel { Army, Corps, Brigade, Division, Regiment, Battalion, Company, Platoon/*, Section*/ };
@@ -33,21 +33,74 @@ namespace Core.Units
 
         public UnitLevel unitLevel { get { return _level; } /*private*/ set { _level = value; } }
         public UnitType unitType { get { return _type; } private set { _type = value; } }
+        
+        private List<UnitPieceWrapper> unitPiecesWrappersList = new List<UnitPieceWrapper>();
+        private Dictionary<UnitPieceWrapper, Action> onUnitPiecesRemovalHandlersDict = new Dictionary<UnitPieceWrapper, Action>();
+		
+        public static List<UnitPieceWrapper> GetUnitPieceWrappersInUnit(UnitWrapper unitWrapper)
+        {
+            return unitWrapper.GetWrappedReference().unitPiecesWrappersList;
+        }
+        
+        public static List<UnitWrapper> GetMyselfAndSubUnitsWrappers(UnitWrapper unitWrapper)
+        {
+            // very clunky, to be changed
+            var res = new List<UnitWrapper>();
+            res.Add(unitWrapper);
+            res.AddRange(unitWrapper.GetChildNodes());
+            return res;
+        }
 
-        /*--------*/
+        public static List<UnitWrapper> GetSubUnits(UnitWrapper unitWrapper)
+        {
+            return unitWrapper.GetChildNodes();
+        }
+        
+        public static void AddSubUnitToUnit(UnitWrapper unitToAdd, UnitWrapper destinationParentUnit)
+        {    
+            destinationParentUnit.AddChild(unitToAdd);            
+        }
+        
+        public static void DettachSubUnitFromItsParent(UnitWrapper unitToDettachFromItsParent)
+        {
+            if (unitToDettachFromItsParent.GetParentNode() != null)
+                unitToDettachFromItsParent.GetParentNode().RemoveChild(unitToDettachFromItsParent);
+            else
+                Debug.LogWarning("already dettached");
+        }
 
-        private SpriteRenderer mySprRenderer;
+        public static void AddUnitPieceToUnit(UnitPieceWrapper unitPieceWrapper, UnitWrapper unitWrapper, Action actionOnRemovalFromGroup)
+        {    
+            /// Keep an eye
+            if (unitPieceWrapper.unitWrapper.GetWrappedReference().isVirtualUnit)
+            {
+                if (unitPieceWrapper.unitWrapper != null)
+                {
+                    RemoveUnitPieceFromUnit(unitPieceWrapper, unitPieceWrapper.unitWrapper);
+                }
+            }
+    
+            unitWrapper.GetWrappedReference().unitPiecesWrappersList.Add(unitPieceWrapper);
 
-        //private UnitTreeNode unitTreeNode;
+            unitWrapper.GetWrappedReference().SubscribeOnUnitPieceRemovalFromUnit(unitPieceWrapper, actionOnRemovalFromGroup);
 
-        /*--------*/
+            unitPieceWrapper.SubscribeOnClearance("removeunitpiece",() => RemoveUnitPieceFromUnit(unitPieceWrapper, unitWrapper));
+            
+        }
 
-        private UnitWrapper _myWrapper;
-        public UnitWrapper GetMyWrapper() { return _myWrapper; }
-
-        /*--------*/
-
-        [HideInInspector] public UnitMover myMover;
+        public static void RemoveUnitPieceFromUnit(UnitPieceWrapper unitPieceWrapper, UnitWrapper unitWrapper)
+        {
+            if (unitWrapper.GetWrappedReference() != null)
+            {
+                unitPieceWrapper.UnsubscribeOnClearance("removeunitpiece");
+                if(unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict[unitPieceWrapper] != null)
+                    unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict[unitPieceWrapper].Invoke();
+                else
+                    Debug.LogWarning("is this normal ?");
+                unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict[unitPieceWrapper] = null;
+                unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict.Remove(unitPieceWrapper);
+            }
+        }
 
         public static bool IsSelected(UnitWrapper unitWrapper, Selector selector)
         {
@@ -59,107 +112,104 @@ namespace Core.Units
             return selector.IsHighlighted(unitWrapper);
         }
 
-        public static bool IsThereAnyParentHighlightedOrSelected(UnitWrapper unitWrapper, Selector selector)
+        public static Unit CreateUnit(bool isVirtualUnit, bool realOrVirtualGroup)
         {
-            /*if (unitWrapper != null && Unit.GetParentWrapper(unitWrapper) != null)
-            {
-                bool b = Unit.IsSelected(Unit.GetParentWrapper(unitWrapper), selector)
-                    || Unit.IsHighlighted(Unit.GetParentWrapper(unitWrapper), selector);
-                return b || Unit.IsThereAnyParentHighlightedOrSelected(Unit.GetParentWrapper(unitWrapper), selector);
-            }
-            else*/
-            {
-                return false;
-            }
+            throw new NotImplementedException();
         }
 
-        public static void Dismantle(UnitWrapper unitWrapper)
+        public static void DestroyUnit(UnitWrapper unitWrapper)
         {
-            Destroy(unitWrapper.WrappedObject.gameObject);
+            Destroy(unitWrapper.GetWrappedReference().gameObject);
             unitWrapper.DestroyWrappedReference();
         }
 
-        // Public for testing
-        public static void SetAsSubordinateOf(UnitWrapper unitWrapper, UnitWrapper newSuperior)
+        public static Vector3 GetPosition(UnitWrapper uw)
         {
-            Debug.Log("Being changed - not useful anyway");
-            //unitWrapper.WrappedObject.unitTreeNode.ChangeParentTo(newSuperior.WrappedObject.unitTreeNode);
+            return uw.GetWrappedReference().transform.position;
+            /*var l = uw.WrappedObject.unitPiecesWrappersList;
+            int c = l.Count;
+            Vector3 res = Vector3.zero;
+
+            if (c == 0)
+                throw new SystemException("what");
+
+            foreach(var v in l)
+            {
+                res += v.WrappedObject.transform.position;
+            }
+            res /= c;
+            return res;*/
         }
 
-        /*List<Unit>*/
-        /*public static List<UnitWrapper> GetAllSubordinateUnitsList(UnitWrapper unitWrapper)
+        public void SubscribeOnUnitPieceRemovalFromUnit(UnitPieceWrapper unitPieceWrapper, Action actionOnUnitPieceRemovalFromUnit)
         {
-            List<UnitWrapper> tns = unitWrapper.WrappedObject.unitTreeNode.BFSListMeAndAllChildrenWrappers();
-            return tns;
-        }*/
-
-        /*public static List<UnitWrapper> GetMeAndAllChildrenWrappersList(UnitWrapper unitWrapper)
-        {
-            return unitWrapper.WrappedObject.unitTreeNode.BFSListMeAndAllChildrenWrappers();
-        }*/
-
-        /*public static UnitWrapper GetParentWrapper(UnitWrapper unitWrapper)
-        {
-            return unitWrapper.WrappedObject.unitTreeNode.GetParentWrapper();
-        }*/
-
-        /*public static List<UnitWrapper> GetChildrenWrappers(UnitWrapper unitWrapper)
-        {
-            return unitWrapper.WrappedObject.unitTreeNode.ListChildrenWrappers();
-        }*/
-
-
+            Action a;
+            if(!onUnitPiecesRemovalHandlersDict.TryGetValue(unitPieceWrapper, out a))
+                onUnitPiecesRemovalHandlersDict.Add(unitPieceWrapper, actionOnUnitPieceRemovalFromUnit);
+            else
+                a += actionOnUnitPieceRemovalFromUnit;
+        }
+       
         private Selector GetUsedSelector()
         {
             return SelectionHandler.GetUsedSelector();
         }
+        
+        [SerializeField] private bool _isVirtualUnit;
+        public bool isVirtualUnit { get { return _isVirtualUnit; } private set { _isVirtualUnit = value;} }
 
-        private void Init()
+        [HideInInspector] public UnitMover myMover;
+        protected UnitWrapper _myWrapper;
+        public UnitWrapper GetRefWrapper() { return _myWrapper; }
+
+        private void Init(bool isVirtualUnit)
         {
-            _myWrapper = new UnitWrapper(this, () => {_myWrapper = null;});
-            //unitTreeNode = new UnitTreeNode(GetMyWrapper());
+            factionAffiliation = GetComponent<FactionAffiliation>();
+            
+            this.isVirtualUnit = isVirtualUnit;
+            
+            _myWrapper = new UnitWrapper(this, () => 
+                {
+                    foreach (var v in unitPiecesWrappersList) 
+                        RemoveUnitPieceFromUnit(v, GetRefWrapper());
+                    _myWrapper = null;
+                });
             myMover = GetComponent<UnitMover>();
-            mySprRenderer = GetComponent<SpriteRenderer>();
+            mySprRenderer = GetComponent<SpriteRenderer>();            
         }
 
         private void Awake()
         {
-            factionAffiliation = GetComponent<FactionAffiliation>();
-            Init();
+            Init(isVirtualUnit);
         }
-
-        public bool subTesting = false;
-        private static UnitWrapper _toaddtest = null;
+        
         private void Update()
         {
-            /*if (IsSelected(GetMyWrapper(), GetUsedSelector())
-                && Input.GetKeyDown(KeyCode.K))
-            {
-                Dismantle(GetMyWrapper());
-            }*/
-            if (subTesting)
-                Unit._toaddtest = GetMyWrapper();
 
-            if (IsSelected(GetMyWrapper(), GetUsedSelector())
+            if (GetUsedSelector().IsSelected(GetRefWrapper())
                 && Input.GetKeyDown(KeyCode.K))
             {
-                GetMyWrapper().ChangeUnitsFormation(_toaddtest.unitsGroupWrapper);
+                DestroyUnit(GetRefWrapper());
             }
 
             DrawUpdate();
+
         }
 
         private void DrawUpdate()
         {
             mySprRenderer.color = Color.white;
             
-            if (Unit.IsSelected(GetMyWrapper(), GetUsedSelector()))
+            if (IsSelected(GetRefWrapper(), GetUsedSelector()))
             {
                 mySprRenderer.color = factionAffiliation.MyFaction.baseColor;
+                foreach (UnitWrapper uw in GetSubUnits(GetRefWrapper()))
+                {
+                    var p = Unit.GetPosition(uw); // in the future, take the highest ranked unit in the group
+                    Debug.DrawLine(transform.position, p, Color.white);
+                }
             }
-            else if (/*Unit.IsSelected(GetMyWrapper(), GetUsedSelector())
-                    || */Unit.IsHighlighted(GetMyWrapper(), GetUsedSelector()))
-                    // || Unit.IsThereAnyParentHighlightedOrSelected(GetMyWrapper(), GetUsedSelector()))
+            else if (IsHighlighted(GetRefWrapper(), GetUsedSelector()))
             {
                 mySprRenderer.color = 
                     new Color(factionAffiliation.MyFaction.baseColor.r,
@@ -170,4 +220,5 @@ namespace Core.Units
         }
 
     }
+
 }

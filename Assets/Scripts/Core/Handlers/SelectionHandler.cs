@@ -40,15 +40,5 @@ namespace Core.Handlers
             return null;
         }
 
-        public static Selector GetAppropriateSelectorForUnit(RefWrapper<Unit> unitWrapper)
-        {
-            for (int r = 0; r < MyInstance.selectors.Length; r++)
-            {
-                if (MyInstance.selectors[r].selectorFaction == unitWrapper.WrappedObject.factionAffiliation)
-                    return MyInstance.selectors[r];
-            }
-            return null;
-        }
-
     }
 }

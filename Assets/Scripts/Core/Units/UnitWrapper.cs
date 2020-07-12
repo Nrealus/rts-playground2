@@ -1,84 +1,72 @@
-﻿using Core.Units;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
-using VariousUtilsExtensions;
-using Core.Selection;
-using Core.Orders;
-using GlobalManagers;
-using Core.Handlers;
-using Core.MapMarkers;
 using System.Linq;
+using VariousUtilsExtensions;
+using UnityEngine;
+using System;
+using Core.Tasks;
+using Core.MapMarkers;
+using Core.Handlers;
+using Gamelogic.Extensions;
+using Core.Selection;
 
 namespace Core.Units
 {
+
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     ///<summary>
     /// The RefWrapper for Unit.
+    /// Follows a tree structure (implements ITreeNodeBase<UnitGroupWrapper>).
+    /// TO BE UPDATED
     ///</summary>
-    public class UnitWrapper : RefWrapper<Unit>, 
-        ISelectable<Unit>, IOrderable<Unit>
+    public class UnitWrapper : RefWrapper<Unit>, ITreeNodeBase<UnitWrapper>, ITaskSubject, ISelectable
     {
 
-        public UnitGroupWrapper unitsGroupWrapper;
-        
-        public void ChangeUnitsFormation(UnitGroupWrapper frmwrp)
-        {
-            UnitGroup.AddUnitToGroup(this, frmwrp, () => { unitsGroupWrapper = null; });
-            unitsGroupWrapper = frmwrp;
-        }
+        #region ITaskSubject explicit implementations
 
-        private OrderPlan _ordersPlan;
-        public OrderPlan GetOrdersPlan()
-        {
-            return _ordersPlan;
-        }
-        
-        public UnitWrapper(Unit wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
-        {
-            _ordersPlan = new OrderPlan();
-
-            SubscribeOnClearance(() => { GetOrdersPlan().Clear(); _ordersPlan = null; });
-
-            unitsGroupWrapper = new UnitGroup(new List<UnitWrapper>() { this }, false).GetMyWrapper();
-
-            ChangeUnitsFormation(unitsGroupWrapper);
-        }
-
-        #region ISelectables explicit implementations
-
-        RefWrapper ISelectable.GetSelectableAsReferenceWrapperNonGeneric()
+        RefWrapper ITaskSubject.GetTaskSubjectAsReferenceWrapperNonGeneric()
         {
             return this;
         }
 
-        RefWrapper<Unit> ISelectable<Unit>.GetSelectableAsReferenceWrapperGeneric()
+        /*RefWrapper<Unit> ITaskSubject<Unit>.GetOrderableAsReferenceWrapperGeneric()
         {
             return this;
-        }
+        }*/
 
-        Y ISelectable.GetSelectableAsReferenceWrapperSpecific<Y>()
+        Y ITaskSubject.GetTaskSubjectAsReferenceWrapperSpecific<Y>()
         {
             return this as Y;
         }
 
         #endregion
 
-        #region IOrderables explicit implementations
+        #region ISelectable explicit implementations
 
-        RefWrapper IOrderable.GetOrderableAsReferenceWrapperNonGeneric()
+        private EasyObserver<string, (Selector,bool)> onSelectionStateChange = new EasyObserver<string, (Selector, bool)>();
+
+        public EasyObserver<string, (Selector,bool)> GetOnSelectionStateChangeObserver()
+        {
+            return onSelectionStateChange;
+        }
+        
+        void ISelectable.InvokeOnSelectionStateChange(Selector selector, bool b)
+        {
+            onSelectionStateChange.Invoke((selector, b));
+        }
+
+        RefWrapper ISelectable.GetSelectableAsReferenceWrapperNonGeneric()
         {
             return this;
         }
 
-        RefWrapper<Unit> IOrderable<Unit>.GetOrderableAsReferenceWrapperGeneric()
+        /*RefWrapper<Unit> ISelectable<Unit>.GetSelectableAsReferenceWrapperGeneric()
         {
             return this;
-        }
+        }*/
 
-        Y IOrderable.GetOrderableAsReferenceWrapperSpecific<Y>()
+        Y ISelectable.GetSelectableAsReferenceWrapperSpecific<Y>()
         {
             return this as Y;
         }
@@ -87,10 +75,196 @@ namespace Core.Units
         
         public bool IsWrappedObjectNotNull()
         {
-            return WrappedObject != null;
+            return GetWrappedReference() != null;
         }
 
+        private TaskPlan _taskPlan;
+        public TaskPlan GetTaskPlan()
+        {
+            return _taskPlan;
+        }
+    
+        public void SetTaskPlan(TaskPlan tp)
+        {
+            _taskPlan = tp;
+        }
+
+        public UnitWrapper(Unit wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
+        {
+            _taskPlan = new TaskPlan();
+
+            if (!GetWrappedReference().isVirtualUnit)
+            {
+                UIHandler.GetUIOrdobMenu().AddUnitToOrdob(this);
+                _parent.Value = null;
+            }
+
+            SubscribeOnClearance(() => 
+            {
+                GetTaskPlan().Clear();
+                _taskPlan = null; 
+            });
+            
+            SubscribeOnClearance(() => 
+            {
+                if (!GetWrappedReference().isVirtualUnit)
+                    UIHandler.GetUIOrdobMenu().RemoveUnitFromOrdob(this);
+            });
+
+            _parent.ForceInvokeOnValueChange();
+
+            // PREVIOUS ORDER 
+            /*SubscribeOnClearance(() => 
+            {
+                if (!WrappedObject.isVirtualUnit)
+                    UIHandler.GetUIOrderOfBattleMenu().RemoveUnitFromOrderOfBattle(this);
+
+                GetTaskPlan().Clear();
+                _taskPlan = null; 
+            });*/
+
+            _childNodes = new List<UnitWrapper>();
+        }
+
+        public T GetWrappedAs<T>() where T : Unit
+        {
+            return GetWrappedReference() as T;
+        }
+
+        #region Tree Structure
+
+        private Dictionary<string,Action> _actDict = new Dictionary<string,Action>();        
+        private ObservedValue<UnitWrapper> _parent = new ObservedValue<UnitWrapper>(null);
         
+        public void SubscribeOnParentChange(string key, Action action)
+        {
+            if (!_actDict.ContainsKey(key))
+            {
+                _actDict.Add(key, action);
+                _parent.OnValueChange += action;
+            }
+        }
+
+        public void UnsubscribeOnParentChange(string key)
+        {
+            _parent.OnValueChange -= _actDict[key];
+        }
+
+        private List<UnitWrapper> _childNodes;
+
+        public UnitWrapper GetThisNode() { return this; }
+
+        public UnitWrapper GetParentNode() { return _parent.Value; }
+
+        public void Internal_SetParentNode(UnitWrapper newParent)
+        {
+            _parent.Value = newParent;
+        }
+
+        public bool IsLeaf()
+        {
+            return GetChildNodes().Count == 0;
+        }
+
+        public bool IsRoot()
+        {
+            return GetParentNode() == null;
+        }
+
+        public List<UnitWrapper> GetChildNodes()
+        {
+            return _childNodes;
+        }
+        
+        public void SetChildNodes(List<UnitWrapper> childNodes)
+        {
+            _childNodes = childNodes;
+        }
+
+        public List<UnitWrapper> GetLeafChildren()
+        {
+            return GetChildNodes().Where(x => x.IsLeaf()).ToList();
+        }
+
+        public List<UnitWrapper> GetNonLeafChildren()
+        {
+            return GetChildNodes().Where(x => !x.IsLeaf()).ToList();
+        }
+
+        public UnitWrapper GetRootNode()
+        {
+            if (GetParentNode() == null)
+                return GetThisNode();
+
+            return GetParentNode().GetRootNode();
+        }
+
+        public void AddChild(UnitWrapper child)
+        {
+            if (child.GetParentNode() != null)
+                child.GetParentNode().RemoveChild(child);
+            child.Internal_SetParentNode(GetThisNode());
+            GetChildNodes().Add(child);
+        }
+
+        public void AddChildren(IEnumerable<UnitWrapper> children)
+        {
+            foreach (UnitWrapper child in children)
+                AddChild(child);
+        }
+
+        public void RemoveChild(UnitWrapper child)
+        {
+            child.Internal_SetParentNode(null);
+            GetChildNodes().Remove(child);
+        }
+
+        public void RemoveChildren(IEnumerable<UnitWrapper> children)
+        {
+            foreach (UnitWrapper child in children)
+                RemoveChild(child);
+        }
+
+        public void ChangeParentTo(UnitWrapper newParent)
+        {
+            if (newParent != null)
+            {
+                newParent.AddChild(GetThisNode());
+                //unitWrapper.WrappedObject.transform.SetParent(newParent.unitWrapper.WrappedObject.transform);
+            }
+            else
+            {
+                if (GetParentNode() != null)
+                    GetParentNode().RemoveChild(GetThisNode());
+                //unitWrapper.WrappedObject.transform.SetParent(null);
+            }
+        }
+        
+        private Queue<UnitWrapper> _bfsqueue = new Queue<UnitWrapper>();
+        public List<UnitWrapper> BFSList()
+        {
+            List<UnitWrapper> result = new List<UnitWrapper>();
+
+            _bfsqueue.Enqueue(GetThisNode());
+
+            while (_bfsqueue.Count > 0)
+            {
+                result.Add(_bfsqueue.Peek().GetThisNode());
+
+                var a = _bfsqueue.Dequeue().GetChildNodes();
+                var c = a.Count;
+                for (int k = 0; k < c; k++)
+                    _bfsqueue.Enqueue(a[k]);
+
+            }
+
+            _bfsqueue.Clear();
+
+            return result;
+        }
+
+        #endregion
 
     }
+
 }

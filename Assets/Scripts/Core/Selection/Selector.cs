@@ -6,6 +6,7 @@ using Core.Units;
 using VariousUtilsExtensions;
 using Core.Helpers;
 using Gamelogic.Extensions;
+using System;
 
 namespace Core.Selection
 {
@@ -32,6 +33,8 @@ namespace Core.Selection
         }
 
         #region Basic functions and direct interaction methods (usable both here and from somewhere else if needed)
+
+        //public event Action<ISelectable, bool> onEntitySelectionStateChanged;
 
         private UnitsRoot unitsRoot;
         private Vector3 myPointerPreviousScreenPosition, myPointerCurrentScreenPostion;
@@ -67,12 +70,47 @@ namespace Core.Selection
             return res;
         }
 
+        public List<ISelectable> GetCurrentlySelectedEntitiesOfType<T>()
+        {
+            var res = new List<ISelectable>();
+            foreach(var v in selectedEntities)
+            {
+                if (v is T)
+                    res.Add(v);
+            }
+            return res;
+        }
+
+        public List<T> GetCurrentlySelectedEntitiesOfTypeAndCast<T>()
+        {
+            var res = new List<T>();
+            foreach(var v in selectedEntities)
+            {
+                if (v is T)
+                    res.Add((T)v);
+            }
+            return res;
+        }
+
         public void SelectEntity(ISelectable selectable)
         {
             if (!selectedEntities.Contains(selectable))
             {
+                selectable.InvokeOnSelectionStateChange(this, true);
                 selectedEntities.Add(selectable);
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().SubscribeOnClearance(() => DeselectEntity(selectable));
+                //onEntitySelectionStateChanged?.Invoke(selectable, true);
+                selectable.GetSelectableAsReferenceWrapperNonGeneric().SubscribeOnClearance("deselect",() => DeselectEntity(selectable));
+            }
+        }
+
+        public void DeselectEntity(ISelectable selectable)
+        {
+            if (selectedEntities.Contains(selectable))
+            {
+                selectable.InvokeOnSelectionStateChange(this, false);
+                selectable.GetSelectableAsReferenceWrapperNonGeneric().UnsubscribeOnClearance("deselect");
+                //onEntitySelectionStateChanged?.Invoke(selectable, false);
+                selectedEntities.Remove(selectable);
             }
         }
 
@@ -81,16 +119,16 @@ namespace Core.Selection
             if (!preselectedEntities.Contains(selectable))
             {
                 preselectedEntities.Add(selectable);
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().SubscribeOnClearance(() => DepreselectEntity(selectable));
+                selectable.GetSelectableAsReferenceWrapperNonGeneric().SubscribeOnClearance("depreselect",() => DepreselectEntity(selectable));
             }
         }
 
-        public void DeselectEntity(ISelectable selectable)
+        public void DepreselectEntity(ISelectable selectable)
         {
-            if (selectedEntities.Contains(selectable))
+            if (preselectedEntities.Contains(selectable))
             {
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().UnsubscribeOnClearance(() => DeselectEntity(selectable));
-                selectedEntities.Remove(selectable);
+                selectable.GetSelectableAsReferenceWrapperNonGeneric().UnsubscribeOnClearance("depreselect");
+                preselectedEntities.Remove(selectable);
             }
         }
 
@@ -106,25 +144,15 @@ namespace Core.Selection
                 DepreselectEntity(preselectedEntities[i]);
         }
 
-        public void DepreselectEntity(ISelectable selectable)
-        {
-            if (preselectedEntities.Contains(selectable))
-            {
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().UnsubscribeOnClearance(() => DepreselectEntity(selectable));
-                preselectedEntities.Remove(selectable);
-            }
-        }
-
-
         // example (generics shenanigans)
-        public void DeselectUnit(ISelectable<Unit> selectable)
+        /*public void DeselectUnit(ISelectable<Unit> selectable)
         {
             if (selectedEntities.Contains(selectable))
             {
                 selectable.GetSelectableAsReferenceWrapperNonGeneric().UnsubscribeOnClearance(() => DeselectEntity(selectable));
                 selectedEntities.Remove(selectable);
             }
-        }
+        }*/
 
         #endregion
 
@@ -202,6 +230,11 @@ namespace Core.Selection
 
         }
 
+        private void OnDestroy()
+        {
+            //onEntitySelectionStateChanged = null;
+        }
+
         private void Update()
         {
             stateMachineHigh.Update();
@@ -237,7 +270,7 @@ namespace Core.Selection
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
             {
                 var u = unitsRoot.transform.GetChild(i).GetComponent<Unit>();
-                ISelectable s = u.GetMyWrapper();
+                ISelectable s = u.GetRefWrapper();
                 
                 sp = GetMyCamera().WorldToScreenPoint(u.transform.position);
                 sp.z = 0;
@@ -262,7 +295,7 @@ namespace Core.Selection
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
             {
                 var u = unitsRoot.transform.GetChild(i).GetComponent<Unit>();
-                ISelectable s = u.GetMyWrapper();
+                ISelectable s = u.GetRefWrapper();
 
                 DepreselectEntity(s);
 
@@ -288,7 +321,7 @@ namespace Core.Selection
         {
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
             {
-                DepreselectEntity(unitsRoot.transform.GetChild(i).GetComponent<Unit>().GetMyWrapper());
+                DepreselectEntity(unitsRoot.transform.GetChild(i).GetComponent<Unit>().GetRefWrapper());
             }
         }
 

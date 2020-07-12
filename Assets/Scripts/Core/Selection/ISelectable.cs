@@ -1,4 +1,5 @@
 ﻿using Core.Units;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -27,6 +28,10 @@ namespace Core.Selection
         RefWrapper GetSelectableAsReferenceWrapperNonGeneric();
 
         Y GetSelectableAsReferenceWrapperSpecific<Y>() where Y : RefWrapper;
+
+        EasyObserver<string,(Selector, bool)> GetOnSelectionStateChangeObserver();
+
+        void InvokeOnSelectionStateChange(Selector selector, bool b);
     }
 
 
@@ -34,12 +39,12 @@ namespace Core.Selection
     /// An extension of the ISelectable interface.
     /// </summary>
     /// <typeparam name="T">The type of a class implementing this interface</typeparam>
-    public interface ISelectable<T> : ISelectable
+    /*public interface ISelectable<T> : ISelectable
     {
-        RefWrapper<T> GetSelectableAsReferenceWrapperGeneric();
+        //RefWrapper<T> GetSelectableAsReferenceWrapperGeneric();
 
-        //new Y GetSelectableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper<T>;
+        //new Y GetSelectableAsReferenceWrapperSpecific<Y>() where Y : RefWrapper<T>;
 
-    }
+    }*/
 
 }

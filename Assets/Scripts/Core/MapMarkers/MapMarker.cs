@@ -11,19 +11,15 @@ namespace Core.MapMarkers
     /// <summary>
     /// A class whose subclass are intended to be representations of various marks put on the map, may it be
     /// </summary>   
-    public abstract class MapMarker : MonoBehaviour, IHasRefToRefWrapper<MapMarkerWrapper>
+    public abstract class MapMarker : MonoBehaviour, IHasRefWrapper<MapMarkerWrapper>
     {
 
         protected MapMarkerWrapper _myWrapper;
-
-        public MapMarkerWrapper GetMyWrapper() { return _myWrapper; }
-        public MapMarkerWrapper<T> GetMyWrapper<T>() where T : MapMarker { return _myWrapper as MapMarkerWrapper<T>; }
-        public T GetMyWrapper2<T>() where T : MapMarkerWrapper { return _myWrapper as T; }
-
-        /*public void ClearWrapper()
-        {
-            GetMyWrapper().DestroyWrappedReference();
-        }*/
+        
+        public MapMarkerWrapper GetRefWrapper()
+        { 
+            return _myWrapper;
+        }
 
     }
 }

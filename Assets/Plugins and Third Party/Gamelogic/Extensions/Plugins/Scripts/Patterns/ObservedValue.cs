@@ -49,7 +49,7 @@ namespace Gamelogic.Extensions
 		{
 			currentValue = initialValue;
 		}
-		
+
 		public T Value
 		{
 			get { return currentValue; }
@@ -76,6 +76,14 @@ namespace Gamelogic.Extensions
 		public void SetSilently(T value)
 		{
 			currentValue = value;
+		}
+
+		/// <summary>
+		/// (added by Nrealus) Forces OnValueChange invocation.
+		/// </summary>
+		public void ForceInvokeOnValueChange()
+		{
+			OnValueChange?.Invoke();
 		}
 
         /// <summary>

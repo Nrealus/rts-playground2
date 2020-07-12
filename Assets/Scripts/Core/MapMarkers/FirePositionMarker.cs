@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Core.Helpers;
 using UnityEngine;
 
 namespace Core.MapMarkers
@@ -10,8 +11,13 @@ namespace Core.MapMarkers
     /// <summary>
     /// A MapMarker subclass, used to map positions for attack orders, rules of engagements etc.    
     /// </summary>   
-    public class FirePositionMarker : MapMarker
+    public sealed class FirePositionMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<FirePositionMarker>>
     {
+
+        public new MapMarkerWrapper<FirePositionMarker> GetRefWrapper()
+        {
+            return _myWrapper as MapMarkerWrapper<FirePositionMarker>;
+        }
 
         /*private static Camera _cam;
         public Camera GetMyCamera()
@@ -32,7 +38,7 @@ namespace Core.MapMarkers
         {
             FirePositionMarker res = Instantiate<FirePositionMarker>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().firePositionMarkerPrefab,
-                GameObject.Find("WorldUICanvas").transform);
+                GameObject.Find("UI World Canvas").transform);
             
             res.Init(position, radius);
 
@@ -62,7 +68,7 @@ namespace Core.MapMarkers
             this.radius = radius;            
 
             _myWrapper = new MapMarkerWrapper<FirePositionMarker>(this, () => {_myWrapper = null;});
-            GetMyWrapper<FirePositionMarker>().SubscribeOnClearance(DestroyMe);
+            GetRefWrapper().SubscribeOnClearance(DestroyMe);
 
             following = false;            
         }

@@ -43,12 +43,18 @@ namespace Core.Tasks
             return unitWrapper;
         }
         
+        protected override TaskMarkerWrapper InstanceGetTaskMarker()
+        {
+            throw new System.NotImplementedException();
+            //return unitWrapper;
+        }
+
         protected override void InstanceSetSubject(ITaskSubject subject, TaskWrapper predecessor, TaskWrapper successor)
         {
            
             unitWrapper = subject as UnitWrapper;
 
-            unitWrapper.GetTaskPlan().QueuePassiveOrderToPlan(GetRefWrapper(), predecessor, successor);
+            //unitWrapper.GetTaskPlan().QueuePassiveOrderToPlan(GetRefWrapper(), predecessor, successor);
 
             SetPhase(GetRefWrapper(), OrderPhase.Staging);
             
@@ -68,6 +74,13 @@ namespace Core.Tasks
         protected override TaskParams InstanceGetParameters()
         {
             return myParameters;
+        }
+
+        protected override void InstanceSetTaskMarker(TaskMarkerWrapper taskMarkerWrapper)
+        {
+            //this.taskMarkerWrapper = taskMarkerWrapper;
+            
+            //Task.SetSubject(GetRefWrapper(), null, null, Task.GetTaskMarker(GetRefWrapper()).GetWrappedReference().GetTaskSubjects().GetEnumerator().Current);
         }
         
         /*protected override void InstanceSetOrderParams(OrderParams orderParams)
@@ -187,11 +200,11 @@ namespace Core.Tasks
                     waitForReactionAtEnd = true;
                 }
                 
-                if (GetSubject(GetRefWrapper()).GetTaskPlan().GetNextInlinePassiveOrderInPlan(GetRefWrapper()) != null
+                /*if (GetSubject(GetRefWrapper()).GetTaskPlan().GetNextInlinePassiveOrderInPlan(GetRefWrapper()) != null
                     && GetParameters(GetSubject(GetRefWrapper()).GetTaskPlan().GetNextInlinePassiveOrderInPlan(GetRefWrapper())).ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
                 {
                     nextActiveOrder = InstanceGetSubject().GetTaskPlan().GetNextInlinePassiveOrderInPlan(GetRefWrapper());
-                }
+                }*/
 
             },
             () =>

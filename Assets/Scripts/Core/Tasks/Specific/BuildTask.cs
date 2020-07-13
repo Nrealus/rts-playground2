@@ -92,7 +92,13 @@ namespace Core.Tasks
         {
             return unitWrapper;
         }
-        
+
+        protected override TaskMarkerWrapper InstanceGetTaskMarker()
+        {
+            throw new System.NotImplementedException();
+            //return unitWrapper;
+        }        
+
         protected override void InstanceSetSubject(ITaskSubject subject, TaskWrapper predecessor, TaskWrapper successor)
         {
            
@@ -136,6 +142,13 @@ namespace Core.Tasks
 
             SetPhase(GetRefWrapper(), OrderPhase.Staging);
 
+        }
+
+        protected override void InstanceSetTaskMarker(TaskMarkerWrapper taskMarkerWrapper)
+        {
+            //this.taskMarkerWrapper = taskMarkerWrapper;
+            
+            //Task.SetSubject(GetRefWrapper(), null, null, Task.GetTaskMarker(GetRefWrapper()).GetWrappedReference().GetTaskSubjects().GetEnumerator().Current);
         }
 
         protected override TaskParams InstanceGetParameters()

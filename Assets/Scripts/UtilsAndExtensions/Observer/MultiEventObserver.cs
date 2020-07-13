@@ -76,10 +76,18 @@ namespace Nrealus.Extensions.Observer
                     senders.Add(sender);
                     invoking = true;
                     events[eventId].Invoke(sender, args);
+                    /* Previous version : removed to support deletion / unsubscription of methods,
+                    as it's not possible to modify a collection during a foreach loop. (http://msdn.microsoft.com/en-us/library/ttw7t8t6.aspx)
                     foreach(var v in events)
                     {
                         if (v.Key != eventId)
                             v.Value.Invoke(sender, args);
+                    }
+                    */
+                    foreach(var vk in new List<int>(events.Keys))
+                    {
+                        if (vk != eventId)
+                            events[vk].Invoke(sender, args);
                     }
                     invoking = false;                   
                     senders.Clear();

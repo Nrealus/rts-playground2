@@ -1,5 +1,6 @@
 ﻿using Core.Handlers;
 using Core.Helpers;
+using Core.MapMarkers;
 using Core.Units;
 using Gamelogic.Extensions;
 using GlobalManagers;
@@ -80,6 +81,19 @@ namespace Core.Tasks
             return res;
         }
 
+        //CreateTaskWrapperAndSetReceiverAndTaskMarker
+        public static TaskWrapper<T> CreateTaskWrapperAndSetTaskMarker<T>(/*ITaskSubject subject, */TaskMarkerWrapper associatedTaskMarkerWrapper)
+             where T : Task
+        {
+            TaskWrapper<T> res = CreateTaskWrapper<T>();
+
+            TaskHandler.AddToGlobalTaskWrapperList(res);
+
+            //Task.SetSubject(res, null, null, subject);
+            Task.SetTaskMarker(res, associatedTaskMarkerWrapper);
+            return res;
+        }
+
         public static TaskWrapper<T> CreatePredecessorTaskWrapperAndSetReceiver<T>(ITaskSubject subject, TaskWrapper successor) where T : Task
         {
             TaskWrapper<T> res = CreateTaskWrapper<T>();
@@ -142,6 +156,11 @@ namespace Core.Tasks
         {
             return taskWrapper.GetWrappedReference().InstanceGetSubject();
         }
+        
+        public static TaskMarkerWrapper GetTaskMarker(TaskWrapper taskWrapper)
+        {
+            return taskWrapper.GetWrappedReference().InstanceGetTaskMarker();
+        }
 
         public static Vector3 GetTaskLocation(TaskWrapper taskWrapper)
         {
@@ -151,20 +170,15 @@ namespace Core.Tasks
                 return Vector3.zero;
         }
 
-        public static object GetTaskGiver(TaskWrapper taskWrapper)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public static void SetSubject(TaskWrapper taskWrapper, TaskWrapper predecessor, TaskWrapper successor, ITaskSubject subject)
         {
             // unsubscribe this if SetOrderReceiver for another orderable afterwards, potentially ?
             taskWrapper.GetWrappedReference().InstanceSetSubject(subject, predecessor, successor);
         }
 
-        public static void SetTaskGiver(TaskWrapper taskWrapper)
+        public static void SetTaskMarker(TaskWrapper taskWrapper, TaskMarkerWrapper taskMarkerWrapper)
         {
-            throw new System.NotImplementedException();
+            taskWrapper.GetWrappedReference().InstanceSetTaskMarker(taskMarkerWrapper);
         }
 
         public static TaskParams GetParameters(TaskWrapper taskWrapper)
@@ -233,9 +247,13 @@ namespace Core.Tasks
 
         protected abstract ITaskSubject InstanceGetSubject();
         
+        protected abstract TaskMarkerWrapper InstanceGetTaskMarker();
+        
         //public abstract T GetOrderReceiverAsT<T>() where T : IOrderable;
 
         protected abstract void InstanceSetSubject(ITaskSubject orderable, TaskWrapper predecessor, TaskWrapper successor);
+
+        protected abstract void InstanceSetTaskMarker(TaskMarkerWrapper taskMarkerWrapper);
 
         protected abstract void InitPhasesFSM();
 

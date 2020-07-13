@@ -40,8 +40,23 @@ namespace Nrealus.Extensions.Observer
 
         public void Invoke()
         {
+            /* Previously :
+
             foreach (var elt in dict)
-                elt.Value.Invoke();
+                elt.Values.Invoke();
+
+            If an "event handler" unsubscribes themselves during their execution, the collection is modified during the foreach loop.
+            
+            And as MSDN states (http://msdn.microsoft.com/en-us/library/ttw7t8t6.aspx): 
+                The foreach statement is used to iterate through the collection to get the information that you want,
+                but can not be used to add or remove items from the source collection to avoid unpredictable side effects.
+                If you need to add or remove items from the source collection, use a for loop.
+
+            The solution chosen here is to iterate over a copy of the collection.
+
+            */
+            foreach (var f in new List<Action>(dict.Values))
+                f.Invoke();
         }
     }
 
@@ -76,8 +91,10 @@ namespace Nrealus.Extensions.Observer
 
         public void Invoke(TArgs args)
         {
-            foreach (var elt in dict)
-                elt.Value.Invoke(args);
+            // See EasyObserver<TKey> for explanation
+
+            foreach (var f in new List<Action<TArgs>>(dict.Values))
+                f.Invoke(args);
         }
 
     }

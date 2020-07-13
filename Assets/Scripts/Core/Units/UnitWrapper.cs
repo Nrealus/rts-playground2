@@ -118,6 +118,12 @@ namespace Core.Units
             _childNodes = new List<UnitWrapper>();
         }
 
+        protected override void Constructor2(Action nullifyPrivateRefToWrapper)
+        {
+            nullifyPrivateRefToWrapper += () => GetOnSelectionStateChangeObserver().UnsubscribeFromAllEvents();
+            base.Constructor2(nullifyPrivateRefToWrapper);
+        }
+
         #region Tree Structure
 
         private Dictionary<string,Action> _actDict = new Dictionary<string,Action>();        

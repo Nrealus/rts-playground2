@@ -28,7 +28,7 @@ namespace Core.Tasks
     /// </summary>
     public class TaskPlan
     {
-        
+            
         private EasyObserver<TaskWrapper> onClearance = new EasyObserver<TaskWrapper>();
 
         public void Clear()
@@ -52,10 +52,27 @@ namespace Core.Tasks
             onClearance.UnsubscribeFromEvent(key);
         }
 
+        /*private Dictionary<TaskWrapper,TaskMarkerWrapper> associatedTaskMarkerDict = new Dictionary<TaskWrapper, TaskMarkerWrapper>();
+        public TaskMarkerWrapper GetAssociatedTaskMarker(TaskWrapper tw)
+        {
+            TaskMarkerWrapper res;
+            associatedTaskMarkerDict.TryGetValue(tw, out res);
+            return res;
+        }*/
+
         private bool lastAddedActiveOrPassive = true;
         private LinkedList<TaskWrapper> activeTaskPlan = new LinkedList<TaskWrapper>();
         private LinkedList<TaskWrapper> passiveTaskPlan = new LinkedList<TaskWrapper>();
 
+        public void StartActiveExecution()
+        {
+            Task.TryStartExecution(GetFirstInlineActiveTaskInPlan());
+        }
+
+        public void StopActiveExecution()
+        {
+            Task.EndExecution(activeTaskPlan);
+        }
 
         #region Active Tasks In Plan Functions
 
@@ -203,7 +220,7 @@ namespace Core.Tasks
 
         #endregion
 
-        #region Passive Orders In Plan Functions
+        /*#region Passive Orders In Plan Functions
 
         public TaskWrapper GetFirstInlinePassiveOrderInPlan()
         {
@@ -330,7 +347,7 @@ namespace Core.Tasks
             }
         }
 
-        #endregion
+        #endregion*/
 
 
     }

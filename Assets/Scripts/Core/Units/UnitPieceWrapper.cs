@@ -40,6 +40,12 @@ namespace Core.Units
             ChangeUnit(unitWrapper);
         }
 
+        protected override void Constructor2(Action nullifyPrivateRefToWrapper)
+        {
+            nullifyPrivateRefToWrapper += () => GetOnSelectionStateChangeObserver().UnsubscribeFromAllEvents();
+            base.Constructor2(nullifyPrivateRefToWrapper);
+        }
+
         #region ISelectables explicit implementations
 
         private EasyObserver<string, (Selector,bool)> onSelectionStateChange = new EasyObserver<string, (Selector, bool)>();

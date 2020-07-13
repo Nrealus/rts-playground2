@@ -46,7 +46,7 @@ namespace Core.Units
             // very clunky, to be changed
             var res = new List<UnitWrapper>();
             res.Add(unitWrapper);
-            res.AddRange(unitWrapper.GetChildNodes());
+            res.AddRange(GetSubUnits(unitWrapper));
             return res;
         }
 

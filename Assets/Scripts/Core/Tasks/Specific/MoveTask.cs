@@ -7,6 +7,7 @@ using NPBehave;
 using Core.MapMarkers;
 using Core.Handlers;
 using Core.Helpers;
+using System.Linq;
 
 namespace Core.Tasks
 {
@@ -29,7 +30,8 @@ namespace Core.Tasks
     
         private List<MapMarkerWrapper<WaypointMarker>> waypointMarkerWrappersList = new List<MapMarkerWrapper<WaypointMarker>>();
 
-        private UnitWrapper unitWrapper;
+        //private UnitWrapper unitWrapper;
+        private TaskMarkerWrapper taskMarkerWrapper;
         private class UnitWrapperExecutionState
         {
             public int currentWaypointIndex;
@@ -42,13 +44,25 @@ namespace Core.Tasks
         }
         private Dictionary<UnitWrapper, UnitWrapperExecutionState> currentExecutionStatePerUnit = new Dictionary<UnitWrapper, UnitWrapperExecutionState>();
 
+        /*protected override ITaskSubject InstanceGetSubject()
+        {
+            return taskMarkerWrapper.GetCastReference<MoveTaskMarker>().GetTaskSubjects().GetEnumerator().Current;
+        }*/
+
+        private UnitWrapper unitWrapper;
         protected override ITaskSubject InstanceGetSubject()
         {
             return unitWrapper;
         }
+
+        protected override TaskMarkerWrapper InstanceGetTaskMarker()
+        {
+            return taskMarkerWrapper;
+        }
         
         protected override void InstanceSetSubject(ITaskSubject subject, TaskWrapper predecessor, TaskWrapper successor)
         {
+            
             unitWrapper = subject as UnitWrapper;
             //unitWrapper.GetTaskPlan().QueueActiveOrderToPlan(GetMyWrapper(), predecessor, successor);
 
@@ -76,6 +90,17 @@ namespace Core.Tasks
             }
 
             SetPhase(GetRefWrapper(), OrderPhase.Staging);
+        }
+
+        protected override void InstanceSetTaskMarker(TaskMarkerWrapper myTaskMarkerWrapper)
+        {
+            this.taskMarkerWrapper = myTaskMarkerWrapper;
+            
+            Task.SetSubject(GetRefWrapper(), null, null,
+                Task.GetTaskMarker(GetRefWrapper()).GetWrappedReference().GetTaskSubjects().First());
+
+            GetRefWrapper().SubscribeOnClearance("taskwrapperclear",() => { myTaskMarkerWrapper = null; });
+
         }
 
         protected override TaskParams InstanceGetParameters()
@@ -124,7 +149,7 @@ namespace Core.Tasks
         {
             _endedPathForAll = true;
             //foreach (var uw in Unit.GetUnitPieceWrappersInUnit(unitWrapper))
-            foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(unitWrapper))
+            foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(Task.GetSubject(GetRefWrapper()).GetTaskSubjectAsReferenceWrapperSpecific<UnitWrapper>()))
             {
                 if (Task.IsInPhase(GetRefWrapper(), OrderPhase.Execution))
                 {

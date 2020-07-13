@@ -452,7 +452,8 @@ public class InputController : MonoBehaviour,
         var l = selector.GetCurrentlySelectedEntities();
         foreach (var v in l)
         {
-            Task.CreateTaskWrapperAndSetReceiver<MoveTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
+            //Task.CreateTaskWrapperAndSetReceiver<MoveTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
+            
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
             //currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlineActiveOrderInPlan());
             currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetTaskPlan().GetLastInlineActiveTaskInPlan());
@@ -520,7 +521,8 @@ public class InputController : MonoBehaviour,
         var l = selector.GetCurrentlySelectedEntities();
         foreach (var v in l)
         {
-            Task.CreateTaskWrapperAndSetReceiver<BuildTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
+            //Task.CreateTaskWrapperAndSetReceiver<BuildTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
+            
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
             //currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlineActiveOrderInPlan());
             currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetTaskPlan().GetLastInlineActiveTaskInPlan());
@@ -568,10 +570,11 @@ public class InputController : MonoBehaviour,
         var l = selector.GetCurrentlySelectedEntities();
         foreach (var v in l)
         {
-            Task.CreateTaskWrapperAndSetReceiver<EngageAtPositionsTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>()/*.formationWrapper*/);                    
+            //Task.CreateTaskWrapperAndSetReceiver<EngageAtPositionsTask>(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>()/*.formationWrapper*/);                    
+            
             //v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetMostRecentAddedOrder();
             //currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetLastInlinePassiveOrderInPlan());
-            currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetTaskPlan().GetLastInlinePassiveOrderInPlan());
+            //currentlyEditedOWBunch.Add(v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>().GetTaskPlan().GetLastInlinePassiveOrderInPlan());
         }
     }
 

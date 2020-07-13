@@ -83,7 +83,8 @@ namespace Core.UI
         public void BindPressEvent(MultiEventObserver binder, Action<object, EventArgs> action)
         {
             var id = binder.AddNewEventAndSubscribeToIt(action);
-            onPressedInBind.SubscribeToEvent("bindpress", (_) => binder.InvokeEvent(id, this, new SimpleEventArgs(_)));
+            onPressedInBind.SubscribeToEvent("bindpress",
+                (_) => binder.InvokeEvent(id, this, new SimpleEventArgs(_)));
             onUnbind += () => UnbindPressEvent(binder, id);
         }
 

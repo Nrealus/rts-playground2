@@ -9,6 +9,7 @@ using System;
 using Core.Selection;
 using Core.Tasks;
 using Nrealus.Extensions.ReferenceWrapper;
+using Core.MapMarkers;
 //using TaskWrapper = Core.Tasks.TaskWrapper<Core.Tasks.Task>;
 
 namespace Core.Tasks
@@ -51,6 +52,25 @@ namespace Core.Tasks
     public abstract class TaskWrapper : RefWrapper2<Task>//, ISelectable<Task>
     {
 
+        /*private TaskMarkerWrapper _taskMarkerWrapper;
+
+        public TaskMarkerWrapper GetTaskMarkerWrapper()
+        {
+            return _taskMarkerWrapper;
+        }
+
+        public void SetTaskMarkerWrapper(TaskMarkerWrapper tmw)
+        {
+            if (GetTaskMarkerWrapper() != null)
+            {
+                GetTaskMarkerWrapper().GetWrappedReference().task
+            }
+            else
+            {
+                _taskMarkerWrapper = tmw;
+            }
+        }*/
+
         public TaskWrapper<T> CastWrapper<T>() where T : Task
         {
             return (TaskWrapper<T>) this;
@@ -58,6 +78,7 @@ namespace Core.Tasks
 
         public TaskWrapper(Task wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
         {
+
         }
         
     }

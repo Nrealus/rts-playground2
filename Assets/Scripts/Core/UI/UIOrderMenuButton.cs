@@ -21,6 +21,10 @@ namespace Core.UI
     public class UIOrderMenuButton : MonoBehaviour
     {
         
+        private enum TaskTypeEnum {Move, Build, EngageAt}
+        [SerializeField]
+        private TaskTypeEnum taskTypeAsEnumField;
+
         public GameObject associatedTaskEditMenu;
 
         private Selector mySelector;
@@ -49,13 +53,24 @@ namespace Core.UI
                 if (temp != null && temp != this)
                     temp.SetActiveRecursivelyExt(false);
             }
-
             if (!on && b)
             {
                 associatedTaskEditMenu.SetActiveRecursivelyExt(true);
                 
                 List<ISelectable> l = mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>();
-                CreateTaskMarker<MoveTaskMarker>(mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>());
+                
+                switch (taskTypeAsEnumField)
+                {
+                    case TaskTypeEnum.Move :
+                        CreateTaskMarker<MoveTaskMarker>(mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>());
+                        break;
+                    case TaskTypeEnum.Build :
+                        CreateTaskMarker<MoveTaskMarker>(mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>());
+                        break;
+                    case TaskTypeEnum.EngageAt :
+                        CreateTaskMarker<MoveTaskMarker>(mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>());
+                        break;
+                }
             }
             on = b;
         }
@@ -64,12 +79,18 @@ namespace Core.UI
         {
             if (list.Count > 0)
             {
-
                 var v = TaskMarker.CreateInstance<T>(UIHandler.GetPointedScreenPosition(), list);
 
                 InitBinderForTaskWrapper(v);
                 
                 v.GetWrappedReference().EnterEditMode();
+
+                v.GetWrappedReference().OnExitEditMode.SubscribeToEvent("spawnerbuttondeactivate",
+                    () =>
+                    {
+                        on = false;
+                        v.GetWrappedReference().OnExitEditMode.UnsubscribeFromEvent("spawnerbuttondeactivate");
+                    });
 
                 SelectionHandler.GetUsedSelector().SelectEntity(v);
             }
@@ -79,10 +100,7 @@ namespace Core.UI
         {
             var id = binder.AddNewEventAndSubscribeToIt(action);
             tmw.GetOnSelectionStateChangeObserver().SubscribeToEvent("key",
-                (_) => 
-                {   
-                    binder.InvokeEvent(id,tmw, new SimpleEventArgs(_.Item2));
-                });
+                (_) => binder.InvokeEvent(id,tmw, new SimpleEventArgs(_.Item2)));
         }
 
         private void InitBinderForTaskWrapper(TaskMarkerWrapper tmw)

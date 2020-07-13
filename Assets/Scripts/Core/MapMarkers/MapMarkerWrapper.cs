@@ -38,6 +38,12 @@ namespace Core.MapMarkers
             Constructor2(nullifyPrivateRefToWrapper);
         }
 
+        protected override void Constructor2(Action nullifyPrivateRefToWrapper)
+        {
+            nullifyPrivateRefToWrapper += () => GetOnSelectionStateChangeObserver().UnsubscribeFromAllEvents();
+            base.Constructor2(nullifyPrivateRefToWrapper);
+        }
+
     }
     
     /// <summary>

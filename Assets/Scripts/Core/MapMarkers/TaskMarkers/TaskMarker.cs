@@ -10,6 +10,9 @@ using UnityEngine.EventSystems;
 using System.Text;
 using Core.Helpers;
 using Core.MapMarkers;
+using Nrealus.Extensions.Observer;
+using Core.Faction;
+using System;
 
 namespace Core.MapMarkers
 {
@@ -47,12 +50,17 @@ namespace Core.MapMarkers
             return _uiScreenCanvasRT;
         }
 
-        public static TaskMarkerWrapper<T> CreateInstance<T>(Vector3 screenPosition, List<ISelectable> subjects) where T : TaskMarker
+        protected Selector GetUsedSelector()
+        {
+            return SelectionHandler.GetUsedSelector();
+        }
+
+        public static TaskMarkerWrapper<T> CreateInstance<T>(Vector3 screenPosition, IEnumerable<ISelectable> subjects) where T : TaskMarker
         {
             return CreateInstance<T>(screenPosition, subjects, null);
         }
         
-        public static TaskMarkerWrapper<T> CreateInstance<T>(Vector3 screenPosition, List<ISelectable> subjects, TaskMarkerWrapper previousTaskMarker)
+        public static TaskMarkerWrapper<T> CreateInstance<T>(Vector3 screenPosition, IEnumerable<ISelectable> subjects, TaskMarkerWrapper previousTaskMarker)
             where T : TaskMarker
         {
             T res = Instantiate(
@@ -65,15 +73,30 @@ namespace Core.MapMarkers
             return res.GetRefWrapper().CastWrapper<T>();
         }
 
-        protected abstract void Init(Vector3 screenPosition, List<ISelectable> subjects, TaskMarkerWrapper previousTaskMarker);
-
         protected static int _instcount = 0;
+
+        protected bool isEditing = false;
+
+        protected FactionAffiliation factionAffiliation;
+        protected UnityEngine.UI.Graphic uiGraphic;
+
+        public EasyObserver<string> OnExitEditMode = new EasyObserver<string>();
+
+        protected virtual void Init(Vector3 screenPosition, IEnumerable<ISelectable> subjects, TaskMarkerWrapper previousTaskMarker)
+        {
+            /*OnExitEditMode.SubscribeToEvent("oneditexitdeselectall",
+                () => 
+                {
+                    foreach (var v in GetUsedSelector().GetCurrentlySelectedEntitiesOfType<TaskMarkerWrapper>())
+                        GetUsedSelector().DeselectEntity(v);
+                });*/
+        }
 
         public abstract TaskPlan GetTaskPlan();
 
         protected abstract TaskWrapper GetTaskWrapper();
 
-        protected bool isEditing = false;
+        public abstract IEnumerable<ITaskSubject> GetTaskSubjects();
 
         public void EnterEditMode()
         {
@@ -82,17 +105,21 @@ namespace Core.MapMarkers
 
         public void ExitEditMode()
         {
+            OnExitEditMode.Invoke();
             isEditing = false;
         }
 
         protected bool ready = false;
         protected bool expanded = false;
 
-        protected List<ISelectable> subjects;
-
         private void Update()
         {
             UpdateMe();
+        }
+
+        protected virtual void DestroyMe()
+        {
+            Destroy(gameObject);
         }
 
         protected virtual void UpdateMe()
@@ -114,6 +141,27 @@ namespace Core.MapMarkers
             }
         }
 
+        protected virtual void DrawUpdate(Color _initialColor)
+        {
+            if (uiGraphic != null)
+            {
+                uiGraphic.color = _initialColor;
+                
+                if (GetUsedSelector().IsSelected(GetRefWrapper()))
+                {
+                    uiGraphic.color = factionAffiliation.MyFaction.baseColor;
+                }
+                /*else if (GetUsedSelector().IsHighlighted(GetRefWrapper()))
+                {
+                    graphic.color = 
+                        new Color(factionAffiliation.MyFaction.baseColor.r,
+                                factionAffiliation.MyFaction.baseColor.g,
+                                factionAffiliation.MyFaction.baseColor.b,
+                                factionAffiliation.MyFaction.baseColor.a/2);
+                }*/
+            }
+        }
+
         protected bool paused = false;   
 
         protected void Expand()
@@ -125,8 +173,8 @@ namespace Core.MapMarkers
 
         protected void Contract()
         {
-            GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 36);
-            GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 36);
+            GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, 24);
+            GetComponent<RectTransform>().SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, 24);
             expanded = false;
         }
 

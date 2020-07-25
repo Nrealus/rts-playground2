@@ -1,27 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Nrealus.Extensions.ReferenceWrapper
 {
 
-    /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
-
-    ///<summary>
-    /// Base class for "Reference Wrappers". See RefWrapper<T> for much more details.
-    ///</summary>
-    public abstract class RefWrapper// : IRefWrapperInterf1
-    {        
-        public abstract void SubscribeOnClearance(Action action);
-
-        public abstract void SubscribeOnClearance(string key, Action action);
-
-        public abstract void UnsubscribeOnClearance(string key);
-
-        public abstract void UnsubscribeOnClearanceAll();
-
-        public abstract void DestroyWrappedReference();
-
-    }
+    /****** Author : nrealus ****** Last documentation update : 24-07-2020 ******/
 
     /// <summary>
     /// A wrapper class whose initial purpose is to remove any direct references to the wrapped object.
@@ -30,147 +14,66 @@ namespace Nrealus.Extensions.ReferenceWrapper
     /// To prevent that, we use references to a wrapper that contains one single reference to this object.
     /// Once the object is not needed anymore, we set the reference to it in the wrapper to null, and "clear" the rest of the wrapper.
     /// "Used" wrappers do not contain any useful information anymore, and will then eventually be collected, or may be used again with a pooling system.
-    /// Finally this wrapper publishes(?) an event whose subscribed methods are invoked when the wrapper is cleaned, i.e. when the wrapped object isn't needed anymore.
-    /// For example, this allows to automatically remove the wrapped object from a list, when it is remotely "destroyed".
     /// </summary>
     /// <typeparam name="T">Type of the wrapped object</typeparam>
-    public class RefWrapper<T> : RefWrapper
+    public class RefWrapper<T>
     {
+        public T Value { get; private set; }
 
-		private bool destroyed = false;
-
-        private event Action onClearance;
-        private Dictionary<string,Action> storedHandlers = new Dictionary<string, Action>();
-        private Action nullifyPrivateRefToWrapper;
-        
-        public RefWrapper(T wrappedObject, Action nullifyPrivateRefToWrapper)
+        public RefWrapper(T value)
         {
-            Constructor1(wrappedObject, nullifyPrivateRefToWrapper);
+            Value = value;
         }
 
-        protected virtual void Constructor1(T wrappedObject, Action nullifyPrivateRefToWrapper)
+        protected void DestroyRef()
         {
-            Special_SetWrappedObject(wrappedObject);
-            Constructor2(nullifyPrivateRefToWrapper);
+            Value = default(T);
         }
 
-        protected virtual void Constructor2(Action nullifyPrivateRefToWrapper)
+        public override bool Equals(object obj)
         {
-            this.nullifyPrivateRefToWrapper = nullifyPrivateRefToWrapper;
+            var otherWrapper = obj as RefWrapper<T>;
+
+            return object.ReferenceEquals(this, obj) 
+                || (!object.ReferenceEquals(null, Value)
+                    && Value.Equals(otherWrapper.Value));
         }
 
-        private T _wrappedObject;
-
-        protected virtual void Special_SetWrappedObject(T value)
+        public override int GetHashCode()
         {
-            _wrappedObject = value;
-        }
-
-        public virtual T GetWrappedReference()
-        {
-            return _wrappedObject;
-        }
-
-        public override void SubscribeOnClearance(Action action)
-        {
-            onClearance += action;
-        }
-
-        /*public override void UnsubscribeOnClearance(Action action)
-        {
-            OnClearance -= action;
-        }*/
-
-        public override void SubscribeOnClearance(string key, Action action)
-        {
-            if (storedHandlers.ContainsKey(key))
-                throw new SystemException("Already known key...");
-            else
+            unchecked
             {
-                storedHandlers.Add(key,action);
-                onClearance += storedHandlers[key];
+                // Choose large primes to avoid hashing collisions
+                const int HashingBase = (int)2166136261;
+                const int HashingMultiplier = 16777619;
+
+                int hash = HashingBase;
+                hash = (hash * HashingMultiplier) ^ (!object.ReferenceEquals(null, Value) ? Value.GetHashCode() : 0);
+                hash = (hash * HashingMultiplier) ^ (!object.ReferenceEquals(null, typeof(T)) ? typeof(T).GetHashCode() : 0);
+                return hash;
             }
         }
 
-        public override void UnsubscribeOnClearance(string key)
+        public static bool operator ==(RefWrapper<T> wrapper1, RefWrapper<T> wrapper2)
         {
-            if (!storedHandlers.ContainsKey(key))
-                throw new SystemException("Unknown key...");
-            else
+            if (object.ReferenceEquals(wrapper1, wrapper2))
             {
-                onClearance -= storedHandlers[key];
-                storedHandlers.Remove(key);
+                return true;
             }
-        }
-        
-        public override void UnsubscribeOnClearanceAll()
-        {
-            onClearance = null;
-        }        
 
-        public override void DestroyWrappedReference()
-        {
-            Clear(true,true);
-        }
-        
-        private void Clear(bool destroyReference, bool unsubAllOnClearance)
-        {
-            if (destroyReference && !unsubAllOnClearance)
-                throw new SystemException("Impossible case : destroy Reference without unsubbing from OnClearance.");
-            
-            if (!destroyed)
+            if(object.ReferenceEquals(null, wrapper2))
             {
-                if (destroyReference)
-                    onClearance += nullifyPrivateRefToWrapper;
-
-                // The idea behind is to allow the (very possibly private) reference to the wrapper 
-                // from the wrapped object is set to null
-                // after all other handlers have been executed.
-
-                // if(GetWrappedReference() != default(T)) ???
-                onClearance.Invoke();
-
-                if (unsubAllOnClearance)
-                {
-                    onClearance = null; // Automatically unsubscribes everything
-                    storedHandlers.Clear();
-                }
-
-                if (destroyReference)
-                {
-                    Special_SetWrappedObject(default(T));
-                    destroyed = true;
-                }
-          
+                return false;
             }
+
+            return (wrapper1.Equals(wrapper2));
+        }
+
+        public static bool operator !=(RefWrapper<T> wrapper1, RefWrapper<T> wrapper2)
+        {
+            return !(wrapper1 == wrapper2);
         }
 
     }
 
-    public class RefWrapper2<T> : RefWrapper<T>
-    {
-        protected T _wrappedObject;
-        
-        public override T GetWrappedReference()
-        {
-            return _wrappedObject;
-        }
-
-        protected override void Special_SetWrappedObject(T value)
-        {
-            _wrappedObject = value;
-        }
-
-        public U GetCastReference<U>() where U : T
-        {
-            return (U) GetWrappedReference();
-        }
-
-        public RefWrapper2(T wrappedObject, Action nullifyPrivateRefToWrapper) : base(wrappedObject, nullifyPrivateRefToWrapper)
-        {
-        }
-
-    }
-
-    
 }

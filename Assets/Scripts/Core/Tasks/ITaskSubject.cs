@@ -4,42 +4,28 @@ using Core.MapMarkers;
 using UnityEngine;
 using Nrealus.Extensions;
 using Nrealus.Extensions.ReferenceWrapper;
+using Core.Helpers;
 
 namespace Core.Tasks
 {
-    /****** Author : nrealus ****** Last documentation update : 09-07-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
     
-    public interface ITaskSubjectBase
-    {
-        bool IsWrappedObjectNotNull();        
-
-        //bool IsOrderApplicable(OrderWrapper order);
-
-    }
-
     /// <summary>
-    /// This interface is implemented by classes that can be "subjects" of Tasks, like units that receive and execute them.
-    /// They are passed to Tasks (via TaskWrappers)
+    /// A class implementing this interface shows that it can be a "subject" of a Task, like a unit that receives and executes one.
+    /// There is a possibility that it may expose methods allowing a subject knowledge of TaskPlans which have it as a subject.
     /// </summary> 
-    public interface ITaskSubject : ITaskSubjectBase
+    public interface ITaskSubject : IDestroyable
     {
+        //void AddToPlans(TaskPlan2 taskPlan);
 
-        RefWrapper GetTaskSubjectAsReferenceWrapperNonGeneric();
+        //void RemoveFromPlans(TaskPlan2 taskPlan);
 
-        Y GetTaskSubjectAsReferenceWrapperSpecific<Y>() where Y : RefWrapper;
-     
-        TaskPlan GetTaskPlan();
+        //IEnumerable<TaskPlan2> GetPlans();
 
-        void SetTaskPlan(TaskPlan taskPlan);
+        //TaskPlan2 GetTaskPlan();
+
+        //void SetTaskPlan(TaskPlan2 taskPlan);
 
     }
-
-    /*public interface ITaskSubject<T> : ITaskSubject
-    {
-        //RefWrapper<T> GetOrderableAsReferenceWrapperGeneric();
-
-        //new Y GetOrderableAsReferenceWrapperSpecific<Y>() where Y : ReferenceWrapper<T>;
-
-    }*/
     
 }

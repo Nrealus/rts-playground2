@@ -8,18 +8,229 @@ using System;
 using Core.Faction;
 using Core.Selection;
 using Core.Handlers;
+using Core.Formations;
+using Nrealus.Extensions.Observer;
+using Core.Tasks;
+using Nrealus.Extensions.ReferenceWrapper;
+using Nrealus.Extensions.Tree;
+using Gamelogic.Extensions;
 
 namespace Core.Units
 {
 
-    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
 
+    public class UnitWrapper : RefWrapper<Unit>
+    {
+        public UnitWrapper(Unit obj) : base(obj)
+        { 
+            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+        }
+    }
+    
     ///<summary>
     /// Main Unity component for units.
     ///</summary>
-    public class Unit : MonoBehaviour, IHasRefWrapper<UnitWrapper>
+    public class Unit : MonoBehaviour, ISelectable, ITaskSubject//, ITreeNodeBase<Unit>
     {
-    
+
+        #region ITaskSubject implementation
+        
+        #endregion
+        
+        #region ISelectable implementation
+
+        private EasyObserver<string, (Selector,bool)> onSelectionStateChange = new EasyObserver<string, (Selector, bool)>();
+
+        public EasyObserver<string, (Selector,bool)> GetOnSelectionStateChangeObserver()
+        {
+            return onSelectionStateChange;
+        }
+        
+        void ISelectable.InvokeOnSelectionStateChange(Selector selector, bool b)
+        {
+            onSelectionStateChange.Invoke((selector, b));
+        }
+
+        #endregion
+        
+        #region IDestroyable implementation
+        
+        private EasyObserver<string> onDestroyed = new EasyObserver<string>();
+
+        public void SubscribeOnDestruction(string key, Action action)
+        {
+            onDestroyed.SubscribeEventHandlerMethod(key, action);
+        }
+
+        public void SubscribeOnDestructionAtEnd(string key, Action action)
+        {
+            onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
+        }
+
+        public void SubscribeOnDestruction(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        {
+            onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
+        }
+
+        public void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        {
+            onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
+        }
+
+        public void UnsubscribeOnDestruction(string key)
+        {
+            onDestroyed.UnsubscribeEventHandlerMethod(key);
+        }
+
+        public void DestroyThis()
+        {
+            Destroy(gameObject);
+
+            //foreach (var v in unitPiecesWrappersList) 
+            //    RemoveUnitPieceFromUnit(v, this);
+
+            onDestroyed.Invoke();
+
+            GetOnSelectionStateChangeObserver().UnsubscribeAllEventHandlerMethods();
+        }
+
+        #endregion
+
+        #region Tree Structure
+
+        private Dictionary<string,Action> _actDict = new Dictionary<string,Action>();        
+        private ObservedValue<Unit> _parent = new ObservedValue<Unit>(null);
+
+        public void SubscribeOnParentChange(string key, Action action)
+        {
+            if (!_actDict.ContainsKey(key))
+            {
+                _actDict.Add(key, action);
+                _parent.OnValueChange += action;
+            }
+        }
+
+        public void UnsubscribeOnParentChange(string key)
+        {
+            _parent.OnValueChange -= _actDict[key];
+        }
+
+        public Unit GetThisNode() { return this; }
+
+        public Unit GetParentNode() { return _parent.Value; }
+
+        public void Internal_SetParentNode(Unit newParent)
+        {
+            _parent.Value = newParent;
+        }
+
+        public bool IsLeaf()
+        {
+            return GetChildNodes().Count == 0;
+        }
+
+        public bool IsRoot()
+        {
+            return GetParentNode() == null;
+        }
+
+        private List<Unit> _childNodes;
+
+        public List<Unit> GetChildNodes()
+        {
+            return _childNodes;
+        }
+        
+        public void SetChildNodes(List<Unit> childNodes)
+        {
+            _childNodes = childNodes;
+        }
+
+        public List<Unit> GetLeafChildren()
+        {
+            return GetChildNodes().Where(x => x.IsLeaf()).ToList();
+        }
+
+        public List<Unit> GetNonLeafChildren()
+        {
+            return GetChildNodes().Where(x => !x.IsLeaf()).ToList();
+        }
+
+        public Unit GetRootNode()
+        {
+            if (GetParentNode() == null)
+                return GetThisNode();
+
+            return GetParentNode().GetRootNode();
+        }
+
+        public void AddChild(Unit child)
+        {
+            if (child.GetParentNode() != null)
+                child.GetParentNode().RemoveChild(child);
+            child.Internal_SetParentNode(GetThisNode());
+            GetChildNodes().Add(child);
+        }
+
+        public void AddChildren(IEnumerable<Unit> children)
+        {
+            foreach (Unit child in children)
+                AddChild(child);
+        }
+
+        public void RemoveChild(Unit child)
+        {
+            child.Internal_SetParentNode(null);
+            GetChildNodes().Remove(child);
+        }
+
+        public void RemoveChildren(IEnumerable<Unit> children)
+        {
+            foreach (Unit child in children)
+                RemoveChild(child);
+        }
+
+        public void ChangeParentTo(Unit newParent)
+        {
+            if (newParent != null)
+            {
+                newParent.AddChild(GetThisNode());
+                //Unit.WrappedObject.transform.SetParent(newParent.Unit.WrappedObject.transform);
+            }
+            else
+            {
+                if (GetParentNode() != null)
+                    GetParentNode().RemoveChild(GetThisNode());
+                //Unit.WrappedObject.transform.SetParent(null);
+            }
+        }
+        
+        private Queue<Unit> _bfsqueue = new Queue<Unit>();
+        public List<Unit> BFSList()
+        {
+            List<Unit> result = new List<Unit>();
+
+            _bfsqueue.Enqueue(GetThisNode());
+
+            while (_bfsqueue.Count > 0)
+            {
+                result.Add(_bfsqueue.Peek().GetThisNode());
+
+                var a = _bfsqueue.Dequeue().GetChildNodes();
+                var c = a.Count;
+                for (int k = 0; k < c; k++)
+                    _bfsqueue.Enqueue(a[k]);
+
+            }
+
+            _bfsqueue.Clear();
+
+            return result;
+        }
+
+        #endregion
+
         private SpriteRenderer mySprRenderer;
         
         [HideInInspector] public FactionAffiliation factionAffiliation;
@@ -33,82 +244,62 @@ namespace Core.Units
         public UnitLevel unitLevel { get { return _level; } /*private*/ set { _level = value; } }
         public UnitType unitType { get { return _type; } private set { _type = value; } }
         
+        private Formation formation;        
+        public Formation GetFormation()
+        {
+            return formation;
+        }
+
+        /*
         private List<UnitPieceWrapper> unitPiecesWrappersList = new List<UnitPieceWrapper>();
         private Dictionary<UnitPieceWrapper, Action> onUnitPiecesRemovalHandlersDict = new Dictionary<UnitPieceWrapper, Action>();
-		
-        public static List<UnitPieceWrapper> GetUnitPieceWrappersInUnit(UnitWrapper unitWrapper)
-        {
-            return unitWrapper.GetWrappedReference().unitPiecesWrappersList;
-        }
         
-        public static List<UnitWrapper> GetMyselfAndSubUnitsWrappers(UnitWrapper unitWrapper)
+        public static List<UnitPieceWrapper> GetUnitPieceWrappersInUnit(Unit unit)
         {
-            // very clunky, to be changed
-            var res = new List<UnitWrapper>();
-            res.Add(unitWrapper);
-            res.AddRange(GetSubUnits(unitWrapper));
-            return res;
+            return unit.unitPiecesWrappersList;
         }
 
-        public static List<UnitWrapper> GetSubUnits(UnitWrapper unitWrapper)
-        {
-            return unitWrapper.GetChildNodes();
-        }
-        
-        public static void AddSubUnitToUnit(UnitWrapper unitToAdd, UnitWrapper destinationParentUnit)
-        {    
-            destinationParentUnit.AddChild(unitToAdd);            
-        }
-        
-        public static void DettachSubUnitFromItsParent(UnitWrapper unitToDettachFromItsParent)
-        {
-            if (unitToDettachFromItsParent.GetParentNode() != null)
-                unitToDettachFromItsParent.GetParentNode().RemoveChild(unitToDettachFromItsParent);
-            else
-                Debug.LogWarning("already dettached");
-        }
-
-        public static void AddUnitPieceToUnit(UnitPieceWrapper unitPieceWrapper, UnitWrapper unitWrapper, Action actionOnRemovalFromGroup)
+        public static void AddUnitPieceToUnit(UnitPieceWrapper unitPieceWrapper, Unit unit, Action actionOnRemovalFromGroup)
         {    
             /// Keep an eye
-            if (unitPieceWrapper.unitWrapper.GetWrappedReference().isVirtualUnit)
+            if (false//unitPieceWrapper.Unit.GetWrappedReference().isVirtualUnit)
             {
-                if (unitPieceWrapper.unitWrapper != null)
+                if (unitPieceWrapper.Unit != null)
                 {
-                    RemoveUnitPieceFromUnit(unitPieceWrapper, unitPieceWrapper.unitWrapper);
+                    RemoveUnitPieceFromUnit(unitPieceWrapper, unit);
                 }
             }
     
-            unitWrapper.GetWrappedReference().unitPiecesWrappersList.Add(unitPieceWrapper);
+            unit.unitPiecesWrappersList.Add(unitPieceWrapper);
 
-            unitWrapper.GetWrappedReference().SubscribeOnUnitPieceRemovalFromUnit(unitPieceWrapper, actionOnRemovalFromGroup);
+            unit.SubscribeOnUnitPieceRemovalFromUnit(unitPieceWrapper, actionOnRemovalFromGroup);
 
-            unitPieceWrapper.SubscribeOnClearance("removeunitpiece",() => RemoveUnitPieceFromUnit(unitPieceWrapper, unitWrapper));
+            unitPieceWrapper.SubscribeOnClearance("removeunitpiece",() => RemoveUnitPieceFromUnit(unitPieceWrapper, unit));
             
         }
 
-        public static void RemoveUnitPieceFromUnit(UnitPieceWrapper unitPieceWrapper, UnitWrapper unitWrapper)
+        public static void RemoveUnitPieceFromUnit(UnitPieceWrapper unitPieceWrapper, Unit unit)
         {
-            if (unitWrapper.GetWrappedReference() != null)
+            if (unit != null)
             {
                 unitPieceWrapper.UnsubscribeOnClearance("removeunitpiece");
-                if(unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict[unitPieceWrapper] != null)
-                    unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict[unitPieceWrapper].Invoke();
+                if(unit.onUnitPiecesRemovalHandlersDict[unitPieceWrapper] != null)
+                    unit.onUnitPiecesRemovalHandlersDict[unitPieceWrapper].Invoke();
                 else
                     Debug.LogWarning("is this normal ?");
-                unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict[unitPieceWrapper] = null;
-                unitWrapper.GetWrappedReference().onUnitPiecesRemovalHandlersDict.Remove(unitPieceWrapper);
+                unit.onUnitPiecesRemovalHandlersDict[unitPieceWrapper] = null;
+                unit.onUnitPiecesRemovalHandlersDict.Remove(unitPieceWrapper);
             }
+        }*/
+
+        public bool IsSelected(Selector selector)
+        {
+            return selector.IsSelected(this);
         }
 
-        public static bool IsSelected(UnitWrapper unitWrapper, Selector selector)
+        public bool IsHighlighted(Selector selector)
         {
-            return selector.IsSelected(unitWrapper);
-        }
-
-        public static bool IsHighlighted(UnitWrapper unitWrapper, Selector selector)
-        {
-            return selector.IsHighlighted(unitWrapper);
+            return selector.IsHighlighted(this);
         }
 
         public static Unit CreateUnit(bool isVirtualUnit, bool realOrVirtualGroup)
@@ -116,15 +307,9 @@ namespace Core.Units
             throw new NotImplementedException();
         }
 
-        public static void DestroyUnit(UnitWrapper unitWrapper)
+        public Vector3 GetPosition()
         {
-            Destroy(unitWrapper.GetWrappedReference().gameObject);
-            unitWrapper.DestroyWrappedReference();
-        }
-
-        public static Vector3 GetPosition(UnitWrapper uw)
-        {
-            return uw.GetWrappedReference().transform.position;
+            return transform.position; //uw.GetWrappedReference().transform.position;
             /*var l = uw.WrappedObject.unitPiecesWrappersList;
             int c = l.Count;
             Vector3 res = Vector3.zero;
@@ -140,55 +325,73 @@ namespace Core.Units
             return res;*/
         }
 
-        public void SubscribeOnUnitPieceRemovalFromUnit(UnitPieceWrapper unitPieceWrapper, Action actionOnUnitPieceRemovalFromUnit)
+        /*public void SubscribeOnUnitPieceRemovalFromUnit(UnitPieceWrapper unitPieceWrapper, Action actionOnUnitPieceRemovalFromUnit)
         {
             Action a;
             if(!onUnitPiecesRemovalHandlersDict.TryGetValue(unitPieceWrapper, out a))
                 onUnitPiecesRemovalHandlersDict.Add(unitPieceWrapper, actionOnUnitPieceRemovalFromUnit);
             else
                 a += actionOnUnitPieceRemovalFromUnit;
-        }
-       
+        }*/
+    
         private Selector GetUsedSelector()
         {
             return SelectionHandler.GetUsedSelector();
         }
         
-        [SerializeField] private bool _isVirtualUnit;
-        public bool isVirtualUnit { get { return _isVirtualUnit; } private set { _isVirtualUnit = value;} }
+        //[SerializeField] private bool _isVirtualUnit;
+        //public bool isVirtualUnit { get { return _isVirtualUnit; } private set { _isVirtualUnit = value;} }
 
         [HideInInspector] public UnitMover myMover;
-        protected UnitWrapper _myWrapper;
-        public UnitWrapper GetRefWrapper() { return _myWrapper; }
+        //protected Unit _myWrapper;
+        //public Unit GetRefWrapper() { return _myWrapper; }
 
-        private void Init(bool isVirtualUnit)
+        private void Init(/*bool isVirtualUnit*/)
         {
             factionAffiliation = GetComponent<FactionAffiliation>();
             
-            this.isVirtualUnit = isVirtualUnit;
+            UIHandler.GetUIOrdobMenu().AddUnitToOrdob(this);
+            _parent.Value = null;
             
-            _myWrapper = new UnitWrapper(this, () => 
-                {
-                    foreach (var v in unitPiecesWrappersList) 
-                        RemoveUnitPieceFromUnit(v, GetRefWrapper());
-                    _myWrapper = null;
-                });
+            SubscribeOnDestruction("removefromunittree",
+                () =>
+                { 
+                    ChangeParentTo(null);
+                    RemoveChildren(GetChildNodes());
+                } );
+            
+            SubscribeOnDestruction("removeunitfromordob",
+                () => UIHandler.GetUIOrdobMenu().RemoveUnitFromOrdob(this));
+
+            _parent.ForceInvokeOnValueChange();
+            _childNodes = new List<Unit>();
+
+            formation = new Formation(this, Formation.FormationRole.MainGuard, Formation.FormationType.Column);
+
+            SubscribeOnDestruction("clearformation",
+                () => { formation = null; });
+
             myMover = GetComponent<UnitMover>();
-            mySprRenderer = GetComponent<SpriteRenderer>();            
+            mySprRenderer = GetComponent<SpriteRenderer>();
+
+            GetFormation().facingAngle = 0f;
+            GetFormation().depthLength = 1f;
+            GetFormation().frontLength = 2f;
+
         }
 
         private void Awake()
         {
-            Init(isVirtualUnit);
+            Init(/*isVirtualUnit*/);
         }
         
         private void Update()
         {
 
-            if (GetUsedSelector().IsSelected(GetRefWrapper())
+            if (IsSelected(GetUsedSelector())
                 && Input.GetKeyDown(KeyCode.K))
             {
-                DestroyUnit(GetRefWrapper());
+                DestroyThis();
             }
 
             DrawUpdate();
@@ -199,16 +402,16 @@ namespace Core.Units
         {
             mySprRenderer.color = Color.white;
             
-            if (IsSelected(GetRefWrapper(), GetUsedSelector()))
+            if (IsSelected(GetUsedSelector()))
             {
                 mySprRenderer.color = factionAffiliation.MyFaction.baseColor;
-                foreach (UnitWrapper uw in GetSubUnits(GetRefWrapper()))
+                foreach (Unit u in GetChildNodes())
                 {
-                    var p = Unit.GetPosition(uw); // in the future, take the highest ranked unit in the group
+                    var p = u.GetPosition(); // in the future, take the highest ranked unit in the group
                     Debug.DrawLine(transform.position, p, Color.white);
                 }
             }
-            else if (IsHighlighted(GetRefWrapper(), GetUsedSelector()))
+            else if (IsHighlighted(GetUsedSelector()))
             {
                 mySprRenderer.color = 
                     new Color(factionAffiliation.MyFaction.baseColor.r,
@@ -216,8 +419,26 @@ namespace Core.Units
                             factionAffiliation.MyFaction.baseColor.b,
                             factionAffiliation.MyFaction.baseColor.a/2);
             }
+            
+            if (GetFormation() != null)
+            {
+                Vector3 center = transform.position;
+
+                var frontPoint = center + GetFormation().GetNormalizedFacingVector() * GetFormation().depthLength;
+                var rearPoint = center - GetFormation().GetNormalizedFacingVector() * GetFormation().depthLength;
+
+                var lateralDirection = new Vector3(
+                    -GetFormation().GetNormalizedFacingVector().z,
+                    GetFormation().GetNormalizedFacingVector().y,
+                    GetFormation().GetNormalizedFacingVector().x);
+
+                //Debug.DrawLine(frontPoint, rearPoint);
+                Debug.DrawLine(frontPoint-lateralDirection*GetFormation().frontLength, frontPoint+lateralDirection*GetFormation().frontLength);
+                Debug.DrawLine(frontPoint-lateralDirection*GetFormation().frontLength, rearPoint-lateralDirection*GetFormation().frontLength);
+                Debug.DrawLine(frontPoint+lateralDirection*GetFormation().frontLength, rearPoint+lateralDirection*GetFormation().frontLength);
+                //Debug.DrawLine(rearPoint-lateralDirection*formation.frontLength, rearPoint+lateralDirection*formation.frontLength);
+            }
         }
 
     }
-
 }

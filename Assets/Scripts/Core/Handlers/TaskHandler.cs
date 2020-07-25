@@ -8,12 +8,13 @@ using System;
 
 namespace Core.Handlers
 {
-    /****** Author : nrealus ****** Last documentation update : 09-07-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
 
     /// <summary>
-    /// Singleton registering all Tasks (or rather, TaskWrappers) - they are added to this singleton's list when created and given a receiver, using static "factory" methods in Task.
-    /// Of course, they are unregistered from the list when they are cleared.
-    /// For now, its only use is to update all the Tasks (again, via TaskWrappers) in the game loop, by updating their main finite state machine.
+    /// Singleton registering all Tasks - they are added to this singleton's list when created, using static "factory" methods in Task.
+    /// Of course, they are unregistered from the list when they are destroyed.
+    /// For now, its only use is to update all the Tasks in the game loop, by updating their main finite state machine.
+    /// This is needed because Tasks are not MonoBehaviours and their updates must be called from another MonoBehaviour.
     /// </summary>    
     public class TaskHandler : MonoBehaviour
     {
@@ -30,9 +31,9 @@ namespace Core.Handlers
         }
         
         ///<summary>
-        /// This list contains all orders' wrappers that currently exist in the whole scene.
+        /// This list contains all tasks that currently exist.
         ///</summary>
-        private List<TaskWrapper> taskWrappersList = new List<TaskWrapper>();
+        private List<Task> tasksList = new List<Task>();
         
         private void Awake()
         {
@@ -40,10 +41,10 @@ namespace Core.Handlers
 
         private void Update()
         {
-            // Updating all orders.
-            for (int i = taskWrappersList.Count - 1; i >= 0; i--)
+            // Updating all tasks.
+            for (int i = tasksList.Count - 1; i >= 0; i--)
             {
-                Task.Update(taskWrappersList[i]);
+                tasksList[i].Update();
                 // Add parameter for "delta time" ?
             }
         }
@@ -71,15 +72,15 @@ namespace Core.Handlers
         }
 */
         ///<summary>
-        /// This method registers a task's wrapper to the list of all tasks' wrappers.
+        /// This method registers a task to the "global" tasksList.
         /// This will allow these tasks to be updated. This method is intended to be called typically right after a task's creation, as it is now. (see Task)
         ///</summary>
-        public static bool AddToGlobalTaskWrapperList(TaskWrapper wrapper)
+        public static bool AddToGlobalTasksList(Task task)
         {
-            if(!MyInstance.taskWrappersList.Contains(wrapper))
+            if(!MyInstance.tasksList.Contains(task))
             {
-                wrapper.SubscribeOnClearance("removefromglobal",() => RemoveFromGlobalTaskWrapperList(wrapper));
-                MyInstance.taskWrappersList.Add(wrapper);
+                task.SubscribeOnDestruction("removefromglobal",() => RemoveFromGlobalTasksList(task));
+                MyInstance.tasksList.Add(task);
                 //MyInstance.onTaskWrapperAddOrRemove.Invoke((wrapper, true));
                 return true;
             }
@@ -90,12 +91,12 @@ namespace Core.Handlers
             }
         }
 
-        private static bool RemoveFromGlobalTaskWrapperList(TaskWrapper wrapper)
+        private static bool RemoveFromGlobalTasksList(Task task)
         {
-            if(MyInstance.taskWrappersList.Contains(wrapper))
+            if(MyInstance.tasksList.Contains(task))
             {
-                wrapper.UnsubscribeOnClearance("removefromglobal");
-                MyInstance.taskWrappersList.Remove(wrapper);
+                task.UnsubscribeOnDestruction("removefromglobal");
+                MyInstance.tasksList.Remove(task);
                 //MyInstance.onTaskWrapperAddOrRemove.Invoke((wrapper, true));
                 return true;
             }

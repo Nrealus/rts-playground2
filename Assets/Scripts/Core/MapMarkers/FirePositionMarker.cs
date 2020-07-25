@@ -11,13 +11,8 @@ namespace Core.MapMarkers
     /// <summary>
     /// A MapMarker subclass, used to map positions for attack tasks, rules of engagements etc.    
     /// </summary>   
-    public class FirePositionMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<FirePositionMarker>>
+    public class FirePositionMarker : MapMarker//, IHasRefWrapper<MapMarkerWrapper<FirePositionMarker>>
     {
-
-        public new MapMarkerWrapper<FirePositionMarker> GetRefWrapper()
-        {
-            return _myWrapper as MapMarkerWrapper<FirePositionMarker>;
-        }
 
         public static FirePositionMarker CreateInstance(Vector3 position, float radius)
         {
@@ -52,10 +47,7 @@ namespace Core.MapMarkers
             transform.position = position;
             this.radius = radius;            
 
-            _myWrapper = new MapMarkerWrapper<FirePositionMarker>(this, () => {_myWrapper = null;});
-            GetRefWrapper().SubscribeOnClearance(DestroyMe);
-
-            following = false;            
+            following = false;
         }
 
         private void Update()
@@ -63,9 +55,5 @@ namespace Core.MapMarkers
             
         }
 
-        private void DestroyMe()
-        {
-            Destroy(gameObject);
-        }
     }
 }

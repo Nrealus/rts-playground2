@@ -9,16 +9,10 @@ namespace Core.MapMarkers
     /****** Author : nrealus ****** Last documentation update : 20-05-2020 ******/
 
     /// <summary>
-    /// A MapMarker subclass, currently used as a waypoint for MoveTasks. They are manually entered on the map by the player,
-    /// or automatically created by the game logic at some position. They can also be dragged on the screen (map) with a cursor (mouse)
+    /// A MapMarker subclass, currently used as a waypoint for MoveTasks.
     /// </summary>   
-    public class WaypointMarker : MapMarker, IHasRefWrapper<MapMarkerWrapper<WaypointMarker>>
+    public class WaypointMarker : MapMarker
     {
-
-        public new MapMarkerWrapper<WaypointMarker> GetRefWrapper()
-        {
-            return _myWrapper as MapMarkerWrapper<WaypointMarker>;
-        }
 
         private static Camera _cam;
         public Camera GetMyCamera()
@@ -40,23 +34,20 @@ namespace Core.MapMarkers
             return res;
         }
 
-        public static void UpdateWaypointMarker(MapMarkerWrapper<WaypointMarker> waypointMarkerWrapper, bool following, Vector3 screenPositionToFollow)
+        public static void UpdateWaypointMarker(WaypointMarker waypointMarker, bool following, Vector3 screenPositionToFollow)
         {
-            if(waypointMarkerWrapper.GetWrappedReference() != null)
-                waypointMarkerWrapper.GetWrappedReference().FollowScreenPosition(following, screenPositionToFollow);
+            if (waypointMarker != null)
+                waypointMarker.FollowScreenPosition(following, screenPositionToFollow);
         }
         
         public float moveSpeed = 0.5f;
         public float offset = 5f;
         public bool following;
 
-        
+        public Vector3 followedScreenPosition;
         private void Init(Vector3 position)
         {
             transform.position = position;
-
-            _myWrapper = new MapMarkerWrapper<WaypointMarker>(this, () => {_myWrapper = null;});
-            GetRefWrapper().SubscribeOnClearance(DestroyMe);
 
             following = false;
         }
@@ -90,6 +81,7 @@ namespace Core.MapMarkers
             this.following = following;
             if (following)
             {
+                followedScreenPosition = screenPositionToFollow;
                 transform.position = Vector3.Lerp(transform.position, 
                     GetMyCamera().GetPointedPositionPhysRaycast(screenPositionToFollow), moveSpeed);
                 //transform.position.Set(wp.x, wp.y, wp.z);

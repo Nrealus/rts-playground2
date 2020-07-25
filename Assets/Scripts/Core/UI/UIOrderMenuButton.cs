@@ -10,6 +10,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Nrealus.Extensions;
 using Nrealus.Extensions.Observer;
+using System.Linq;
 
 namespace Core.UI
 {
@@ -44,7 +45,7 @@ namespace Core.UI
             OnButtonActivationOrNot(!on);
         }
 
-        private void OnButtonActivationOrNot(bool b)
+        private void OnButtonActivationOrNot(bool desiredButtonState)
         {
             foreach(Transform t in transform.parent.transform)
             {
@@ -53,66 +54,112 @@ namespace Core.UI
                 if (temp != null && temp != this)
                     temp.SetActiveRecursivelyExt(false);
             }
-            if (!on && b)
+            if (!on && desiredButtonState)
             {
                 associatedTaskEditMenu.SetActiveRecursivelyExt(true);
                 
-                List<ISelectable> l = mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>();
+                List<ISelectable> l = mySelector.GetCurrentlySelectedEntitiesOfType<Unit>();
                 
                 switch (taskTypeAsEnumField)
                 {
                     case TaskTypeEnum.Move :
-                        CreateTaskMarker<MoveTaskMarker>(mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>());
+                        CreateTaskMarkerEtc<MoveTaskMarker>(l);
                         break;
-                    case TaskTypeEnum.Build :
-                        CreateTaskMarker<MoveTaskMarker>(mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>());
+                    /*case TaskTypeEnum.Build :
+                        CreateTaskMarker<MoveTaskMarker>(l);
                         break;
                     case TaskTypeEnum.EngageAt :
-                        CreateTaskMarker<MoveTaskMarker>(mySelector.GetCurrentlySelectedEntitiesOfType<UnitWrapper>());
-                        break;
+                        CreateTaskMarker<MoveTaskMarker>(l);
+                        break;*/
                 }
             }
-            on = b;
+            on = desiredButtonState;
         }
 
-        private void CreateTaskMarker<T>(List<ISelectable> list) where T : TaskMarker
+        private void CreateTaskMarkerEtc<T>(List<ISelectable> list) where T : TaskMarker
         {
             if (list.Count > 0)
             {
-                var v = TaskMarker.CreateInstance<T>(UIHandler.GetPointedScreenPosition(), list);
+                T v = TaskMarker.CreateInstance<T>(UIHandler.GetPointedScreenPosition()/*, list*/);
 
-                InitBinderForTaskWrapper(v);
+                InitBinderForTask(v);
                 
-                v.GetWrappedReference().EnterEditMode();
+                v.EnterPlacementUIMode();
 
-                v.GetWrappedReference().OnExitEditMode.SubscribeToEvent("spawnerbuttondeactivate",
+                v.OnExitPlacementUIMode.SubscribeEventHandlerMethod("spawnerbuttondeactivate",// += SpawnerButtonDeactivate;
                     () =>
                     {
                         on = false;
-                        v.GetWrappedReference().OnExitEditMode.UnsubscribeFromEvent("spawnerbuttondeactivate");
+                        v.OnExitPlacementUIMode.UnsubscribeEventHandlerMethod("spawnerbuttondeactivate");
+                    });
+                
+                /*void SpawnerButtonDeactivate()
+                {
+                    on = false;
+                    v.OnExitPlacementUIMode -= SpawnerButtonDeactivate;
+                }*/
+
+                v.OnPlacementConfirmation.SubscribeEventHandlerMethod("onplacementconfirmationcallback",
+                    (b) =>
+                    {
+                        if (b)
+                        {
+                            EditedPlanAddTask(v.GetTask(), list[0] as Unit);
+                        }
+                        else
+                        {
+                            editedTaskPlan = null;
+                        }
                     });
 
                 SelectionHandler.GetUsedSelector().SelectEntity(v);
             }
         }
+        private TaskPlan2 editedTaskPlan;
 
-        private void BindTaskWrapperSelectionEvent(MultiEventObserver binder, Action<object, EventArgs> action, TaskMarkerWrapper tmw)
+        private void EditedPlanAddTask(Task t, ITaskSubject ts)
         {
-            var id = binder.AddNewEventAndSubscribeToIt(action);
-            tmw.GetOnSelectionStateChangeObserver().SubscribeToEvent("key",
-                (_) => binder.InvokeEvent(id,tmw, new SimpleEventArgs(_.Item2)));
+            if (editedTaskPlan == null)
+            {
+                editedTaskPlan = new TaskPlan2(ts);
+                editedTaskPlan.AddTaskToPlan(t);
+                editedTaskPlan.StartPlanExecution();
+            }
+            else
+            {
+                editedTaskPlan.AddTaskToPlan(t);
+            }
+
+            t.GetParameters().AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
+
+            if (Input.GetKey(KeyCode.LeftShift))
+            {
+                OnButtonActivationOrNot(true);
+            }
+            else
+            {
+                editedTaskPlan = null;
+            }
+
         }
 
-        private void InitBinderForTaskWrapper(TaskMarkerWrapper tmw)
+        private void BindTaskSelectionEvent(MultiEventObserver binder, Action<object, EventArgs> action, TaskMarker tm)
+        {
+            var id = binder.AddNewEventAndSubscribeMethodToIt(action);
+            tm.GetOnSelectionStateChangeObserver().SubscribeEventHandlerMethod("whateverkey", 
+                (_) => binder.InvokeEvent(id,tm, new SimpleEventArgs(_.Item2)), true);
+        }
+
+        private void InitBinderForTask(TaskMarker tm)
         {
             var binder = new MultiEventObserver();
             
-            BindTaskWrapperSelectionEvent(binder,
+            BindTaskSelectionEvent(binder,
                 (sender, args) => {
                     //Debug.Log("Triggered by direct selection status change.");
                     if (args is SimpleEventArgs)
                         associatedTaskEditMenu.SetActiveRecursivelyExt(((bool)(args as SimpleEventArgs).args[0]));
-                }, tmw);
+                }, tm);
         }
 
     }

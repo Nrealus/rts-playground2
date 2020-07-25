@@ -23,40 +23,40 @@ namespace Core.UI
 
         public UIOrdobTreeViewElement treeViewRootElement;
 
-        private List<UIOrdobTreeViewElement> trackedUnitWrappersTreeViewElements = new List<UIOrdobTreeViewElement>();
+        private List<UIOrdobTreeViewElement> trackedUnitsTVEs = new List<UIOrdobTreeViewElement>();
         //private Dictionary<UnitWrapper, UIOrderOfBattleTreeViewElement> trackedUnitWrappersTreeViewElements = new Dictionary<UnitWrapper, UIOrderOfBattleTreeViewElement>();
-        private Dictionary<UnitWrapper, MultiEventObserver> trackedUnitWrappersBinders = new Dictionary<UnitWrapper, MultiEventObserver>();
+        private Dictionary<Unit, MultiEventObserver> trackedUnitsBinders = new Dictionary<Unit, MultiEventObserver>();
 
         private void Start()
         {
             
         }
 
-        public void AddUnitToOrdob(UnitWrapper uwToAdd)
+        public void AddUnitToOrdob(Unit uToAdd)
         {
-            uwToAdd.SubscribeOnParentChange("changeobui",
+            uToAdd.SubscribeOnParentChange("changeobui",
                 () =>
                 {
-                    if (trackedUnitWrappersTreeViewElements.Any((_) => { return _.associatedUnitWrapper == uwToAdd; }))
-                        UpdateTreeViewElementParent(uwToAdd);
+                    if (trackedUnitsTVEs.Any((_) => { return _.associatedUnit == uToAdd; }))
+                        UpdateTreeViewElementParent(uToAdd);
                     else
-                        AddUnitToOrdob_Aux(uwToAdd);
+                        AddUnitToOrdob_Aux(uToAdd);
                 }
             );
         }
 
-        private void AddUnitToOrdob_Aux(UnitWrapper uw)
+        private void AddUnitToOrdob_Aux(Unit u)
         {
-            var tve = AddTreeViewElement(uw);
+            var tve = AddTreeViewElement(u);
             
             var binder = new MultiEventObserver();
             
             BindSelectionEvent(binder,
                 (sender, args) => {
                     //Debug.Log("Triggered by direct selection status change.");
-                    if (sender is UnitWrapper)
+                    if (sender is Unit)
                         tve.ActualOnPointerDown(null);
-                }, uw);
+                }, u);
 
             tve.BindPressEvent(binder,
                 (sender, args) => {
@@ -64,36 +64,35 @@ namespace Core.UI
                     if (args is SimpleEventArgs)
                     {
                         if ((bool)(args as SimpleEventArgs).args[0])
-                            SelectionHandler.GetUsedSelector().SelectEntity(uw);
+                            SelectionHandler.GetUsedSelector().SelectEntity(u);
                         else
-                            SelectionHandler.GetUsedSelector().DeselectEntity(uw);
+                            SelectionHandler.GetUsedSelector().DeselectEntity(u);
                     }
                 });
 
-            trackedUnitWrappersTreeViewElements.Add(tve);
+            trackedUnitsTVEs.Add(tve);
         }
 
-        public void RemoveUnitFromOrdob(UnitWrapper uwToRemove)
+        public void RemoveUnitFromOrdob(Unit uToRemove)
         {
-            uwToRemove.UnsubscribeOnParentChange("changeobui");
-            var bndr = trackedUnitWrappersBinders[uwToRemove];
-            UnbindSelectionEvent(bndr, uwToRemove);
+            uToRemove.UnsubscribeOnParentChange("changeobui");
+            var bndr = trackedUnitsBinders[uToRemove];
+            UnbindSelectionEvent(bndr, uToRemove);
 
-            var r = trackedUnitWrappersTreeViewElements.Find((_) => { return _.associatedUnitWrapper == uwToRemove; });
+            var r = trackedUnitsTVEs.Find((_) => { return _.associatedUnit == uToRemove; });
             
-            r.associatedUnitWrapper = null;
-            trackedUnitWrappersTreeViewElements.Remove(r);       
+            trackedUnitsTVEs.Remove(r);       
             
             r.DestroyMe();
         }
 
-        private UIOrdobTreeViewElement AddTreeViewElement(UnitWrapper uwToAdd)
+        private UIOrdobTreeViewElement AddTreeViewElement(Unit uToAdd)
         {
             UIOrdobTreeViewElement res;
             
-            foreach (var v in trackedUnitWrappersTreeViewElements)
+            foreach (var v in trackedUnitsTVEs)
             {
-                if (v.associatedUnitWrapper == uwToAdd.GetParentNode())
+                if (v.associatedUnit == uToAdd.GetParentNode())
                 {
                     res = Instantiate<UIOrdobTreeViewElement>(
                         GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().uiOrdobTreeViewElementPrefab,
@@ -102,9 +101,7 @@ namespace Core.UI
                     // This (VVVV) obviously sucks, will be changed in the future during next massive refactoring.
                     //res.containerOfWholeTreeView = transform.Find("Scroll Area").Find("List").GetComponent<RectTransform>();
                     // Already better :
-                    res.dragArea = v.dragArea;
-                    res.containerOfWholeTreeView = v.containerOfWholeTreeView;
-                    res.associatedUnitWrapper = uwToAdd;
+                    res.Init(uToAdd, v.dragArea, v.containerOfWholeTreeView);
 
                     return res;
                 }
@@ -117,17 +114,15 @@ namespace Core.UI
             // This (VVVV) obviously sucks, will be changed in the future during next massive refactoring.
             //res.containerOfWholeTreeView = transform.Find("Scroll Area").Find("List").GetComponent<RectTransform>();
             // Already better :
-            res.dragArea = treeViewRootElement.dragArea;
-            res.containerOfWholeTreeView = treeViewRootElement.containerOfWholeTreeView;
-            res.associatedUnitWrapper = uwToAdd;
+            res.Init(uToAdd, treeViewRootElement.dragArea, treeViewRootElement.containerOfWholeTreeView);
             
             return res;
         }
         
-        private void UpdateTreeViewElementParent(UnitWrapper uw)
+        private void UpdateTreeViewElementParent(Unit u)
         {
-            UIOrdobTreeViewElement ugwTve = trackedUnitWrappersTreeViewElements.Find((_) => { return _.associatedUnitWrapper == uw; });
-            UIOrdobTreeViewElement ugwParentTve = trackedUnitWrappersTreeViewElements.Find((_) => { return _.associatedUnitWrapper == uw.GetParentNode(); });
+            UIOrdobTreeViewElement ugwTve = trackedUnitsTVEs.Find((_) => { return _.associatedUnit == u; });
+            UIOrdobTreeViewElement ugwParentTve = trackedUnitsTVEs.Find((_) => { return _.associatedUnit == u.GetParentNode(); });
             
             if (ugwParentTve == null)
                 ugwParentTve = treeViewRootElement;
@@ -136,23 +131,23 @@ namespace Core.UI
                 ugwTve.transform.SetParent(ugwParentTve.childrenRoot.transform);
         }
 
-        private void BindSelectionEvent(MultiEventObserver binder, Action<object, EventArgs> action, UnitWrapper uw)
+        private void BindSelectionEvent(MultiEventObserver binder, Action<object, EventArgs> action, Unit u)
         {
-            if (!trackedUnitWrappersBinders.ContainsKey(uw))
+            if (!trackedUnitsBinders.ContainsKey(u))
             {
-                var id = binder.AddNewEventAndSubscribeToIt(action);
-                uw.GetOnSelectionStateChangeObserver().SubscribeToEvent("doactiontreeview",
-                    (_) => binder.InvokeEvent(id, uw, null));
-                trackedUnitWrappersBinders.Add(uw, binder);
+                var id = binder.AddNewEventAndSubscribeMethodToIt(action);
+                u.GetOnSelectionStateChangeObserver().SubscribeEventHandlerMethod("doactiontreeview",
+                    (_) => binder.InvokeEvent(id, u, null));
+                trackedUnitsBinders.Add(u, binder);
             }
         }
 
-        private void UnbindSelectionEvent(MultiEventObserver binder, UnitWrapper uw)
+        private void UnbindSelectionEvent(MultiEventObserver binder, Unit u)
         {
-            if (trackedUnitWrappersBinders.ContainsKey(uw))
+            if (trackedUnitsBinders.ContainsKey(u))
             {
-                uw.GetOnSelectionStateChangeObserver().UnsubscribeFromEvent("doactiontreeview");
-                trackedUnitWrappersBinders.Remove(uw);
+                u.GetOnSelectionStateChangeObserver().UnsubscribeEventHandlerMethod("doactiontreeview");
+                trackedUnitsBinders.Remove(u);
             }
         }
 

@@ -95,7 +95,7 @@ namespace Nrealus.Extensions.Observer
             }
         }
     
-        public int AddNewEventAndSubscribeToIt(Action<object, EventArgs> callback)
+        public int AddNewEventAndSubscribeMethodToIt(Action<object, EventArgs> callback)
         {
             var r = new EventWrapper();
 

@@ -3,6 +3,7 @@ using UnityEngine.EventSystems;
 using Nrealus.Extensions;
 using Core.Units;
 using Nrealus.Extensions.Observer;
+using UnityEngine;
 
 namespace Core.UI
 {
@@ -14,7 +15,8 @@ namespace Core.UI
     public class UIOrdobTreeViewElement : TreeViewElement
     {
 
-        public UnitWrapper associatedUnitWrapper;
+        private UnitWrapper _associatedUnitWrapper;
+        public Unit associatedUnit { get { return _associatedUnitWrapper.Value; } }
 
         private ITreeViewSelectable _associatedTreeViewSelectable;
         public override ITreeViewSelectable GetAssociatedTreeViewSelectable()
@@ -36,6 +38,13 @@ namespace Core.UI
             _associatedTreeViewSelectable.SetAssociatedTreeViewElement(this);
         }
 
+        public void Init(Unit unit, RectTransform dragArea, RectTransform containerOfWholeTreeView)
+        {
+            this.dragArea = dragArea;
+            this.containerOfWholeTreeView = containerOfWholeTreeView;
+            _associatedUnitWrapper = new UnitWrapper(unit);
+        }
+
         #region ssdfsdfs
 
         public override void OnDragHoverOn(TreeViewElement hoveredPotentialAttachElements, TreeViewElement previousHoveredPotentialAttachElements)
@@ -52,10 +61,10 @@ namespace Core.UI
             if (newParent != null)
             {
                 newParent.GetAssociatedTreeViewSelectable().Unhighlight();
-                Unit.AddSubUnitToUnit(associatedUnitWrapper, (newParent as UIOrdobTreeViewElement).associatedUnitWrapper);
+                associatedUnit.ChangeParentTo((newParent as UIOrdobTreeViewElement).associatedUnit);
             }                
             else
-                Unit.DettachSubUnitFromItsParent(associatedUnitWrapper);
+                associatedUnit.ChangeParentTo(null);
         }
 
         public override void OnPressInOrOut(bool inOrOut, PointerEventData data)
@@ -82,15 +91,15 @@ namespace Core.UI
 
         public void BindPressEvent(MultiEventObserver binder, Action<object, EventArgs> action)
         {
-            var id = binder.AddNewEventAndSubscribeToIt(action);
-            onPressedInBind.SubscribeToEvent("bindpress",
+            var id = binder.AddNewEventAndSubscribeMethodToIt(action);
+            onPressedInBind.SubscribeEventHandlerMethod("bindpress",
                 (_) => binder.InvokeEvent(id, this, new SimpleEventArgs(_)));
             onUnbind += () => UnbindPressEvent(binder, id);
         }
 
         private void UnbindPressEvent(MultiEventObserver binder, int sourceId)
         {
-            onPressedInBind.UnsubscribeFromEvent("bindpress");
+            onPressedInBind.UnsubscribeEventHandlerMethod("bindpress");
         }
 
     }

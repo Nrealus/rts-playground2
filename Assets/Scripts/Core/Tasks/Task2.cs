@@ -8,40 +8,35 @@ namespace Core.Tasks
     public abstract class Task2 : Task
     {
 
+        private TaskPlan2 taskPlan;
+        protected override void InstanceSetTaskPlan(TaskPlan2 taskPlan)
+        {
+            this.taskPlan = taskPlan;
+        }
+
+        protected override TaskPlan2 InstanceGetTaskPlan()
+        {
+            return taskPlan;
+        }
+
         protected override bool InstanceTryStartExecution()
         {
-            if (IsInPhase(GetRefWrapper(), OrderPhase.Staging))
+            if (IsInPhase(TaskPhase.Staging))
             {
-                if(GetSubject(GetRefWrapper()).GetTaskPlan().IsFirstInlineActiveTaskInPlan(GetRefWrapper()))
+                if(GetTaskPlan().GetCurrentTaskInPlan() == this)
                 {
-                    SetPhase(GetRefWrapper(), OrderPhase.ExecutionWaitingTimeToStart);
+                    SetPhase(TaskPhase.WaitToStartExecution);
                     return true;
                 }
                 else
                 {
-                    if (InstanceGetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.InstantOverrideAll))
+                    if (GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.InstantOverrideAll))
                     {
-                        // "delete" orders that start after the starting time of this order
-                        foreach (var ow in GetSubject(GetRefWrapper()).GetTaskPlan().GetAllActiveTasksFromPlan())
-                        {
-                            if (ow != GetRefWrapper() && GetSubject(GetRefWrapper()).GetTaskPlan().IsActiveTaskInPlanAfterOther(GetRefWrapper(), ow))
-                            {
-                                EndExecution(ow);
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        
-                        if (GetSubject(GetRefWrapper()).GetTaskPlan().GetFirstInlineActiveTaskInPlan() != null)
-                        {
-                            SetPhase(GetRefWrapper(), Task.OrderPhase.ExecutionWaitingTimeToStart);  
-                            return true;
-                        }
-                        
-                        return false;
+                        GetTaskPlan().StopPlanExecution();
+                        SetPhase(Task.TaskPhase.WaitToStartExecution);  
+                        return true;
                     }
+                    return false;
                 }
             }
 
@@ -52,99 +47,94 @@ namespace Core.Tasks
         protected override void InitPhasesFSM()
         {
             
-            orderPhasesFSM.AddState(OrderPhase.Initial);
+            orderPhasesFSM.AddState(TaskPhase.Initial);
 
-            orderPhasesFSM.AddState(OrderPhase.Staging);
+            orderPhasesFSM.AddState(TaskPhase.Staging);
 
-            orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingTimeToStart,
+            orderPhasesFSM.AddState(TaskPhase.WaitToStartExecution,
+                EnterExecutionWaitingTimeToStart,
+                UpdateExecutionWaitingTimeToStart);
+
+            orderPhasesFSM.AddState(TaskPhase.Execution,
+                EnterExecution,
+                UpdateExecution);
+
+            orderPhasesFSM.AddState(TaskPhase.Pause);
+
+            orderPhasesFSM.AddState(TaskPhase.Cancelled,
                 () =>
-                {
-                    if(!Task.GetParameters(GetRefWrapper()).plannedStartingTime.isInitialized)
-                    {
-                        Task.SetPhase(GetRefWrapper(), Task.OrderPhase.Execution);
-                    }
-                    else if (TimeHandler.HasTimeJustPassed(Task.GetParameters(GetRefWrapper()).plannedStartingTime))
-                    {
-                        Task.SetPhase(GetRefWrapper(), Task.OrderPhase.Execution);                
-                    }
-                },
+                { },
                 () =>
-                {
-                    if(TimeHandler.HasTimeJustPassed(Task.GetParameters(GetRefWrapper()).plannedStartingTime))
-                    {
-                        Task.SetPhase(GetRefWrapper(), Task.OrderPhase.Execution);
-                    }
-                });
+                { });
 
-            orderPhasesFSM.AddState(OrderPhase.Execution,
-                () =>
-                {
-                    GetParameters(GetRefWrapper()).plannedStartingTime = TimeHandler.CurrentTime();
-                },
-                () =>
-                {
-                    UpdateExecution();
-                });
-
-            orderPhasesFSM.AddState(OrderPhase.Pause);
-
-            orderPhasesFSM.AddState(OrderPhase.Cancelled,
-                () =>
-                {
-                    
-                },
-                () =>
-                {
-
-                });
-
-            orderPhasesFSM.AddState(OrderPhase.End,
+            orderPhasesFSM.AddState(TaskPhase.End,
+               () => 
+               { },
                () =>
                {
-
-               },
-               () =>
-               {
-                    SetPhase(GetRefWrapper(), OrderPhase.End2);
+                    SetPhase( TaskPhase.End2);
                });
 
             
             bool waitForReactionAtEnd = false;
+
             TaskWrapper nextActiveOrder = null;
             
-            orderPhasesFSM.AddState(OrderPhase.End2,
+            orderPhasesFSM.AddState(TaskPhase.End2,
             () =>
             {
-                if(Task.GetParameters(GetRefWrapper()).ContainsExecutionMode(TaskParams.TaskExecutionMode.WaitForReactionAtEnd))
+                if(GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.WaitForReactionAtEnd))
                 {
                     waitForReactionAtEnd = true;
                 }
-                
-                if (GetSubject(GetRefWrapper()).GetTaskPlan().GetNextInlineActiveTaskInPlan(GetRefWrapper()) != null
-                    && GetParameters(GetSubject(GetRefWrapper()).GetTaskPlan().GetNextInlineActiveTaskInPlan(GetRefWrapper())).ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
+                if (GetTaskPlan().GetNextTaskInPlan(this) != null
+                    && GetTaskPlan().GetNextTaskInPlan(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
                 {
-                    nextActiveOrder = InstanceGetSubject().GetTaskPlan().GetNextInlineActiveTaskInPlan(GetRefWrapper());
+                    nextActiveOrder = new TaskWrapper(GetTaskPlan().GetNextTaskInPlan(this));
                 }
-
             },
             () =>
             {
                 if (waitForReactionAtEnd == false)
-                    SetPhase(GetRefWrapper(), OrderPhase.Disposed);
+                    SetPhase(TaskPhase.Disposed);
             });
 
-            orderPhasesFSM.AddState(OrderPhase.Disposed,
+            orderPhasesFSM.AddState(TaskPhase.Disposed,
             () =>
             {
-            
-                GetRefWrapper().DestroyWrappedReference();
+                DestroyThis();
 
-                if (nextActiveOrder != null && nextActiveOrder.GetWrappedReference() != null)
-                    Task.TryStartExecution(nextActiveOrder);
+                if (nextActiveOrder != null && nextActiveOrder.Value != null)
+                    nextActiveOrder.Value.TryStartExecution();
 
             });
                
-            orderPhasesFSM.CurrentState = OrderPhase.Initial;
+            orderPhasesFSM.CurrentState = TaskPhase.Initial;
+        }
+
+        protected virtual void EnterExecutionWaitingTimeToStart()
+        {
+            if(!GetParameters().plannedStartingTime.isInitialized)
+            {
+                SetPhase(Task.TaskPhase.Execution);
+            }
+            else if (TimeHandler.HasTimeJustPassed(GetParameters().plannedStartingTime))
+            {
+                SetPhase(Task.TaskPhase.Execution);                
+            }
+        }
+
+        protected virtual void UpdateExecutionWaitingTimeToStart()
+        {
+            if(TimeHandler.HasTimeJustPassed(GetParameters().plannedStartingTime))
+            {
+                SetPhase(Task.TaskPhase.Execution);
+            }
+        }
+
+        protected virtual void EnterExecution()
+        {
+            GetParameters().plannedStartingTime = TimeHandler.CurrentTime();
         }
 
         protected abstract void UpdateExecution();

@@ -15,38 +15,30 @@ using Core.Faction;
 namespace Core.MapMarkers
 {
 
-    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
 
     /// <summary>
     /// A subclass of TaskMarker, specific to MoveTask tasks. (NEEDS MORE DETAILS)
     /// </summary>   
-    public class MoveTaskMarker : TaskMarker, IHasRefWrapper<TaskMarkerWrapper<MoveTaskMarker>>
+    public class MoveTaskMarker : TaskMarker
     {
 
-        public new TaskMarkerWrapper<MoveTaskMarker> GetRefWrapper()
-        {
-            return _myWrapper as TaskMarkerWrapper<MoveTaskMarker>;
-        }
+        private TaskWrapper<MoveTask> _associatedTaskWrapper;
+        public override Task GetTask() { return _associatedTaskWrapper.Value; }
 
-        private TaskPlan _myTaskPlan;
-        public override TaskPlan GetTaskPlan() { return _myTaskPlan; }
-
-        private TaskWrapper<MoveTask> _myTaskWrapper;
-        protected override TaskWrapper GetTaskWrapper() { return _myTaskWrapper; }
-
-        private List<UnitWrapper> myTaskSubjectsList = new List<UnitWrapper>();
-        public override IEnumerable<ITaskSubject> GetTaskSubjects() { return myTaskSubjectsList; }
+        //private List<UnitWrapper> myTaskSubjectsList = new List<UnitWrapper>();
+        //public override IEnumerable<ITaskSubject> GetTaskSubjects() { return myTaskSubjectsList; }
 
         private string onPauseEventKey;
         private string onUnpauseEventKey;
         private string onClearanceSubjectsKey;
         
-        private List<MapMarkerWrapper<WaypointMarker>> waypointMarkerWrappersList = new List<MapMarkerWrapper<WaypointMarker>>();
+        private List<WaypointMarker> waypointMarkersList = new List<WaypointMarker>();
 
-        private Color _initialColor;
-        protected override void Init(Vector3 screenPosition, IEnumerable<ISelectable> subjects, TaskMarkerWrapper previousTaskMarker)
+        private Color _initialColor; 
+        private void InitFirstHalf()
         {
-            base.Init(screenPosition, subjects, previousTaskMarker);
+            ready = true;
 
             _instcount++;
 
@@ -61,6 +53,13 @@ namespace Core.MapMarkers
             onUnpauseEventKey = (new StringBuilder("tmw")).Append(-_instcount).ToString();            
             UIHandler.SubscribeOnPause(onPauseEventKey,() => paused = true);
             UIHandler.SubscribeOnUnpause(onUnpauseEventKey,() => paused = false);
+        }
+
+        protected override void Init(Vector3 screenPosition/*, IEnumerable<ISelectable> subjects*/, TaskMarker _previousTaskMarker)
+        {
+            base.Init(screenPosition/*, subjects*/, _previousTaskMarker);
+
+            InitFirstHalf();
 
             factionAffiliation = GetComponent<FactionAffiliation>();
             uiGraphic = GetComponentInChildren<UnityEngine.UI.Image>();
@@ -68,50 +67,47 @@ namespace Core.MapMarkers
 
             PlaceAtScreenPosition(screenPosition);
 
-            onClearanceSubjectsKey += (new StringBuilder("rmvsubj")).Append(_instcount).ToString();
+            /*onClearanceSubjectsKey += (new StringBuilder("rmvsubj")).Append(_instcount).ToString();
+
             foreach(var v in subjects)
             {
                 var uw = v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>();
-                uw.SubscribeOnClearance(onClearanceSubjectsKey,() => _RemoveSubjectAndUnsubscribe(uw));
+                uw.SubscribeOnClearance(onClearanceSubjectsKey,() => RemoveAndUnsubSubject(uw));
                 myTaskSubjectsList.Add(uw);
-            }
+            }*/
 
-            _myWrapper = new TaskMarkerWrapper<MoveTaskMarker>(this, () => {_myWrapper = null;});
-
-            ready = true;
-
-            if (previousTaskMarker == null)
+            /*if (_previousTaskMarkerWrapper == null)
             {
-                _myTaskPlan = new TaskPlan();
+                //_myTaskPlan = new TaskPlan2();
             }
             else
             {
-                _myTaskPlan = previousTaskMarker.GetWrappedReference().GetTaskPlan();//.GetTaskPlan();
-            }
-            //_myTaskWrapper = Task.CreateTaskWrapperWithoutSubject<MoveTask>();
-            //Task.SetSubject(GetTaskWrapper(), null, null, this.subjects[0].GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
-            _myTaskWrapper = Task.CreateTaskWrapperAndSetTaskMarker<MoveTask>(
-                //this.subjects[0].GetSelectableAsReferenceWrapperSpecific<UnitWrapper>(),
-                GetRefWrapper());
+                previousTaskMarkerWrapper = _previousTaskMarkerWrapper;
+                previousTaskMarkerWrapper.SubscribeOnClearance(() => previousTaskMarkerWrapper = null);
+                //_myTaskPlan = _previousTaskMarkerWrapper.GetWrappedReference().GetTaskPlan();//.GetTaskPlan();
+            }*/
 
-            GetTaskWrapper().SubscribeOnClearance("taskmarkerclear",() => { GetRefWrapper().DestroyWrappedReference(); _myTaskWrapper = null; });
+            _associatedTaskWrapper = new TaskWrapper<MoveTask>(Task.CreateTask<MoveTask>());//Task.CreateTaskWrapperAndSetReceiver<MoveTask>(myTaskSubjectsList[0]);
 
-            GetRefWrapper().SubscribeOnClearance(DestroyMe);
+            GetTask().SubscribeOnDestruction("taskmarkerclear", DestroyThis);
+            //GetRefWrapper().SubscribeOnClearance(DestroyMe);
 
         }
 
-        private void _RemoveSubjectAndUnsubscribe(UnitWrapper uw)
+        /*private void RemoveAndUnsubSubject(UnitWrapper uw)
         {
             myTaskSubjectsList.Remove(uw);
             uw.UnsubscribeOnClearance(onClearanceSubjectsKey);
-        }
+        }*/
 
-        protected override void DestroyMe()
+        public override void DestroyThis()
         {
             UIHandler.UnsubscribeOnPause(onPauseEventKey);
             UIHandler.UnsubscribeOnUnpause(onUnpauseEventKey);
-            _myTaskPlan = null;
-            Destroy(gameObject);
+            //successorTaskMarker = null;
+            //_myTaskPlan = null;
+            base.DestroyThis();
+            _associatedTaskWrapper = null;
         }
 
         protected override void UpdateMe()
@@ -124,8 +120,9 @@ namespace Core.MapMarkers
                     {
                         if (Input.GetKeyDown(KeyCode.Mouse1))
                         {
-                            ExitEditMode();
-                            GetRefWrapper().DestroyWrappedReference();
+                            ExitPlacementUIMode();
+                            ConfirmPositioning(false);
+                            DestroyThis();
                         }
                         PlaceAtScreenPosition(UIHandler.GetPointedScreenPosition());                
                     }
@@ -133,6 +130,17 @@ namespace Core.MapMarkers
             }
 
             DrawUpdate(_initialColor);
+        }
+
+        protected override void DrawUpdate(Color _initialColor)
+        {
+            base.DrawUpdate(_initialColor);
+
+            /*if (successorTaskMarkerWrapper != null)
+            {
+                Debug.DrawLine(transform.position, successorTaskMarkerWrapper.GetWrappedReference().transform.position);
+            }*/
+
         }
 
         private void OnPointerClickDelegate(PointerEventData data)
@@ -143,48 +151,38 @@ namespace Core.MapMarkers
                 {
                     if (UIHandler.EventSystemPointedGameObjects().Count > 1)
                     {
-                        ExitEditMode();
-                        GetRefWrapper().DestroyWrappedReference();
+                        ExitPlacementUIMode();
+                        ConfirmPositioning(false);
+                        DestroyThis();
                     }
-                    else if (myTaskSubjectsList.Count > 0)
-                    {
-                        if (Input.GetKey(KeyCode.LeftShift))
-                        {
-                            var v = MoveTaskMarker.CreateInstance<MoveTaskMarker>(UIHandler.GetPointedScreenPosition(), myTaskSubjectsList, GetRefWrapper());
-                            
-                            v.GetWrappedReference().ConfirmAndExecute();
-                            
-                            Task.GetParameters(v.GetWrappedReference().GetTaskWrapper()).AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
-                            
-                            v.GetWrappedReference().GetTaskPlan().QueueActiveOrderToPlan(v.GetWrappedReference().GetTaskWrapper(), null, null);
-                        }
-                        else
-                        {
-                            ConfirmAndExecute();
-                           
-                            Task.GetParameters(GetTaskWrapper()).AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
+                    else// if (myTaskSubjectsList.Count > 0)
+                    {            
+                        AddWaypoint(WaypointMarker.CreateInstance(UIHandler.GetPointedWorldPosition()));
+                        (GetTask() as MoveTask).AddWaypoints(waypointMarkersList);
 
-                            GetTaskPlan().QueueActiveOrderToPlan(GetTaskWrapper(), null, null);
-                            
-                            Task.GetSubject(GetTaskWrapper()).GetTaskPlan().StopActiveExecution();
+                        /*var taskPlan = new TaskPlan2();
+                        taskPlan.AddTaskToPlan(GetTaskWrapper());
+                        
+                        Task.GetSubject(GetTaskWrapper()).GetTaskPlan().StopPlanExecution();
 
-                            Task.GetSubject(GetTaskWrapper()).SetTaskPlan(GetTaskPlan());
-                            GetTaskPlan().StartActiveExecution();
-                            //Task.TryStartExecution(GetTaskPlan().GetFirstInlineActiveTaskInPlan());
-                        }
+                        Task.GetSubject(GetTaskWrapper()).SetTaskPlan(GetTaskPlan());
+                        GetTaskPlan().StartPlanExecution();*/
+
+                        ExitPlacementUIMode();
+                        ConfirmPositioning(true);
                     }
                 }
                 else
                 {
                     if (expanded)
                     {
-                        SelectionHandler.GetUsedSelector().DeselectEntity(GetRefWrapper());
+                        SelectionHandler.GetUsedSelector().DeselectEntity(this);
                         expanded = false;
                         //Contract();
                     }
                     else
                     {
-                        SelectionHandler.GetUsedSelector().SelectEntity(GetRefWrapper());
+                        SelectionHandler.GetUsedSelector().SelectEntity(this);
                         expanded = true;
                         //Expand();
                     }
@@ -192,37 +190,21 @@ namespace Core.MapMarkers
             }
         }
 
-        private void ConfirmAndExecute()
+        private void AddWaypoint(WaypointMarker wp)
         {
-            SelectionHandler.GetUsedSelector().DeselectEntity(GetRefWrapper());
-            /*foreach (var v in subjects)
+            if (!waypointMarkersList.Contains(wp))
             {
-                TaskFactory.CreateTaskWrapperAndSetReceiver<MoveTask>((ITaskSubject<Unit>)v.GetSelectableAsReferenceWrapperSpecific<UnitWrapper>());
-            }*/            
-            ExitEditMode();
-            
-            AddWaypoint(WaypointMarker.CreateInstance(UIHandler.GetPointedWorldPosition()).GetRefWrapper());
-
-            GetTaskWrapper().GetCastReference<MoveTask>().AddWaypoints(waypointMarkerWrappersList);
-
-            //Task.GetSubject(myTaskWrapper).SetTaskPlan(myTaskPlan);
-            //Task.TryStartExecution(myTaskWrapper);
-        }
-
-        private void AddWaypoint(MapMarkerWrapper<WaypointMarker> waypointWrapper)
-        {
-            if (!waypointMarkerWrappersList.Contains(waypointWrapper))
-            {
-                GetRefWrapper().SubscribeOnClearance(() => RemoveClearedWaypointWrapper(waypointWrapper));
-                this.waypointMarkerWrappersList.Add(waypointWrapper);
+                SubscribeOnDestruction(wp.GetInstanceID().ToString(), () => RemoveClearedWaypointWrapper(wp));
+                this.waypointMarkersList.Add(wp);
             }
         }
 
-        private void RemoveClearedWaypointWrapper(MapMarkerWrapper<WaypointMarker> waypointWrapper)
+        private void RemoveClearedWaypointWrapper(WaypointMarker wp)
         {
-            if (waypointMarkerWrappersList.Contains(waypointWrapper))
+            if (waypointMarkersList.Contains(wp))
             {
-                waypointMarkerWrappersList.Remove(waypointWrapper);
+                waypointMarkersList.Remove(wp);
+                //UnsubscribeOnDestruction(wp.GetInstanceID().ToString());
             }
         }
 

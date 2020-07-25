@@ -16,21 +16,17 @@ using System;
 
 namespace Core.MapMarkers
 {
-    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+    
+    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
 
     /// <summary>
     /// A MapMarker subclass, that serve as a means of communication with an associated Task. It has both a pure game logic and UI role.
     /// For now, a Task is spawned from a TaskMarker, and the settings of a TaskMarker can be used to influence the parameters or behaviour of a Task.
     /// That includes the position of the marker on the map.
-    /// There also is a TaskPlan associated to this marker, and the associated Task (again, via its TaskWrapper of course) is expected to be part of the TaskPlan.
+    /// There also is a TaskPlan associated to this marker, and the associated Task is expected to be part of the TaskPlan.
     /// </summary>   
-    public abstract class TaskMarker : MapMarker, IHasRefWrapper<TaskMarkerWrapper>
+    public abstract class TaskMarker : MapMarker
     {
-
-        public new TaskMarkerWrapper GetRefWrapper()
-        {
-            return _myWrapper as TaskMarkerWrapper;
-        }
 
         private static Camera _cam;
         public Camera GetMyCamera()
@@ -55,12 +51,12 @@ namespace Core.MapMarkers
             return SelectionHandler.GetUsedSelector();
         }
 
-        public static TaskMarkerWrapper<T> CreateInstance<T>(Vector3 screenPosition, IEnumerable<ISelectable> subjects) where T : TaskMarker
+        public static T CreateInstance<T>(Vector3 screenPosition/*, IEnumerable<ISelectable> subjects*/) where T : TaskMarker
         {
-            return CreateInstance<T>(screenPosition, subjects, null);
+            return CreateInstance<T>(screenPosition/*, subjects*/, null);
         }
         
-        public static TaskMarkerWrapper<T> CreateInstance<T>(Vector3 screenPosition, IEnumerable<ISelectable> subjects, TaskMarkerWrapper previousTaskMarker)
+        public static T CreateInstance<T>(Vector3 screenPosition/*, IEnumerable<ISelectable> subjects*/, TaskMarker previousTaskMarker)
             where T : TaskMarker
         {
             T res = Instantiate(
@@ -68,9 +64,9 @@ namespace Core.MapMarkers
                 GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>())
                 .gameObject.AddComponent<T>();
 
-            res.Init(screenPosition, subjects, previousTaskMarker);
+            res.Init(screenPosition/*, subjects*/, previousTaskMarker);
 
-            return res.GetRefWrapper().CastWrapper<T>();
+            return res;//.GetRefWrapper().CastWrapper<T>();
         }
 
         protected static int _instcount = 0;
@@ -80,9 +76,11 @@ namespace Core.MapMarkers
         protected FactionAffiliation factionAffiliation;
         protected UnityEngine.UI.Graphic uiGraphic;
 
-        public EasyObserver<string> OnExitEditMode = new EasyObserver<string>();
+        public EasyObserver<string> OnExitPlacementUIMode = new EasyObserver<string>();
+        //public event Action OnExitPlacementUIMode;
+        public EasyObserver<string, bool> OnPlacementConfirmation = new EasyObserver<string, bool>();
 
-        protected virtual void Init(Vector3 screenPosition, IEnumerable<ISelectable> subjects, TaskMarkerWrapper previousTaskMarker)
+        protected virtual void Init(Vector3 screenPosition/*, IEnumerable<ISelectable> subjects*/, TaskMarker previousTaskMarker)
         {
             /*OnExitEditMode.SubscribeToEvent("oneditexitdeselectall",
                 () => 
@@ -92,21 +90,26 @@ namespace Core.MapMarkers
                 });*/
         }
 
-        public abstract TaskPlan GetTaskPlan();
+        //public abstract TaskPlan2 GetTaskPlan();
 
-        protected abstract TaskWrapper GetTaskWrapper();
+        public abstract Task GetTask();
 
-        public abstract IEnumerable<ITaskSubject> GetTaskSubjects();
+        //public abstract IEnumerable<ITaskSubject> GetTaskSubjects();
 
-        public void EnterEditMode()
+        public void EnterPlacementUIMode()
         {
             isEditing = true;
         }
 
-        public void ExitEditMode()
+        public void ExitPlacementUIMode()
         {
-            OnExitEditMode.Invoke();
+            OnExitPlacementUIMode.Invoke();
             isEditing = false;
+        }
+
+        public void ConfirmPositioning(bool confirmationStatus)
+        {
+            OnPlacementConfirmation.Invoke(confirmationStatus);            
         }
 
         protected bool ready = false;
@@ -115,11 +118,6 @@ namespace Core.MapMarkers
         private void Update()
         {
             UpdateMe();
-        }
-
-        protected virtual void DestroyMe()
-        {
-            Destroy(gameObject);
         }
 
         protected virtual void UpdateMe()
@@ -132,8 +130,8 @@ namespace Core.MapMarkers
                     {
                         if (Input.GetKeyDown(KeyCode.Mouse1))
                         {
-                            ExitEditMode();
-                            GetRefWrapper().DestroyWrappedReference();
+                            ExitPlacementUIMode();
+                            DestroyThis();
                         }
                         PlaceAtScreenPosition(UIHandler.GetPointedScreenPosition());                
                     }
@@ -147,7 +145,7 @@ namespace Core.MapMarkers
             {
                 uiGraphic.color = _initialColor;
                 
-                if (GetUsedSelector().IsSelected(GetRefWrapper()))
+                if (GetUsedSelector().IsSelected(this))
                 {
                     uiGraphic.color = factionAffiliation.MyFaction.baseColor;
                 }

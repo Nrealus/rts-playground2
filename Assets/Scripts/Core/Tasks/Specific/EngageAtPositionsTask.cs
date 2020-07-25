@@ -16,6 +16,7 @@ namespace Core.Tasks
     /// OUTDATED
     /// This "passive" order (See OrderPlan) can specify targets for units. WIP (as most things but here especially - UnitROE stuff on the horizon..?)
     /// </summary>
+    #if false
     public class EngageAtPositionsTask : Task, IHasRefWrapper<TaskWrapper<EngageAtPositionsTask>>
     {
 
@@ -43,11 +44,17 @@ namespace Core.Tasks
             return unitWrapper;
         }
         
-        protected override TaskMarkerWrapper InstanceGetTaskMarker()
+        private TaskPlan2 taskPlan;
+        protected override TaskPlan2 InstanceGetTaskPlan()
+        {
+            return taskPlan;
+        }
+
+        /*protected override TaskMarkerWrapper InstanceGetTaskMarker()
         {
             throw new System.NotImplementedException();
             //return unitWrapper;
-        }
+        }*/
 
         protected override void InstanceSetSubject(ITaskSubject subject, TaskWrapper predecessor, TaskWrapper successor)
         {
@@ -76,12 +83,12 @@ namespace Core.Tasks
             return myParameters;
         }
 
-        protected override void InstanceSetTaskMarker(TaskMarkerWrapper taskMarkerWrapper)
+        /*protected override void InstanceSetTaskMarker(TaskMarkerWrapper taskMarkerWrapper)
         {
             //this.taskMarkerWrapper = taskMarkerWrapper;
             
             //Task.SetSubject(GetRefWrapper(), null, null, Task.GetTaskMarker(GetRefWrapper()).GetWrappedReference().GetTaskSubjects().GetEnumerator().Current);
-        }
+        }*/
         
         /*protected override void InstanceSetOrderParams(OrderParams orderParams)
         {
@@ -94,7 +101,7 @@ namespace Core.Tasks
 
             if (IsInPhase(GetRefWrapper(), OrderPhase.Staging))
             {
-                SetPhase(GetRefWrapper(), OrderPhase.ExecutionWaitingTimeToStart);
+                SetPhase(GetRefWrapper(), OrderPhase.WaitToStartExecution);
                 return true;
             }
 
@@ -147,7 +154,7 @@ namespace Core.Tasks
 
             orderPhasesFSM.AddState(OrderPhase.Staging);
 
-            orderPhasesFSM.AddState(OrderPhase.ExecutionWaitingTimeToStart,
+            orderPhasesFSM.AddState(OrderPhase.WaitToStartExecution,
                 () =>
                 {
                     if(!Task.GetParameters(GetRefWrapper()).plannedStartingTime.isInitialized)
@@ -287,4 +294,5 @@ namespace Core.Tasks
         #endregion
 
     }
+    #endif
 }

@@ -16,26 +16,52 @@ namespace Nrealus.Extensions.Observer
     public class EasyObserver<TKey>
     {
         private Dictionary<TKey, Action> dict = new Dictionary<TKey, Action>();
+        private Dictionary<TKey, Action> dictEnd = new Dictionary<TKey, Action>();
 
-        public void SubscribeToEvent(TKey key, Action action)
+        public void SubscribeEventHandlerMethod(TKey key, Action action)
+        {
+            SubscribeEventHandlerMethod(key, action, false);
+        }
+
+        public void SubscribeEventHandlerMethodAtEnd(TKey key, Action action)
+        {
+            SubscribeEventHandlerMethodAtEnd(key, action, false);
+        }
+
+        public void SubscribeEventHandlerMethod(TKey key, Action action, bool combineActionsIfKeyAlreadyExists)
         {
             if (!dict.ContainsKey(key))
                 dict.Add(key, action);
+            else if (combineActionsIfKeyAlreadyExists)
+                dict[key] += action;
             else
                 throw new ArgumentException("Already known key");
         }
 
-        public void UnsubscribeFromEvent(TKey key)
+        public void SubscribeEventHandlerMethodAtEnd(TKey key, Action action, bool combineActionsIfKeyAlreadyExists)
+        {
+            if (!dictEnd.ContainsKey(key))
+                dictEnd.Add(key, action);
+            else if (combineActionsIfKeyAlreadyExists)
+                dictEnd[key] += action;
+            else
+                throw new ArgumentException("Already known key");
+        }
+
+        public void UnsubscribeEventHandlerMethod(TKey key)
         {
             if (dict.ContainsKey(key))
                 dict.Remove(key);
+            else if (dictEnd.ContainsKey(key))
+                dictEnd.Remove(key);
             else
                 throw new ArgumentException("Unknown key");            
         }
 
-        public void UnsubscribeFromAllEvents()
+        public void UnsubscribeAllEventHandlerMethods()
         {
             dict.Clear();
+            dictEnd.Clear();
         }
 
         public void Invoke()
@@ -57,6 +83,8 @@ namespace Nrealus.Extensions.Observer
             */
             foreach (var f in new List<Action>(dict.Values))
                 f.Invoke();
+            foreach (var f in new List<Action>(dictEnd.Values))
+                f.Invoke();
         }
     }
 
@@ -67,26 +95,52 @@ namespace Nrealus.Extensions.Observer
     public class EasyObserver<TKey,TArgs>
     {
         private Dictionary<TKey, Action<TArgs>> dict = new Dictionary<TKey, Action<TArgs>>();
+        private Dictionary<TKey, Action<TArgs>> dictEnd = new Dictionary<TKey, Action<TArgs>>();
 
-        public void SubscribeToEvent(TKey key, Action<TArgs> action)
+        public void SubscribeEventHandlerMethod(TKey key, Action<TArgs> action)
+        {
+            SubscribeEventHandlerMethod(key, action, false);
+        }
+
+        public void SubscribeEventHandlerMethodAtEnd(TKey key, Action<TArgs> action)
+        {
+            SubscribeEventHandlerMethodAtEnd(key, action, false);
+        }
+        
+        public void SubscribeEventHandlerMethod(TKey key, Action<TArgs> action, bool combineActionsIfKeyAlreadyExists)
         {
             if (!dict.ContainsKey(key))
                 dict.Add(key, action);
+            else if (combineActionsIfKeyAlreadyExists)
+                dict[key] += action;
             else
                 throw new ArgumentException("Already known key");
         }
 
-        public void UnsubscribeFromEvent(TKey key)
+        public void SubscribeEventHandlerMethodAtEnd(TKey key, Action<TArgs> action, bool combineActionsIfKeyAlreadyExists)
+        {
+            if (!dictEnd.ContainsKey(key))
+                dictEnd.Add(key, action);
+            else if (combineActionsIfKeyAlreadyExists)
+                dictEnd[key] += action;
+            else
+                throw new ArgumentException("Already known key");
+        }
+
+        public void UnsubscribeEventHandlerMethod(TKey key)
         {
             if (dict.ContainsKey(key))
                 dict.Remove(key);
+            else if (dictEnd.ContainsKey(key))
+                dictEnd.Remove(key);
             else
-                throw new ArgumentException("Unknown key");            
+                throw new ArgumentException("Unknown key");                     
         }
 
-        public void UnsubscribeFromAllEvents()
+        public void UnsubscribeAllEventHandlerMethods()
         {
             dict.Clear();
+            dictEnd.Clear();
         }
 
         public void Invoke(TArgs args)
@@ -95,6 +149,9 @@ namespace Nrealus.Extensions.Observer
 
             foreach (var f in new List<Action<TArgs>>(dict.Values))
                 f.Invoke(args);
+            foreach (var f in new List<Action<TArgs>>(dictEnd.Values))
+                f.Invoke(args);
+
         }
 
     }

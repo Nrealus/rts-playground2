@@ -10,14 +10,12 @@ public class ResourcesListComponent : MonoBehaviour
     
     public WaypointMarker waypointMarkerPrefab;
     //public TaskMarker orderMarkerPrefab;
-    public DeployableMarker buildingMarkerPrefab;
+    //public DeployableMarker buildingMarkerPrefab;
     public FirePositionMarker firePositionMarkerPrefab;
 
     public Component taskMarkerPrefab;
-    //public MoveOrderMarker moveOrderMarkerButtonPrefab;
-
-    public UIOrderMenu orderMenuPrefab;
-
+    //public MoveOrderMarker moveOrderMarkerButtonPrefab;;
+    
     public UIOrdobTreeViewElement uiOrdobTreeViewElementPrefab;
 
 }

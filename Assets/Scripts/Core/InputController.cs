@@ -12,6 +12,7 @@ using Core.Tasks;
 using UnityEngine.UI;
 using Core.MapMarkers;
 
+#if false
 public class InputController : MonoBehaviour, 
     IHasRefToCamera
 {
@@ -802,3 +803,4 @@ public class InputController : MonoBehaviour,
 #endregion
 
 }
+#endif

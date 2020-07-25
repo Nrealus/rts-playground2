@@ -66,22 +66,22 @@ namespace Core.Handlers
 
         public static void SubscribeOnPause(string key, Action onPause)
         {
-            MyInstance.onPausedOrNot.SubscribeToEvent(key, (_) => { if (_ == true) {onPause();} });
+            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, (_) => { if (_ == true) {onPause();} });
         }
 
         public static void UnsubscribeOnPause(string key)
         {
-            MyInstance.onPausedOrNot.UnsubscribeFromEvent(key);
+            MyInstance.onPausedOrNot.UnsubscribeEventHandlerMethod(key);
         }
 
         public static void SubscribeOnUnpause(string key, Action onUnpause)
         {
-            MyInstance.onPausedOrNot.SubscribeToEvent(key, (_) => { if (_ == false) {onUnpause();} });
+            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, (_) => { if (_ == false) {onUnpause();} });
         }
 
         public static void UnsubscribeOnUnpause(string key)
         {
-            MyInstance.onPausedOrNot.UnsubscribeFromEvent(key);
+            MyInstance.onPausedOrNot.UnsubscribeEventHandlerMethod(key);
         }
 
         public static bool IsPaused()
@@ -152,15 +152,12 @@ namespace Core.Handlers
             return MyInstance.GetUIScreenCanvasGroup().GetComponentInChildren<WindowManager3>().GetComponentInChildren<UIOrdobMenu>();
         }
 
-        private UIOrderMenu uiOrderMenu;
-
         private enum UIStates1 { Neutral, Pause }
 
         private StateMachine<UIStates1> uiGeneralFSM;
 
         private void Awake()
         {
-            uiOrderMenu = FindObjectOfType<UIOrderMenu>();
         }
 
         private void OnGUI()

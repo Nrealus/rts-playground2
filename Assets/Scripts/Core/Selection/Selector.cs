@@ -22,6 +22,36 @@ namespace Core.Selection
     /// </summary>   
     public class Selector : MonoBehaviour, IHasRefToCamera
     {
+        
+        /*private class DeepCopyConvertionList : List<ISelectable>
+        {
+            public List<ISelectable> list = new List<ISelectable>();
+
+            private Dictionary<Type,List<ISelectable>> encounteredTypesAndCastListsDict = new Dictionary<Type, List<ISelectable>>();
+
+            public void Add(ISelectable obj)
+            {
+                list.Add(obj);
+            }
+
+            public List<T> SelectByType<T>() where T : ISelectable
+            {
+                if (!encounteredTypesAndCastListsDict.ContainsKey(typeof(T)))
+                {
+                    List<T> castedList = new List<T>();
+                    foreach(var v in list)
+                    {
+                        if (v is T)
+                            castedList.Add((T)v);
+                    }
+                    encounteredTypesAndCastListsDict.Add(typeof(T), castedList);
+                }
+
+                return encounteredTypesAndCastListsDict[typeof(T)] as List<T>;
+            }
+
+        }*/
+
         public FactionData selectorFaction;
 
         private Camera _cam;
@@ -58,21 +88,22 @@ namespace Core.Selection
 
         public List<ISelectable> GetCurrentlySelectedEntities()
         {
-            return new List<ISelectable>(selectedEntities);
+            return /*new List<ISelectable>(*/selectedEntities;//);
         }
 
-        public List<T> GetCurrentlySelectedEntitiesAs<T>() where T : RefWrapper
+        public List<T> GetCurrentlySelectedEntitiesAs<T>() where T : class
         {
             var res = new List<T>();
             foreach(var v in selectedEntities)
             {
-                res.Add(v.GetSelectableAsReferenceWrapperSpecific<T>());
+                res.Add(v as T);
             }
             return res;
         }
 
         public List<ISelectable> GetCurrentlySelectedEntitiesOfType<T>()
         {
+
             var res = new List<ISelectable>();
             foreach(var v in selectedEntities)
             {
@@ -100,7 +131,7 @@ namespace Core.Selection
                 selectable.InvokeOnSelectionStateChange(this, true);
                 selectedEntities.Add(selectable);
                 //onEntitySelectionStateChanged?.Invoke(selectable, true);
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().SubscribeOnClearance("deselect",() => DeselectEntity(selectable));
+                selectable.SubscribeOnDestruction("deselect",() => DeselectEntity(selectable));
             }
         }
 
@@ -109,7 +140,7 @@ namespace Core.Selection
             if (selectedEntities.Contains(selectable))
             {
                 selectable.InvokeOnSelectionStateChange(this, false);
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().UnsubscribeOnClearance("deselect");
+                selectable.UnsubscribeOnDestruction("deselect");
                 //onEntitySelectionStateChanged?.Invoke(selectable, false);
                 selectedEntities.Remove(selectable);
             }
@@ -120,7 +151,7 @@ namespace Core.Selection
             if (!preselectedEntities.Contains(selectable))
             {
                 preselectedEntities.Add(selectable);
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().SubscribeOnClearance("depreselect",() => DepreselectEntity(selectable));
+                selectable.SubscribeOnDestruction("depreselect",() => DepreselectEntity(selectable));
             }
         }
 
@@ -128,7 +159,7 @@ namespace Core.Selection
         {
             if (preselectedEntities.Contains(selectable))
             {
-                selectable.GetSelectableAsReferenceWrapperNonGeneric().UnsubscribeOnClearance("depreselect");
+                selectable.UnsubscribeOnDestruction("depreselect");
                 preselectedEntities.Remove(selectable);
             }
         }
@@ -271,7 +302,7 @@ namespace Core.Selection
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
             {
                 var u = unitsRoot.transform.GetChild(i).GetComponent<Unit>();
-                ISelectable s = u.GetRefWrapper();
+                ISelectable s = u;
                 
                 sp = GetMyCamera().WorldToScreenPoint(u.transform.position);
                 sp.z = 0;
@@ -296,7 +327,7 @@ namespace Core.Selection
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
             {
                 var u = unitsRoot.transform.GetChild(i).GetComponent<Unit>();
-                ISelectable s = u.GetRefWrapper();
+                ISelectable s = u;
 
                 DepreselectEntity(s);
 
@@ -322,7 +353,7 @@ namespace Core.Selection
         {
             for (int i = 0; i < unitsRoot.transform.childCount; i++)
             {
-                DepreselectEntity(unitsRoot.transform.GetChild(i).GetComponent<Unit>().GetRefWrapper());
+                DepreselectEntity(unitsRoot.transform.GetChild(i).GetComponent<Unit>());
             }
         }
 

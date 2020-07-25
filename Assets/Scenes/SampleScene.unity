@@ -1139,7 +1139,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   factionAffiliation: {fileID: 0}
-  _isVirtualUnit: 0
   myMover: {fileID: 0}
 --- !u!114 &746008439
 MonoBehaviour:
@@ -3208,7 +3207,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   factionAffiliation: {fileID: 0}
-  _isVirtualUnit: 0
   myMover: {fileID: 0}
 --- !u!4 &1174867867
 Transform:
@@ -3328,11 +3326,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 133733a1f23354961913e641a6f9e882, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _cam: {fileID: 963194227}
-  controlledSelector: {fileID: 876105079}
-  sampleButtonPrefab: {fileID: 5264916371189140934, guid: a8a43915c25953652a713d8237edbd51,
-    type: 3}
-  menuCurrentButtons: []
 --- !u!4 &1241450588
 Transform:
   m_ObjectHideFlags: 0
@@ -4038,7 +4031,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   factionAffiliation: {fileID: 0}
-  _isVirtualUnit: 0
   myMover: {fileID: 0}
 --- !u!114 &1600825035
 MonoBehaviour:
@@ -4148,7 +4140,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   factionAffiliation: {fileID: 0}
-  _isVirtualUnit: 0
   myMover: {fileID: 0}
 --- !u!4 &1635532246
 Transform:
@@ -4270,13 +4261,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waypointMarkerPrefab: {fileID: 4338039444517644452, guid: 7ca0aeccbeec15feca06af20dfa204cf,
     type: 3}
-  buildingMarkerPrefab: {fileID: 6731532594427990641, guid: 432ff8dd5d2d6f88598fa2f8e6978fa1,
-    type: 3}
   firePositionMarkerPrefab: {fileID: 1693508131594296690, guid: f5fd7289760db9bc18f4a6d7e370bb4a,
     type: 3}
   taskMarkerPrefab: {fileID: 6699431622497080149, guid: b3582e87b1cce3134a60eb0b8a1a2aa2,
     type: 3}
-  orderMenuPrefab: {fileID: 0}
   uiOrdobTreeViewElementPrefab: {fileID: 1194325748918283018, guid: 09903cf32de19f0a5ac7e559d9443c86,
     type: 3}
 --- !u!4 &1658649910
@@ -4554,7 +4542,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   factionAffiliation: {fileID: 0}
-  _isVirtualUnit: 0
   myMover: {fileID: 0}
 --- !u!4 &2048934623
 Transform:

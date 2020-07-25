@@ -4,6 +4,8 @@ using Core.MapMarkers;
 using Core.Units;
 using Gamelogic.Extensions;
 using GlobalManagers;
+using Nrealus.Extensions.Observer;
+using Nrealus.Extensions.ReferenceWrapper;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -12,23 +14,98 @@ using UnityEngine;
 namespace Core.Tasks
 {
 
-    /****** Author : nrealus ****** Last documentation update : 12-07-2020 ******/
+    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
+
+    public class TaskWrapper : TaskWrapper<Task>
+    {
+        public TaskWrapper(Task obj) : base(obj)
+        { 
+            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+        }
+    }
+
+    public class TaskWrapper<T> : RefWrapper<T> where T : Task
+    {
+        public TaskWrapper(T obj) : base(obj)
+        { 
+            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+        }
+    }
     
     /// <summary>
-    /// The base class for all tasks. It works with ITaskSubject "subjects", which are the "executors" of the task. For now there can only be one. This may still changed in the future.
-    /// It provides the structure for tasks, mostly in the form of protected abstract or virtual methods to be implemented by "concrete" subclasses.
-    /// It also provides static methods and functions which call the appropriate instance methods or functions, given a TaskWrapper as a parameter.
-    /// This allows to limit accessing .GetWrappedReference() for common things, and has shown to be a nice approach improving clarity and encapsulation aswell as decoupling.   
-    /// A Task subclass should be instaciated from the "factory" generic function "CreateTaskWrapper".
-    /// With time, some things that may become very common subclasses may be bundled into an "intermediate" abstract subclass, or even into this one.
+    /// The base class for all tasks. They are part of a TaskPlan, and their subject - at least for now - is always the subject of the plan.
+    /// It provides the structure for tasks, notably in the form of protected abstract or virtual methods to be implemented by "concrete" subclasses.
+    /// A Task subclass should be instaciated from the "factory" generic function "CreateTask".
+    /// With time, some things that may become very common subclasses may be bundled into an "intermediate" abstract subclass (like Task2), or even into this one.
     /// </summary>      
-    public abstract class Task :
-        IHasRefWrapper<TaskWrapper>
+    public abstract class Task : IDestroyable
     {
         
+        #region IDestroyable implementation
+        
+        private EasyObserver<string> onDestroyed = new EasyObserver<string>();
+
+        public void SubscribeOnDestruction(string key, Action action)
+        {
+            onDestroyed.SubscribeEventHandlerMethod(key, action);
+        }
+
+        public void SubscribeOnDestructionAtEnd(string key, Action action)
+        {
+            onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
+        }
+
+        public void SubscribeOnDestruction(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        {
+            onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
+        }
+
+        public void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        {
+            onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
+        }
+
+        public void UnsubscribeOnDestruction(string key)
+        {
+            onDestroyed.UnsubscribeEventHandlerMethod(key);
+        }
+
+        public void DestroyThis()
+        {
+            onDestroyed.Invoke();
+        }
+
+        #endregion
+
         #region Static "factory" functions
 
-        private static TaskWrapper<T> CreateTaskWrapper<T>() where T : Task
+        private static T Internal_CreateTask<T>() where T : Task
+        {
+            switch (typeof(T))
+            {
+                case Type taskType when taskType == typeof(MoveTask):
+                {
+                    MoveTask t = new MoveTask();
+                    return t as T;
+                }
+                default:
+                    throw new ArgumentException(
+                    message: "not a recognized type of order");
+                    //return null;
+            }
+
+        } 
+
+        public static T CreateTask<T>() where T : Task
+        {
+            T res = Internal_CreateTask<T>();
+            
+            TaskHandler.AddToGlobalTasksList(res);
+            
+            return res;
+        }
+
+        /*private static TaskWrapper<T> Internal_CreateTaskWrapper<T>() where T : Task
         {
             switch (typeof(T))
             {
@@ -38,7 +115,7 @@ namespace Core.Tasks
                     TaskWrapper<MoveTask> wrapper = t.GetRefWrapper();
                     return wrapper as TaskWrapper<T>;
                 }
-                case Type taskType when taskType == typeof(BuildTask):
+                /*case Type taskType when taskType == typeof(BuildTask):
                 {
                     BuildTask t = new BuildTask();
                     TaskWrapper<BuildTask> wrapper = t.GetRefWrapper();
@@ -50,10 +127,6 @@ namespace Core.Tasks
                     TaskWrapper<EngageAtPositionsTask> wrapper = t.GetRefWrapper();
                     return wrapper as TaskWrapper<T>;
                 }
-                /*case Type MoveOrderType 
-                when MoveOrderType == typeof(MoveOrder) :
-                    bool j = true;
-                    break;*/
                 default:
                     throw new ArgumentException(
                     message: "not a recognized type of order");
@@ -62,62 +135,29 @@ namespace Core.Tasks
 
         } 
 
-        public static TaskWrapper<T> CreateTaskWrapperWithoutSubject<T>() where T : Task
+        public static TaskWrapper<T> CreateTaskWrapper<T>() where T : Task
         {
-            TaskWrapper<T> res = CreateTaskWrapper<T>();
+            TaskWrapper<T> res = Internal_CreateTaskWrapper<T>();
             
             TaskHandler.AddToGlobalTaskWrapperList(res);
             
             return res;
-        }
-
-        public static TaskWrapper<T> CreateTaskWrapperAndSetReceiver<T>(ITaskSubject subject) where T : Task
-        {
-            TaskWrapper<T> res = CreateTaskWrapper<T>();
-
-            TaskHandler.AddToGlobalTaskWrapperList(res);
-
-            Task.SetSubject(res, null, null, subject);
-            return res;
-        }
-
-        //CreateTaskWrapperAndSetReceiverAndTaskMarker
-        public static TaskWrapper<T> CreateTaskWrapperAndSetTaskMarker<T>(/*ITaskSubject subject, */TaskMarkerWrapper associatedTaskMarkerWrapper)
-             where T : Task
-        {
-            TaskWrapper<T> res = CreateTaskWrapper<T>();
-
-            TaskHandler.AddToGlobalTaskWrapperList(res);
-
-            //Task.SetSubject(res, null, null, subject);
-            Task.SetTaskMarker(res, associatedTaskMarkerWrapper);
-            return res;
-        }
-
-        public static TaskWrapper<T> CreatePredecessorTaskWrapperAndSetReceiver<T>(ITaskSubject subject, TaskWrapper successor) where T : Task
-        {
-            TaskWrapper<T> res = CreateTaskWrapper<T>();
-            
-            TaskHandler.AddToGlobalTaskWrapperList(res);
-
-            Task.SetSubject(res, null, successor, subject);
-            return res;
-        }
+        }*/
 
         #endregion
 
-        #region Static functions
+        #region Basic methods
 
-        public static bool TryStartExecution(TaskWrapper taskWrapper)
+        public bool TryStartExecution()
         {
-            return taskWrapper.GetWrappedReference().InstanceTryStartExecution();
+            return InstanceTryStartExecution();
         }
 
-        public static bool PauseExecution(TaskWrapper taskWrapper)
+        public bool PauseExecution()
         {
-            if (IsInPhase(taskWrapper, Task.OrderPhase.Execution))
+            if (IsInPhase(Task.TaskPhase.Execution))
             {
-                SetPhase(taskWrapper, Task.OrderPhase.Pause);
+                SetPhase(Task.TaskPhase.Pause);
                 return true;
             }
             else
@@ -126,11 +166,11 @@ namespace Core.Tasks
             }
         }
 
-        public static bool UnpauseExecution(TaskWrapper taskWrapper)
+        public bool UnpauseExecution()
         {
-            if (IsInPhase(taskWrapper, Task.OrderPhase.Pause))
+            if (IsInPhase(Task.TaskPhase.Pause))
             {
-                SetPhase(taskWrapper, Task.OrderPhase.Execution);
+                SetPhase(Task.TaskPhase.Execution);
                 return true;
             }
             else
@@ -139,100 +179,75 @@ namespace Core.Tasks
             }
         }
 
-        public static bool EndExecution(TaskWrapper taskWrapper)
+        public bool EndExecution()
         {
-            SetPhase(taskWrapper, Task.OrderPhase.End);
+            SetPhase(Task.TaskPhase.End);
             return true;
         }
 
-        public static bool EndExecution(IEnumerable<TaskWrapper> taskWrapper)
+        public static bool EndExecution(IEnumerable<Task> tasks)
         {
-            foreach (var tw in taskWrapper)
-                EndExecution(tw);
+            foreach (var tw in tasks)
+                tw.EndExecution();
             return true;
         }
 
-        public static ITaskSubject GetSubject(TaskWrapper taskWrapper)
+        public void SetTaskPlan(TaskPlan2 taskPlan)
         {
-            return taskWrapper.GetWrappedReference().InstanceGetSubject();
+            InstanceSetTaskPlan(taskPlan);
+        }
+
+        public TaskPlan2 GetTaskPlan()
+        {
+            return InstanceGetTaskPlan();
+        }
+
+        public ITaskSubject GetSubject()
+        {
+            return GetTaskPlan().GetSubject();
         }
         
-        public static TaskMarkerWrapper GetTaskMarker(TaskWrapper taskWrapper)
+        public Vector3 GetTaskLocation()
         {
-            return taskWrapper.GetWrappedReference().InstanceGetTaskMarker();
-        }
-
-        public static Vector3 GetTaskLocation(TaskWrapper taskWrapper)
-        {
-            if (GetSubject(taskWrapper) is UnitWrapper)
-                return Unit.GetPosition((UnitWrapper)GetSubject(taskWrapper));
+            if (GetSubject() is Unit)
+                return (GetSubject() as Unit).GetPosition();
             else
                 return Vector3.zero;
         }
 
-        public static void SetSubject(TaskWrapper taskWrapper, TaskWrapper predecessor, TaskWrapper successor, ITaskSubject subject)
+        public TaskParams GetParameters()
         {
-            // unsubscribe this if SetOrderReceiver for another orderable afterwards, potentially ?
-            taskWrapper.GetWrappedReference().InstanceSetSubject(subject, predecessor, successor);
+            return InstanceGetParameters();
         }
 
-        public static void SetTaskMarker(TaskWrapper taskWrapper, TaskMarkerWrapper taskMarkerWrapper)
-        {
-            taskWrapper.GetWrappedReference().InstanceSetTaskMarker(taskMarkerWrapper);
-        }
-
-        public static TaskParams GetParameters(TaskWrapper taskWrapper)
-        {
-            return taskWrapper.GetWrappedReference().InstanceGetParameters();
-        }
-
-        /*public static void SetParameters(taskWrapper taskWrapper, OrderParams orderParams)
-        {
-            taskWrapper.WrappedObject.InstanceSetOrderParams(orderParams);
-        }*/
-
-        public static bool SubjectExists(TaskWrapper taskWrapper)
+        /*public static bool SubjectExists(Task task)
         {
             return GetSubject(taskWrapper) != null && GetSubject(taskWrapper).IsWrappedObjectNotNull();
+        }*/
+
+        public void SetPhase(TaskPhase phase)
+        {
+            InstanceSetPhase(phase);
         }
 
-        public static void SetPhase(TaskWrapper taskWrapper, OrderPhase phase)
+        public bool IsInPhase(TaskPhase phase)
         {
-            taskWrapper.GetWrappedReference().InstanceSetPhase(phase);
-        }
-
-        public static bool IsInPhase(TaskWrapper taskWrapper, OrderPhase phase)
-        {
-            return taskWrapper.GetWrappedReference().InstanceIsInPhase(phase);
+            return InstanceIsInPhase(phase);
         }
         
-        public static void Update(TaskWrapper taskWrapper)
+        public void Update()
         {
-            if (taskWrapper != null && taskWrapper.GetWrappedReference() != null)
-                taskWrapper.GetWrappedReference().InstanceUpdate();
+            InstanceUpdate();
         }
 
         #endregion
 
-        #region Variables, properties etc.
-
-        public enum OrderPhase
+        public enum TaskPhase
         {   Initial,
             /*Registration,*/ Staging,// ReadyForExecution, NotReadyForExecution,
-            ExecutionWaitingTimeToStart, Execution, Pause, Cancelled, End, End2, Disposed,  
+            WaitToStartExecution, Execution, Pause, Cancelled, End, End2, Disposed,  
         }
-        protected StateMachine<OrderPhase> orderPhasesFSM;
-
-        /*--------*/
-
-        protected TaskWrapper _myWrapper;
-
-        public TaskWrapper GetRefWrapper() { return _myWrapper; }
-        //public TaskWrapper<T> GetRefWrapper<T>() where T : Task { return ReturnUniqueRefWrapperField<T>(); }
-
-        /*--------*/
-
-        #endregion
+        protected StateMachine<TaskPhase> orderPhasesFSM;
 
         public Task()
         {
@@ -241,23 +256,13 @@ namespace Core.Tasks
 
         #region Protected/Private abstract instance methods
 
+        protected abstract void InstanceSetTaskPlan(TaskPlan2 taskPlan);
+
+        protected abstract TaskPlan2 InstanceGetTaskPlan();
+
         protected abstract TaskParams InstanceGetParameters();
 
-        //protected abstract void InstanceSetOrderParams(OrderParams orderParams);
-
-        protected abstract ITaskSubject InstanceGetSubject();
-        
-        protected abstract TaskMarkerWrapper InstanceGetTaskMarker();
-        
-        //public abstract T GetOrderReceiverAsT<T>() where T : IOrderable;
-
-        protected abstract void InstanceSetSubject(ITaskSubject orderable, TaskWrapper predecessor, TaskWrapper successor);
-
-        protected abstract void InstanceSetTaskMarker(TaskMarkerWrapper taskMarkerWrapper);
-
         protected abstract void InitPhasesFSM();
-
-        //protected abstract bool InstanceIsReadyToStartExecution(OrderExecutionMode mode);
 
         protected abstract bool InstanceTryStartExecution();
         
@@ -265,12 +270,12 @@ namespace Core.Tasks
 
         #region Protected/Private instance methods
 
-        protected void InstanceSetPhase(OrderPhase phase)
+        protected void InstanceSetPhase(TaskPhase phase)
         {
             orderPhasesFSM.CurrentState = phase;
         }
 
-        protected bool InstanceIsInPhase(OrderPhase phase)
+        protected bool InstanceIsInPhase(TaskPhase phase)
         {
             return orderPhasesFSM.CurrentState == phase;
         }
@@ -282,7 +287,7 @@ namespace Core.Tasks
 
         protected void CreateAndInitFSM()
         {
-            orderPhasesFSM = new StateMachine<OrderPhase>();
+            orderPhasesFSM = new StateMachine<TaskPhase>();
             InitPhasesFSM();
         }
 

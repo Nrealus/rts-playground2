@@ -51,12 +51,17 @@ namespace Core.MapMarkers
             return SelectionHandler.GetUsedSelector();
         }
 
-        public static T CreateInstance<T>(Vector3 screenPosition/*, IEnumerable<ISelectable> subjects*/) where T : TaskMarker
+        public static T CreateInstanceAtWorldPosition<T>(Vector3 worldPosition) where T : TaskMarker
         {
-            return CreateInstance<T>(screenPosition/*, subjects*/, null);
+            return CreateInstanceAtWorldPosition<T>(worldPosition, null);
         }
-        
-        public static T CreateInstance<T>(Vector3 screenPosition/*, IEnumerable<ISelectable> subjects*/, TaskMarker previousTaskMarker)
+
+        public static T CreateInstanceAtScreenPosition<T>(Vector3 screenPosition) where T : TaskMarker
+        {
+            return CreateInstanceAtScreenPosition<T>(screenPosition, null);
+        }
+
+        public static T CreateInstanceAtWorldPosition<T>(Vector3 worldPosition, TaskMarker previousTaskMarker)
             where T : TaskMarker
         {
             T res = Instantiate(
@@ -64,9 +69,32 @@ namespace Core.MapMarkers
                 GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>())
                 .gameObject.AddComponent<T>();
 
-            res.Init(screenPosition/*, subjects*/, previousTaskMarker);
+            res.Init(worldPosition, previousTaskMarker, false);
 
-            return res;//.GetRefWrapper().CastWrapper<T>();
+            return res;
+        }
+
+        public static T CreateInstanceAtScreenPosition<T>(Vector3 screenPosition, TaskMarker previousTaskMarker)
+            where T : TaskMarker
+        {
+            T res = Instantiate(
+                GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().taskMarkerPrefab,
+                GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>())
+                .gameObject.AddComponent<T>();
+
+            res.Init(screenPosition, previousTaskMarker, true);
+
+            return res;
+        }
+
+        public Vector3 GetScreenPosition()
+        {
+            return GetMyCamera().WorldToScreenPoint(transform.position);
+        }
+
+        public Vector3 GetWorldPosition()
+        {
+            return GetMyCamera().GetPointedPositionPhysRaycast(GetScreenPosition());
         }
 
         protected static int _instcount = 0;
@@ -80,17 +108,29 @@ namespace Core.MapMarkers
         //public event Action OnExitPlacementUIMode;
         public EasyObserver<string, bool> OnPlacementConfirmation = new EasyObserver<string, bool>();
 
-        protected virtual void Init(Vector3 screenPosition/*, IEnumerable<ISelectable> subjects*/, TaskMarker previousTaskMarker)
+        protected virtual void Init(Vector3 position, TaskMarker previousTaskMarker, bool screenPosTrue)
         {
-            /*OnExitEditMode.SubscribeToEvent("oneditexitdeselectall",
-                () => 
-                {
-                    foreach (var v in GetUsedSelector().GetCurrentlySelectedEntitiesOfType<TaskMarkerWrapper>())
-                        GetUsedSelector().DeselectEntity(v);
-                });*/
         }
 
-        //public abstract TaskPlan2 GetTaskPlan();
+        public void InitBinderForTask(GameObject associatedTaskEditMenu)
+        {
+            var binder = new MultiEventObserver();
+            
+            BindTaskSelectionEvent(binder,
+                (sender, args) => {
+                    //Debug.Log("Triggered by direct selection status change.");
+                    if (args is SimpleEventArgs)
+                        associatedTaskEditMenu.SetActiveRecursivelyExt(((bool)(args as SimpleEventArgs).args[0]));
+                });
+        }
+ 
+        private void BindTaskSelectionEvent(MultiEventObserver binder, Action<object, EventArgs> action)
+        {
+            var id = binder.AddNewEventAndSubscribeMethodToIt(action);
+            GetOnSelectionStateChangeObserver().SubscribeEventHandlerMethod("whateverkey", 
+                (_) => binder.InvokeEvent(id,this, new SimpleEventArgs(_.Item2)), true);
+        }
+
 
         public abstract Task GetTask();
 
@@ -181,5 +221,13 @@ namespace Core.MapMarkers
             GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(GetScreenCanvasRT(),
                 GetMyCamera().ScreenToViewportPoint(screenPosition)); 
         }
+        
+        protected void PlaceAtWorldPosition(Vector3 worldPosition)
+        {
+            GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(GetScreenCanvasRT(),
+                GetMyCamera().WorldToViewportPoint(worldPosition));
+            //PlaceAtScreenPosition(GetMyCamera().WorldToScreenPoint(worldPosition));
+        }
+
     }
 }

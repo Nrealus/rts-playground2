@@ -87,10 +87,10 @@ namespace Core.Tasks
                 {
                     waitForReactionAtEnd = true;
                 }
-                if (GetTaskPlan().GetNextTaskInPlan(this) != null
-                    && GetTaskPlan().GetNextTaskInPlan(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
+                if (GetTaskPlan().GetTaskInPlanFollowing(this) != null
+                    && GetTaskPlan().GetTaskInPlanFollowing(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
                 {
-                    nextActiveOrder = new TaskWrapper(GetTaskPlan().GetNextTaskInPlan(this));
+                    nextActiveOrder = new TaskWrapper(GetTaskPlan().GetTaskInPlanFollowing(this));
                 }
             },
             () =>

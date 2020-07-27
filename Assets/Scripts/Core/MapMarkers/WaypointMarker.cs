@@ -33,12 +33,6 @@ namespace Core.MapMarkers
             
             return res;
         }
-
-        public static void UpdateWaypointMarker(WaypointMarker waypointMarker, bool following, Vector3 screenPositionToFollow)
-        {
-            if (waypointMarker != null)
-                waypointMarker.FollowScreenPosition(following, screenPositionToFollow);
-        }
         
         public float moveSpeed = 0.5f;
         public float offset = 5f;

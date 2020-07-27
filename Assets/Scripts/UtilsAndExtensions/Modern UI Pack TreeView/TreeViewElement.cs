@@ -288,7 +288,7 @@ namespace Nrealus.Extensions
         public virtual void OnAttachTo(TreeViewElement newParent)
         {
             transform.SetParent(newParent.childrenRoot);
-            if (newParent)
+            if (newParent != null)
                 newParent.GetAssociatedTreeViewSelectable().Unhighlight();
         }
 
@@ -375,19 +375,20 @@ namespace Nrealus.Extensions
             return null;
         }
 
+        List<RaycastResult> _raycastResults = new List<RaycastResult>();
         private TreeViewElement FindObjectToAttachTo(PointerEventData data)
         {
-            var raycastResults = new List<RaycastResult>();
+            _raycastResults.Clear();
 
             //GetMyGraphicRaycaster().Raycast(data, raycastResults);            
-            EventSystem.current.RaycastAll(data,raycastResults);
+            EventSystem.current.RaycastAll(data,_raycastResults);
 
             var r = FindRootTreeViewElement();
 
-            if (raycastResults.ConvertAll<GameObject>(_ => _.gameObject).Contains(r.GetAssociatedTreeViewSelectable().GetGameObject()))
+            if (_raycastResults.ConvertAll<GameObject>(_ => _.gameObject).Contains(r.GetAssociatedTreeViewSelectable().GetGameObject()))
                 return r;
             else if (r.childrenRoot.childCount > 0)
-                return FindObjectToAttachTo_Aux(r.childrenRoot, data, raycastResults);
+                return FindObjectToAttachTo_Aux(r.childrenRoot, data, _raycastResults);
             else
                 return r;
         }

@@ -4,10 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using Gamelogic.Extensions.Internal;
+using Gamelogic.Extensions;
 
-namespace Gamelogic.Extensions
+namespace Nrealus.Extensions
 {
+	
 	public class ExtendedStateMachine<TLabel> : StateMachine<TLabel>
 	{
 

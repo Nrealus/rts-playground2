@@ -80,46 +80,63 @@ namespace Core.UI
         {
             if (list.Count > 0)
             {
-                T v = TaskMarker.CreateInstance<T>(UIHandler.GetPointedScreenPosition()/*, list*/);
+                T taskMarker = TaskMarker.CreateInstanceAtScreenPosition<T>(UIHandler.GetPointedScreenPosition());
 
-                InitBinderForTask(v);
+                taskMarker.InitBinderForTask(associatedTaskEditMenu);
                 
-                v.EnterPlacementUIMode();
+                taskMarker.EnterPlacementUIMode();
 
-                v.OnExitPlacementUIMode.SubscribeEventHandlerMethod("spawnerbuttondeactivate",// += SpawnerButtonDeactivate;
+                taskMarker.OnExitPlacementUIMode.SubscribeEventHandlerMethod("spawnerbuttondeactivate",// += SpawnerButtonDeactivate;
                     () =>
                     {
                         on = false;
-                        v.OnExitPlacementUIMode.UnsubscribeEventHandlerMethod("spawnerbuttondeactivate");
+                        taskMarker.OnExitPlacementUIMode.UnsubscribeEventHandlerMethod("spawnerbuttondeactivate");
                     });
-                
-                /*void SpawnerButtonDeactivate()
-                {
-                    on = false;
-                    v.OnExitPlacementUIMode -= SpawnerButtonDeactivate;
-                }*/
 
-                v.OnPlacementConfirmation.SubscribeEventHandlerMethod("onplacementconfirmationcallback",
+                taskMarker.OnPlacementConfirmation.SubscribeEventHandlerMethod("onplacementconfirmationcallback",
                     (b) =>
                     {
                         if (b)
                         {
-                            EditedPlanAddTask(v.GetTask(), list[0] as Unit);
+                            EditedPlanAddTask(taskMarker.GetTask(), list[0] as Unit);
+
+                            if (Input.GetKey(KeyCode.LeftShift))
+                            {
+                                _lastPlacedTaskMarkerWrapper = new MapMarkerWrapper<TaskMarker>(taskMarker);
+                                OnButtonActivationOrNot(true);
+                            }
+                            else
+                                _lastPlacedTaskMarkerWrapper = null;
                         }
                         else
                         {
-                            editedTaskPlan = null;
+                            _lastPlacedTaskMarkerWrapper = null;
+                            //editedTaskPlan = null;
                         }
                     });
 
-                SelectionHandler.GetUsedSelector().SelectEntity(v);
+                SelectionHandler.GetUsedSelector().SelectEntity(taskMarker);
             }
         }
-        private TaskPlan2 editedTaskPlan;
+
+        private MapMarkerWrapper<TaskMarker> _lastPlacedTaskMarkerWrapper;
+        //private TaskPlan2 editedTaskPlan;
 
         private void EditedPlanAddTask(Task t, ITaskSubject ts)
         {
-            if (editedTaskPlan == null)
+            t.GetParameters().AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
+            if (_lastPlacedTaskMarkerWrapper?.Value == null)
+            {
+                var tp = new TaskPlan2(ts);
+                tp.AddTaskToPlan(t);
+                tp.StartPlanExecution();                
+            }
+            else
+            {
+                _lastPlacedTaskMarkerWrapper?.Value.GetTask().GetTaskPlan().AddTaskToPlan(t);
+            }
+
+            /*if (editedTaskPlan == null)
             {
                 editedTaskPlan = new TaskPlan2(ts);
                 editedTaskPlan.AddTaskToPlan(t);
@@ -139,27 +156,8 @@ namespace Core.UI
             else
             {
                 editedTaskPlan = null;
-            }
+            }*/
 
-        }
-
-        private void BindTaskSelectionEvent(MultiEventObserver binder, Action<object, EventArgs> action, TaskMarker tm)
-        {
-            var id = binder.AddNewEventAndSubscribeMethodToIt(action);
-            tm.GetOnSelectionStateChangeObserver().SubscribeEventHandlerMethod("whateverkey", 
-                (_) => binder.InvokeEvent(id,tm, new SimpleEventArgs(_.Item2)), true);
-        }
-
-        private void InitBinderForTask(TaskMarker tm)
-        {
-            var binder = new MultiEventObserver();
-            
-            BindTaskSelectionEvent(binder,
-                (sender, args) => {
-                    //Debug.Log("Triggered by direct selection status change.");
-                    if (args is SimpleEventArgs)
-                        associatedTaskEditMenu.SetActiveRecursivelyExt(((bool)(args as SimpleEventArgs).args[0]));
-                }, tm);
         }
 
     }

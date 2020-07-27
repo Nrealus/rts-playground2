@@ -22,35 +22,6 @@ namespace Core.Selection
     /// </summary>   
     public class Selector : MonoBehaviour, IHasRefToCamera
     {
-        
-        /*private class DeepCopyConvertionList : List<ISelectable>
-        {
-            public List<ISelectable> list = new List<ISelectable>();
-
-            private Dictionary<Type,List<ISelectable>> encounteredTypesAndCastListsDict = new Dictionary<Type, List<ISelectable>>();
-
-            public void Add(ISelectable obj)
-            {
-                list.Add(obj);
-            }
-
-            public List<T> SelectByType<T>() where T : ISelectable
-            {
-                if (!encounteredTypesAndCastListsDict.ContainsKey(typeof(T)))
-                {
-                    List<T> castedList = new List<T>();
-                    foreach(var v in list)
-                    {
-                        if (v is T)
-                            castedList.Add((T)v);
-                    }
-                    encounteredTypesAndCastListsDict.Add(typeof(T), castedList);
-                }
-
-                return encounteredTypesAndCastListsDict[typeof(T)] as List<T>;
-            }
-
-        }*/
 
         public FactionData selectorFaction;
 
@@ -91,7 +62,7 @@ namespace Core.Selection
             return /*new List<ISelectable>(*/selectedEntities;//);
         }
 
-        public List<T> GetCurrentlySelectedEntitiesAs<T>() where T : class
+        /*public List<T> GetCurrentlySelectedEntitiesAs<T>() where T : class
         {
             var res = new List<T>();
             foreach(var v in selectedEntities)
@@ -99,11 +70,10 @@ namespace Core.Selection
                 res.Add(v as T);
             }
             return res;
-        }
+        }*/
 
         public List<ISelectable> GetCurrentlySelectedEntitiesOfType<T>()
         {
-
             var res = new List<ISelectable>();
             foreach(var v in selectedEntities)
             {

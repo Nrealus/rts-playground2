@@ -104,7 +104,7 @@ namespace Core.Tasks
                 return null;
         }
 
-        public Task GetNextTaskInPlan(Task tw)
+        public Task GetTaskInPlanFollowing(Task tw)
         {
             var c = tasks.Count;
             for(int i = 0; i < c; i++)
@@ -119,12 +119,12 @@ namespace Core.Tasks
         {
             if (t != null && !tasks.Contains(t))
             {
+                tasks.Add(t);
+
                 t.SetTaskPlan(this);
                 t.SubscribeOnDestruction("removetask", () => { RemoveTaskFromPlan(t); });
                 //AddOnClearance(t, () => t.EndExecution()/*Task.DestroyWrappedReference()*/);
                                 
-                tasks.Add(t);
-
                 return true;
             }
             else

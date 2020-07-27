@@ -31,6 +31,7 @@ namespace Core.Units
     ///<summary>
     /// Main Unity component for units.
     ///</summary>
+    [Serializable]
     public class Unit : MonoBehaviour, ISelectable, ITaskSubject//, ITreeNodeBase<Unit>
     {
 
@@ -375,8 +376,8 @@ namespace Core.Units
             mySprRenderer = GetComponent<SpriteRenderer>();
 
             GetFormation().facingAngle = 0f;
-            GetFormation().depthLength = 1f;
-            GetFormation().frontLength = 2f;
+            GetFormation().depthLength = 10f;
+            GetFormation().frontLength = 5f;
 
         }
 
@@ -424,13 +425,10 @@ namespace Core.Units
             {
                 Vector3 center = transform.position;
 
-                var frontPoint = center + GetFormation().GetNormalizedFacingVector() * GetFormation().depthLength;
-                var rearPoint = center - GetFormation().GetNormalizedFacingVector() * GetFormation().depthLength;
+                var frontPoint = center + GetFormation().GetFacingVector() * GetFormation().depthLength/2;
+                var rearPoint = center - GetFormation().GetFacingVector() * GetFormation().depthLength/2;
 
-                var lateralDirection = new Vector3(
-                    -GetFormation().GetNormalizedFacingVector().z,
-                    GetFormation().GetNormalizedFacingVector().y,
-                    GetFormation().GetNormalizedFacingVector().x);
+                var lateralDirection = GetFormation().GetFacingVectorLeftNormal()/2;
 
                 //Debug.DrawLine(frontPoint, rearPoint);
                 Debug.DrawLine(frontPoint-lateralDirection*GetFormation().frontLength, frontPoint+lateralDirection*GetFormation().frontLength);

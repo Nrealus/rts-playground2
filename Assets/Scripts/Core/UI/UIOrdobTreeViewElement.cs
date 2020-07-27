@@ -16,7 +16,7 @@ namespace Core.UI
     {
 
         private UnitWrapper _associatedUnitWrapper;
-        public Unit associatedUnit { get { return _associatedUnitWrapper.Value; } }
+        public Unit associatedUnit { get { return _associatedUnitWrapper?.Value; } }
 
         private ITreeViewSelectable _associatedTreeViewSelectable;
         public override ITreeViewSelectable GetAssociatedTreeViewSelectable()
@@ -61,10 +61,13 @@ namespace Core.UI
             if (newParent != null)
             {
                 newParent.GetAssociatedTreeViewSelectable().Unhighlight();
-                associatedUnit.ChangeParentTo((newParent as UIOrdobTreeViewElement).associatedUnit);
-            }                
+                if (!newParent.isRoot)
+                    associatedUnit.ChangeParentTo((newParent as UIOrdobTreeViewElement).associatedUnit);
+                else
+                    associatedUnit.ChangeParentTo(null);
+            }
             else
-                associatedUnit.ChangeParentTo(null);
+                associatedUnit.ChangeParentTo(associatedUnit.GetParentNode());
         }
 
         public override void OnPressInOrOut(bool inOrOut, PointerEventData data)

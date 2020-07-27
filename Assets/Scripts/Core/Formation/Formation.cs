@@ -18,38 +18,49 @@ namespace Core.Formations
         public FormationType formationType;
         public FormationRole formationRole;
 
-        public float intendedHorPosFraction ; // (Left) -1 --- 0 --- 1 (Right)
-        public float intendedVerPosFraction ; // (Front) -1 --- 0 --- 1 (Rear)
+        public float lateralOffsetToParentNominalFraction ; // (Left) -1 --- 0 --- 1 (Right)
+        public float depthOffsetToParentNominalFraction ; // (Front) -1 --- 0 --- 1 (Rear)
         public float facingAngle;        
         public float frontLength;
         public float depthLength;
 
-        public Vector3 GetNormalizedFacingVector()
+        public Vector3 GetFacingVector()
         {
             return new Vector3(Mathf.Cos(facingAngle*Mathf.Deg2Rad), 0, Mathf.Sin(facingAngle*Mathf.Deg2Rad));
         }
 
-        public float GetRotatedIntendedHorFraction()
+        public Vector3 GetFacingVectorLeftNormal()
         {
-            var v = GetNormalizedFacingVector();
-            return intendedVerPosFraction*v.z-intendedHorPosFraction*v.x;
+            var v = GetFacingVector();
+            return new Vector3(-v.z, 0, v.x);
         }
 
-        public float GetRotatedIntendedVerFraction()
+        public Vector3 GetRotatedOffsetVect(Vector3 facing, float lateral, float depth)
         {
-            var v = GetNormalizedFacingVector();
-            return intendedVerPosFraction*v.x+intendedHorPosFraction*v.z;
+            return new Vector3(
+                facing.x * depth - facing.z * lateral,
+                0,
+                facing.z * depth + facing.x * lateral);
         }
 
-        public Vector3 GetRotatedIntendedPosFractionVect()
+        public Vector3 GetRotatedOffsetFractionVect(Vector3 facing)
         {
-            var v = GetNormalizedFacingVector();
-            return new Vector3(intendedVerPosFraction*v.z-intendedHorPosFraction*v.x, 0, intendedVerPosFraction*v.x+intendedHorPosFraction*v.z);            
+            return GetRotatedOffsetVect(facing, lateralOffsetToParentNominalFraction, depthOffsetToParentNominalFraction);
         }
 
         public Vector3 GetAcceptableMovementTargetPosition(Vector3 position)
         {
-            return position + GetRotatedIntendedPosFractionVect();
+            if (GetParentFormation() != null)
+            {
+                return position + GetRotatedOffsetVect(
+                    GetParentFormation().GetFacingVector(),
+                    lateralOffsetToParentNominalFraction * GetParentFormation().frontLength,
+                    depthOffsetToParentNominalFraction* GetParentFormation().depthLength);
+            }
+            else
+            {
+                return position;
+            }
         }
 
         private UnitWrapper _unitWrapper;
@@ -81,7 +92,7 @@ namespace Core.Formations
 
         public Formation GetParentFormation()
         {
-            if (unit.GetFormation() != null)
+            if (unit.GetParentNode() != null)
                 return unit.GetParentNode().GetFormation();
             return null;
         }
@@ -160,9 +171,24 @@ namespace Core.Formations
                 FormColumn();
         }
 
-        public void FormColumn()
+        public void FormTest()
         {
             var chn = GetChildFormations();
+            
+            var n = chn.Count;
+
+            if (n > 0)
+            {
+                for(int i = 0; i<n; i++)
+                {
+                    chn[i].depthOffsetToParentNominalFraction = ((float)(i+1))/((float)n);
+                }
+            }
+        }
+
+        public void FormColumn()
+        {
+            var chn = GetChildFormations(); // 
 
             var n = chn.Count;
 
@@ -179,7 +205,7 @@ namespace Core.Formations
                 for(int i = 0; i<n; i++)
                 {
                     (Formation,float) ch = sortedChn[i];
-                    ch.Item1.intendedVerPosFraction = ch.Item2;
+                    ch.Item1.depthOffsetToParentNominalFraction = ch.Item2;
                 }
             }
         }

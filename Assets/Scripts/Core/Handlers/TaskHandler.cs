@@ -33,7 +33,7 @@ namespace Core.Handlers
         ///<summary>
         /// This list contains all tasks that currently exist.
         ///</summary>
-        private List<Task> tasksList = new List<Task>();
+        private List<Task> tasks = new List<Task>();
         
         private void Awake()
         {
@@ -42,9 +42,9 @@ namespace Core.Handlers
         private void Update()
         {
             // Updating all tasks.
-            for (int i = tasksList.Count - 1; i >= 0; i--)
+            for (int i = tasks.Count - 1; i >= 0; i--)
             {
-                tasksList[i].Update();
+                tasks[i].Update();
                 // Add parameter for "delta time" ?
             }
         }
@@ -77,10 +77,10 @@ namespace Core.Handlers
         ///</summary>
         public static bool AddToGlobalTasksList(Task task)
         {
-            if(!MyInstance.tasksList.Contains(task))
+            if(!MyInstance.tasks.Contains(task))
             {
                 task.SubscribeOnDestruction("removefromglobal",() => RemoveFromGlobalTasksList(task));
-                MyInstance.tasksList.Add(task);
+                MyInstance.tasks.Add(task);
                 //MyInstance.onTaskWrapperAddOrRemove.Invoke((wrapper, true));
                 return true;
             }
@@ -93,10 +93,10 @@ namespace Core.Handlers
 
         private static bool RemoveFromGlobalTasksList(Task task)
         {
-            if(MyInstance.tasksList.Contains(task))
+            if(MyInstance.tasks.Contains(task))
             {
                 task.UnsubscribeOnDestruction("removefromglobal");
-                MyInstance.tasksList.Remove(task);
+                MyInstance.tasks.Remove(task);
                 //MyInstance.onTaskWrapperAddOrRemove.Invoke((wrapper, true));
                 return true;
             }

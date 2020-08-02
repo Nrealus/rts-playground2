@@ -22,7 +22,7 @@ namespace Core.Units
     {
         public UnitPieceWrapper(UnitPiece obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
 
@@ -42,7 +42,7 @@ namespace Core.Units
             onDestroyed.SubscribeEventHandlerMethod(key, action);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action)
+        public void SubscribeOnDestructionLate(string key, Action action)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
         }
@@ -52,7 +52,7 @@ namespace Core.Units
             onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        public void SubscribeOnDestructionLate(string key, Action action, bool combineActionsIfKeyAlreadyExists)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
         }

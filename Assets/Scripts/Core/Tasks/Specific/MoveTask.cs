@@ -21,31 +21,66 @@ namespace Core.Tasks
     /// </summary>
     public class MoveTask : Task2
     {
-    
-        private TaskParams myParameters = TaskParams.DefaultParam();
-    
+
+        #region Main declarations
+
+        private Formation subjectAsFormation { get { return GetTaskPlan().GetSubject() as Formation; } }
+
+        private TaskParams _taskParams = TaskParams.DefaultParam();
 
         private MapMarkerWrapper<MoveTaskMarker> _moveTaskMarkerWrapper;
-        private MoveTaskMarker GetMoveTaskMarker() { return _moveTaskMarkerWrapper?.Value; }
-        
-        public void SetMoveTaskMarker(MoveTaskMarker moveTaskMarker)
-        {
-            _moveTaskMarkerWrapper = new MapMarkerWrapper<MoveTaskMarker>(moveTaskMarker);
-        }
 
-        //private List<WaypointMarker> waypointMarkersList = new List<WaypointMarker>();
-        public List<WaypointMarker> GetWaypointMarkersList()
-        {
-            return GetMoveTaskMarker().waypointMarkersList;
-        }
         public int currentWaypointIndex;
         public bool endedPath;
-
         private List<MoveTaskMarker> childrenMoveTaskMarkers = new List<MoveTaskMarker>();
 
-        private Unit GetUnitSubject()
+        #endregion
+
+        public MoveTask()
         {
-            return GetTaskPlan().GetSubject() as Unit;
+            CreateAndInitFSM();
+            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterSubjects(GetParameters().GetParameterSubjects()));
+        }
+        
+        #region Overriden instance methods and functions
+
+        protected override TaskMarker InstanceGetTaskMarker()
+        {
+            return _moveTaskMarkerWrapper?.Value;
+        }
+
+        protected override void InstanceSetTaskMarker(TaskMarker taskMarker)
+        {
+            _moveTaskMarkerWrapper = new MapMarkerWrapper<MoveTaskMarker>(taskMarker as MoveTaskMarker);
+        }
+
+        public List<WaypointMarker> GetWaypointMarkersList()
+        {
+            return _moveTaskMarkerWrapper.Value.waypointMarkersList;
+        }
+
+
+        protected override TaskParams InstanceGetParameters()
+        {   
+            return _taskParams;
+        }
+
+        public override bool CompatibleForParallelExecution(Task task)
+        {
+            if (task is MoveTask)
+            {
+                MoveTask mvtsk = task as MoveTask;
+                var chu = childrenMoveTaskMarkers.Select((_) => (_.GetTask().GetSubject() as Formation).GetUnit());
+                if (mvtsk.subjectAsFormation.GetUnit() == subjectAsFormation.GetUnit()
+                || mvtsk.subjectAsFormation.GetChildFormations().Select((_) => _.GetUnit()).Intersect(chu).Count() > 0)
+                    return false;
+            }
+            bool b = true;
+            foreach (var v in childrenMoveTaskMarkers)
+            {
+                b = b && v.GetTask().CompatibleForParallelExecution(task);
+            }
+            return true && b;
         }
 
         protected override void InstanceSetTaskPlan(TaskPlan2 taskPlan)
@@ -54,76 +89,64 @@ namespace Core.Tasks
 
             if (taskPlan != null)
             {
-                GetUnitSubject().GetFormation().facingAngle =
-                    Vector3.SignedAngle(
-                        Vector3.right,
-                        GetMoveTaskMarker().GetWorldPosition() - GetUnitSubject().myMover.transform.position, Vector3.down);
+                SubscribeOnDestruction("clearchildrenmovetaskmarkers", () => childrenMoveTaskMarkers.Clear());
+    
+                UpdateFormationFacing(GetTaskMarker().GetWorldPosition());
+                subjectAsFormation.FormTest();
 
-                GetUnitSubject().GetFormation().FormTest();
+                MoveTask currentTaskAsMoveTask = GetTaskPlan().GetCurrentTaskInPlan() as MoveTask;
 
-                foreach (var chf in GetUnitSubject().GetFormation().GetChildFormations())
+                foreach (var chf in subjectAsFormation.GetChildFormations())
                 {
-                    //chf.unitWrapper.GetTaskPlan().Clear();
 
-                    Vector3 wpos = chf.GetAcceptableMovementTargetPosition(GetMoveTaskMarker().GetWorldPosition());
-                                        
-                    MoveTaskMarker prevtm = null;
-                    //(GetMoveTaskMarker().GetPreviousTaskMarker().GetTask() as MoveTask) : via taskmarker and its predecessor : other possible approach
-                    MoveTask curmvtsk = GetTaskPlan().GetCurrentTaskInPlan() as MoveTask;
-                    if (curmvtsk != null && curmvtsk != this)
+                    /*foreach (var us in chf.GetUnit().GetChildNodes())
                     {
-                        foreach (var chmtmagain in curmvtsk.childrenMoveTaskMarkers)
-                        {
-                            if ((object)chmtmagain.GetTask().GetSubject() == chf.unit)
-                            {
-                                prevtm = chmtmagain;
-                                break;
-                            }
-                        }
-                    }
-                    MoveTaskMarker tm = TaskMarker.CreateInstanceAtWorldPosition<MoveTaskMarker>(wpos, prevtm);
-                    tm.GetTaskAsMoveTask().SetMoveTaskMarker(tm);
+                        (new Formation(us)).ChangeParentTo(chf);
+                    }*/
+                    
+                    Vector3 wpos;
+                    wpos = chf.GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
+
+                    var prevtm = GetTaskMarker().GetPreviousTaskMarker()?.GetTask() as MoveTask;
+
+                    TaskMarker chprevtm;
                     if (prevtm != null)
-                        prevtm.GetTask().GetTaskPlan().AddTaskToPlan(tm.GetTask());
+                        chprevtm = prevtm.childrenMoveTaskMarkers.Where((_) => (Formation)_.GetTask().GetSubject() == chf).FirstOrDefault();
                     else
-                        (new TaskPlan2(chf.unit)).AddTaskToPlan(tm.GetTask());
+                        chprevtm = null;
 
-                    tm.AddWaypoint(WaypointMarker.CreateInstance(wpos));
-                    
-                    tm.ConfirmPositioning(true);
-                    
-                    tm.GetTask().GetParameters().AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
+                    MoveTaskMarker tm = TaskMarker.CreateInstanceAtWorldPosition<MoveTaskMarker>(wpos);
+                    tm.AddWaypoint(WaypointMarker.CreateWaypointMarker(wpos));
 
-                    tm.SubscribeOnDestruction("removefromparentmovetaskmarkerslist",() => childrenMoveTaskMarkers.Remove(tm));
-                    
-                    //SelectionHandler.GetUsedSelector().SelectEntity(tm);
+                    TaskPlan2 tp = tm.InsertAssociatedTaskInPlan(chf, chprevtm);
+                    if (!tp.IsPlanBeingExecuted())
+                        tp.StartPlanExecution();
+
+                    tm.SubscribeOnDestruction("removefromparentmovetaskmarkerslist",() => childrenMoveTaskMarkers.Remove(tm));                    
                     childrenMoveTaskMarkers.Add(tm);
                 }
-
-                SubscribeOnDestruction("clearchildrenmovetaskmarkers", () => childrenMoveTaskMarkers.Clear());
 
                 SetPhase(TaskPhase.Staging);
             }
             else
             {
-                //childrenMoveTaskMarkers.Clear() etc ?
+                childrenMoveTaskMarkers.Clear();
             }
-        }
-
-        protected override TaskParams InstanceGetParameters()
-        {
-            return myParameters;
-        }
-
-        public MoveTask()
-        {
-            CreateAndInitFSM();
         }
 
         protected override bool InstanceTryStartExecution()
         {
-            if (IsInPhase(TaskPhase.Staging))
+            if (IsInPhase(TaskPhase.Staging) && GetSubject() != null)
             {
+                foreach (var plan in new List<TaskPlan2>(GetSubject().GetPlans()))
+                {
+                    if (plan.GetCurrentTaskInPlan() != this 
+                        && !CompatibleForParallelExecution(plan.GetCurrentTaskInPlan()))
+                    {
+                        plan.EndPlanExecution();
+                    }
+                }
+
                 if(GetTaskPlan().GetCurrentTaskInPlan() == this)
                 {
                     SetPhase(TaskPhase.WaitToStartExecution);
@@ -173,32 +196,9 @@ namespace Core.Tasks
             return false;
         }
 
+        #endregion
+
         #region Specific behaviour logic
-
-        /*public void AddWaypoint(WaypointMarker waypoint)
-        {
-            if (!waypointMarkersList.Contains(waypoint))
-            {
-                //GetRefWrapper().SubscribeOnClearance(() => RemoveClearedWaypointWrapper(waypointWrapper));
-                this.waypointMarkersList.Add(waypoint);
-            }
-        }
-
-        public void AddWaypoints(IEnumerable<WaypointMarker> waypoints)
-        {
-            foreach (var wm in waypoints)
-            {
-                AddWaypoint(wm);
-            }
-        }
-
-        private void RemoveClearedWaypoint(WaypointMarker wp)
-        {
-            if (waypointMarkersList.Contains(wp))
-            {
-                waypointMarkersList.Remove(wp);
-            }
-        }*/
 
         protected override void EnterExecution()
         {
@@ -213,22 +213,35 @@ namespace Core.Tasks
         private bool _endedPathForAll;
         protected override void UpdateExecution()
         {
-            _endedPathForAll = true;
-            //foreach (var uw in Unit.GetUnitPieceWrappersInUnit(unitWrapper))
-            //foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(Task.GetSubject(GetRefWrapper()).GetTaskSubjectAsReferenceWrapperSpecific<UnitWrapper>()))
+            if (subjectAsFormation.IsLeaf())
             {
-                if (IsInPhase(TaskPhase.Execution))
+                _endedPathForAll = true;
+                //foreach (var uw in Unit.GetUnitPieceWrappersInUnit(unitWrapper))
+                //foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(Task.GetSubject(GetRefWrapper()).GetTaskSubjectAsReferenceWrapperSpecific<UnitWrapper>()))
                 {
-                    if (GetSubject() != null && PathExists() && !PathFinished(/*uw*/))
+                    if (IsInPhase(TaskPhase.Execution))
                     {
-                        NavigateAlongPath(/*uw*/);
-                        _endedPathForAll = false;
+                        if (GetSubject() != null && PathExists() && !PathFinished(/*uw*/))
+                        {
+                            NavigateAlongPath(/*uw*/);
+                            _endedPathForAll = false;
+                        }
                     }
                 }
-            }
 
-            if (_endedPathForAll)
-                EndExecution();
+                if (_endedPathForAll)
+                    EndExecution();
+            }
+            else
+            {
+                bool b = true;
+                foreach (var v in childrenMoveTaskMarkers)
+                {
+                    b = b && v.GetTask().IsInPhase(Task.TaskPhase.Disposed);
+                }
+                if (b)
+                    EndExecution();
+            }
         }
 
         private bool PathExists()
@@ -236,39 +249,36 @@ namespace Core.Tasks
             return true;
         }
         
-        private bool PathFinished(/*UnitWrapper uw*/)
+        private bool PathFinished()
         {
-            return currentWaypointIndex >= GetWaypointMarkersList().Count;//waypointMarkersList.Count;
-            //return currentExecutionStatePerUnit[uw].currentWaypointIndex >= waypointMarkerWrappersList.Count;
+            return currentWaypointIndex >= GetWaypointMarkersList().Count;
         }
 
         private float s = 0.05f;
-        private void NavigateAlongPath(/*UnitWrapper uw*/)
-        {
-             
-            //var wpos = waypointMarkerWrappersList[currentExecutionStatePerUnit[uw].currentWaypointIndex].GetWrappedReference().transform.position;
+        private void NavigateAlongPath()
+        {   
             var wpos = GetWaypointMarkersList()[currentWaypointIndex].transform.position;
-            //var wpos = waypointMarkersList[currentWaypointIndex].transform.position;
 
             var targetPos = wpos;//GetUnitSubject().GetFormation().GetAcceptableMovementTargetPosition(wpos);
 
-            GetUnitSubject().myMover.MoveToPosition(targetPos, s);
+            subjectAsFormation.GetUnit().myMover.MoveToPosition(targetPos, s);
 
-            GetUnitSubject().GetFormation().facingAngle =
-                Vector3.SignedAngle(Vector3.right, targetPos - GetUnitSubject().myMover.transform.position, Vector3.down);
+            UpdateFormationFacing(targetPos);
 
-            if (GetUnitSubject().myMover.DistanceConditionToPosition(targetPos, 0.02f))
+            if (subjectAsFormation.GetUnit().myMover.DistanceConditionToPosition(targetPos, 0.02f))
             {
-                //waypointMarkerWrappersList[currentWaypointIndex].DestroyWrappedReference();
-                //currentExecutionStatePerUnit[uw].currentWaypointIndex++;
                 currentWaypointIndex++;
             }
         }
         
-        /*private void FormUp(Unit u)
+        private void UpdateFormationFacing(Vector3 targetPos)
         {
-            
-        }*/
+            subjectAsFormation./*GetUnit().GetFormation().*/facingAngle =
+                Vector3.SignedAngle(
+                Vector3.right,
+                targetPos - subjectAsFormation.GetUnit().myMover.transform.position, Vector3.down);
+
+        }
 
         #endregion
 

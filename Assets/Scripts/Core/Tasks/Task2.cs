@@ -32,7 +32,7 @@ namespace Core.Tasks
                 {
                     if (GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.InstantOverrideAll))
                     {
-                        GetTaskPlan().StopPlanExecution();
+                        GetTaskPlan().EndPlanExecution();
                         SetPhase(Task.TaskPhase.WaitToStartExecution);  
                         return true;
                     }
@@ -59,7 +59,7 @@ namespace Core.Tasks
                 EnterExecution,
                 UpdateExecution);
 
-            orderPhasesFSM.AddState(TaskPhase.Pause);
+            orderPhasesFSM.AddState(TaskPhase.Paused);
 
             orderPhasesFSM.AddState(TaskPhase.Cancelled,
                 () =>
@@ -72,9 +72,8 @@ namespace Core.Tasks
                { },
                () =>
                {
-                    SetPhase( TaskPhase.End2);
+                    SetPhase(TaskPhase.End2);
                });
-
             
             bool waitForReactionAtEnd = false;
 
@@ -87,10 +86,11 @@ namespace Core.Tasks
                 {
                     waitForReactionAtEnd = true;
                 }
-                if (GetTaskPlan().GetTaskInPlanFollowing(this) != null
-                    && GetTaskPlan().GetTaskInPlanFollowing(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
+
+                if (GetTaskPlan().GetTaskInPlanAfter(this) != null
+                    && GetTaskPlan().GetTaskInPlanAfter(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
                 {
-                    nextActiveOrder = new TaskWrapper(GetTaskPlan().GetTaskInPlanFollowing(this));
+                    nextActiveOrder = new TaskWrapper(GetTaskPlan().GetTaskInPlanAfter(this));
                 }
             },
             () =>

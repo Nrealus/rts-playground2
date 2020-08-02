@@ -18,11 +18,11 @@ namespace Core.Helpers
     {
         void SubscribeOnDestruction(string key, Action action);
 
-        void SubscribeOnDestructionAtEnd(string key, Action action);
+        void SubscribeOnDestructionLate(string key, Action action);
 
         void SubscribeOnDestruction(string key, Action action, bool combineActionsIfKeyAlreadyExists);
 
-        void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists);
+        void SubscribeOnDestructionLate(string key, Action action, bool combineActionsIfKeyAlreadyExists);
 
         void UnsubscribeOnDestruction(string key);
 

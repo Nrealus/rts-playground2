@@ -16,11 +16,11 @@ namespace Core.Tasks
     /// </summary> 
     public interface ITaskSubject : IDestroyable
     {
-        //void AddToPlans(TaskPlan2 taskPlan);
+        TaskPlan2 AddNewPlan();
 
-        //void RemoveFromPlans(TaskPlan2 taskPlan);
+        void RemoveAndEndPlan(TaskPlan2 taskPlan);
 
-        //IEnumerable<TaskPlan2> GetPlans();
+        IEnumerable<TaskPlan2> GetPlans();
 
         //TaskPlan2 GetTaskPlan();
 

@@ -20,7 +20,7 @@ namespace Core.Tasks
     {
         public TaskWrapper(Task obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
 
@@ -28,7 +28,7 @@ namespace Core.Tasks
     {
         public TaskWrapper(T obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
     
@@ -50,7 +50,7 @@ namespace Core.Tasks
             onDestroyed.SubscribeEventHandlerMethod(key, action);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action)
+        public void SubscribeOnDestructionLate(string key, Action action)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
         }
@@ -60,7 +60,7 @@ namespace Core.Tasks
             onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        public void SubscribeOnDestructionLate(string key, Action action, bool combineActionsIfKeyAlreadyExists)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
         }
@@ -146,7 +146,7 @@ namespace Core.Tasks
 
         #endregion
 
-        #region Basic methods
+        #region FSM control methods
 
         public bool TryStartExecution()
         {
@@ -157,7 +157,7 @@ namespace Core.Tasks
         {
             if (IsInPhase(Task.TaskPhase.Execution))
             {
-                SetPhase(Task.TaskPhase.Pause);
+                SetPhase(Task.TaskPhase.Paused);
                 return true;
             }
             else
@@ -168,7 +168,7 @@ namespace Core.Tasks
 
         public bool UnpauseExecution()
         {
-            if (IsInPhase(Task.TaskPhase.Pause))
+            if (IsInPhase(Task.TaskPhase.Paused))
             {
                 SetPhase(Task.TaskPhase.Execution);
                 return true;
@@ -192,9 +192,37 @@ namespace Core.Tasks
             return true;
         }
 
+        public void SetPhase(TaskPhase phase)
+        {
+            InstanceSetPhase(phase);
+        }
+
+        public bool IsInPhase(TaskPhase phase)
+        {
+            return InstanceIsInPhase(phase);
+        }
+
+        #endregion
+
+        #region Setters
+
+        public void SetTaskMarker(TaskMarker taskMarker)
+        {
+            InstanceSetTaskMarker(taskMarker);
+        }
+
         public void SetTaskPlan(TaskPlan2 taskPlan)
         {
             InstanceSetTaskPlan(taskPlan);
+        }
+        
+        #endregion
+
+        #region Getters
+
+        public TaskMarker GetTaskMarker()
+        {
+            return InstanceGetTaskMarker();
         }
 
         public TaskPlan2 GetTaskPlan()
@@ -207,13 +235,13 @@ namespace Core.Tasks
             return GetTaskPlan().GetSubject();
         }
         
-        public Vector3 GetTaskLocation()
+        /*public Vector3 GetTaskLocation()
         {
             if (GetSubject() is Unit)
                 return (GetSubject() as Unit).GetPosition();
             else
-                return Vector3.zero;
-        }
+                return Vector3.zero
+        }*/
 
         public TaskParams GetParameters()
         {
@@ -225,27 +253,13 @@ namespace Core.Tasks
             return GetSubject(taskWrapper) != null && GetSubject(taskWrapper).IsWrappedObjectNotNull();
         }*/
 
-        public void SetPhase(TaskPhase phase)
-        {
-            InstanceSetPhase(phase);
-        }
-
-        public bool IsInPhase(TaskPhase phase)
-        {
-            return InstanceIsInPhase(phase);
-        }
-        
-        public void Update()
-        {
-            InstanceUpdate();
-        }
-
         #endregion
-
+        
         public enum TaskPhase
-        {   Initial,
-            /*Registration,*/ Staging,// ReadyForExecution, NotReadyForExecution,
-            WaitToStartExecution, Execution, Pause, Cancelled, End, End2, Disposed,  
+        {   Initial, Staging,
+            WaitToStartExecution, Execution,
+            Paused, Cancelled, End,
+            End2, Disposed,  
         }
         protected StateMachine<TaskPhase> orderPhasesFSM;
 
@@ -254,9 +268,26 @@ namespace Core.Tasks
             //BaseConstructor(); <-- NO : BECAUSE C# CALLS CONSTRUCTORS "FROM TOP TO BOTTOM" (base then derived)
         }
 
-        #region Protected/Private abstract instance methods
+        protected void CreateAndInitFSM()
+        {
+            orderPhasesFSM = new StateMachine<TaskPhase>();
+            InitPhasesFSM();
+        }
+
+        public void Update()
+        {
+            InstanceUpdate();
+        }
+
+        public abstract bool CompatibleForParallelExecution(Task task);
+
+        #region Abstract instance methods
+
+        protected abstract void InstanceSetTaskMarker(TaskMarker taskMarker);
 
         protected abstract void InstanceSetTaskPlan(TaskPlan2 taskPlan);
+
+        protected abstract TaskMarker InstanceGetTaskMarker();
 
         protected abstract TaskPlan2 InstanceGetTaskPlan();
 
@@ -284,14 +315,6 @@ namespace Core.Tasks
         {
             orderPhasesFSM.Update();
         }
-
-        protected void CreateAndInitFSM()
-        {
-            orderPhasesFSM = new StateMachine<TaskPhase>();
-            InitPhasesFSM();
-        }
-
-        //public abstract void SetOptions(OrderOptions options);
 
         #endregion
         

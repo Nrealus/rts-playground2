@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Nrealus.Extensions;
+using System.Text;
 
 namespace Core.Tasks
 {
@@ -12,34 +13,6 @@ namespace Core.Tasks
     /// </summary>
     public class TaskParams
     {
-        
-        public enum TaskExecutionMode
-        {
-            InstantOverrideAll,
-            Chain,
-            WaitForReactionAtEnd,
-            AskForConfirmationRightBeforeStart,
-            
-        }
-
-        private List<TaskExecutionMode> _executionMode = new List<TaskExecutionMode>();
-
-        public bool ContainsExecutionMode(TaskExecutionMode mode)
-        {
-            return _executionMode.Contains(mode);
-        }
-
-        public void AddExecutionMode(TaskExecutionMode mode) // Subject to change when this class will get more formal
-        {
-            _executionMode.Add(mode);
-            if (ContainsExecutionMode(TaskExecutionMode.InstantOverrideAll) && mode == TaskExecutionMode.Chain)
-                _executionMode.Remove(TaskExecutionMode.InstantOverrideAll);
-        }
-
-        public TimeStruct plannedStartingTime { get; /*private*/ set; }
-
-        public bool isPassive { get; /*private*/ set; }
-
         
         public static TaskParams DefaultParam()
         { 
@@ -52,16 +25,89 @@ namespace Core.Tasks
         { 
             var res = new TaskParams();
             res.AddExecutionMode(TaskExecutionMode.InstantOverrideAll);
-            res.isPassive = true;
+            //res.isPassive = true;
             return res;
         }
 
+        #region Main declarations
 
-        
-        public TaskParams()
+        public enum TaskExecutionMode
         {
-            
+            InstantOverrideAll,
+            Chain,
+            WaitForReactionAtEnd,
+            AskForConfirmationRightBeforeStart,
         }
 
+        private List<TaskExecutionMode> executionMode = new List<TaskExecutionMode>();
+
+        public TimeStruct plannedStartingTime { get; /*private*/ set; }
+
+        private List<ITaskSubject> paramSubjects = new List<ITaskSubject>();
+
+        #endregion
+
+        #region Public functions and methods
+        
+        public List<ITaskSubject> GetParameterSubjects()
+        {
+            return paramSubjects;
+        }
+
+        public bool ContainsExecutionMode(TaskExecutionMode mode)
+        {
+            return executionMode.Contains(mode);
+        }
+
+        public void AddExecutionMode(TaskExecutionMode mode) // Subject to change when this class will get more formal
+        {
+            executionMode.Add(mode);
+            if (ContainsExecutionMode(TaskExecutionMode.InstantOverrideAll) && mode == TaskExecutionMode.Chain)
+                executionMode.Remove(TaskExecutionMode.InstantOverrideAll);
+        }
+
+        public void AddParameterSubjects(IEnumerable<ITaskSubject> subjs)
+        {
+            foreach(var v in subjs)
+                AddParameterSubject(v);
+        }
+
+        public void AddParameterSubject(ITaskSubject subj)
+        {
+            if (!paramSubjects.Contains(subj))
+            {
+                paramSubjects.Add(subj);
+                subj.SubscribeOnDestruction(removeParamSubjKey,
+                () => RemoveParameterSubject(subj));
+            }
+        }
+
+        public void RemoveParameterSubjects(IEnumerable<ITaskSubject> subjs)
+        {
+            foreach (var v in new List<ITaskSubject>(subjs))
+                RemoveParameterSubject(v);
+        }
+
+        public void RemoveParameterSubject(ITaskSubject subj)
+        {
+            if (paramSubjects.Remove(subj))
+            {
+                subj.UnsubscribeOnDestruction(removeParamSubjKey);
+            }
+        }
+
+        #endregion
+
+        #region Initialisation
+
+        private static int _instcount;
+        private string removeParamSubjKey;
+        public TaskParams()
+        {
+            _instcount++;
+            removeParamSubjKey = new StringBuilder("removeparamsubj").Append(_instcount).ToString();
+        }
+
+        #endregion
     }
 }

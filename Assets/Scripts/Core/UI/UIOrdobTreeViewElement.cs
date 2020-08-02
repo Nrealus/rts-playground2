@@ -15,28 +15,21 @@ namespace Core.UI
     public class UIOrdobTreeViewElement : TreeViewElement
     {
 
+    
         private UnitWrapper _associatedUnitWrapper;
-        public Unit associatedUnit { get { return _associatedUnitWrapper?.Value; } }
-
         private ITreeViewSelectable _associatedTreeViewSelectable;
+
+        private EasyObserver<string,bool> onPressedInBind = new EasyObserver<string, bool>();
+        private event Action onUnbind;
+
+        public Unit GetAssociatedUnit() { return _associatedUnitWrapper?.Value; }
+
         public override ITreeViewSelectable GetAssociatedTreeViewSelectable()
         {
             return _associatedTreeViewSelectable;
         }
-
-        public override void OnDestroyMe()
-        {
-            onUnbind?.Invoke();
-            onUnbind = null;
-        }
         
-        protected override void Awake()
-        {
-            base.Awake();
-
-            _associatedTreeViewSelectable = GetComponentInChildren<ITreeViewSelectable>();
-            _associatedTreeViewSelectable.SetAssociatedTreeViewElement(this);
-        }
+        #region Initialisation and OnDestruction
 
         public void Init(Unit unit, RectTransform dragArea, RectTransform containerOfWholeTreeView)
         {
@@ -45,7 +38,23 @@ namespace Core.UI
             _associatedUnitWrapper = new UnitWrapper(unit);
         }
 
-        #region ssdfsdfs
+        protected override void Awake()
+        {
+            base.Awake();
+
+            _associatedTreeViewSelectable = GetComponentInChildren<ITreeViewSelectable>();
+            _associatedTreeViewSelectable.SetAssociatedTreeViewElement(this);
+        }
+
+        public override void OnDestruction()
+        {
+            onUnbind?.Invoke();
+            onUnbind = null;
+        }
+
+        #endregion
+
+        #region TreeViewElement overriden event callbacks
 
         public override void OnDragHoverOn(TreeViewElement hoveredPotentialAttachElements, TreeViewElement previousHoveredPotentialAttachElements)
         {
@@ -62,12 +71,12 @@ namespace Core.UI
             {
                 newParent.GetAssociatedTreeViewSelectable().Unhighlight();
                 if (!newParent.isRoot)
-                    associatedUnit.ChangeParentTo((newParent as UIOrdobTreeViewElement).associatedUnit);
+                    GetAssociatedUnit().ChangeParentTo((newParent as UIOrdobTreeViewElement).GetAssociatedUnit());
                 else
-                    associatedUnit.ChangeParentTo(null);
+                    GetAssociatedUnit().ChangeParentTo(null);
             }
             else
-                associatedUnit.ChangeParentTo(associatedUnit.GetParentNode());
+                GetAssociatedUnit().ChangeParentTo(GetAssociatedUnit().GetParentNode());
         }
 
         public override void OnPressInOrOut(bool inOrOut, PointerEventData data)
@@ -88,9 +97,6 @@ namespace Core.UI
         }
 
         #endregion
-
-        private EasyObserver<string,bool> onPressedInBind = new EasyObserver<string, bool>();
-        private event Action onUnbind;
 
         public void BindPressEvent(MultiEventObserver binder, Action<object, EventArgs> action)
         {

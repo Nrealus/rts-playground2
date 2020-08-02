@@ -11,11 +11,13 @@ using Nrealus.Extensions.ReferenceWrapper;
 namespace Core.MapMarkers
 {
 
+    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
+
     public class MapMarkerWrapper : MapMarkerWrapper<MapMarker>
     {
         public MapMarkerWrapper(MapMarker obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
 
@@ -23,13 +25,10 @@ namespace Core.MapMarkers
     {
         public MapMarkerWrapper(T obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
     
-    
-    /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
-
     /// <summary>
     /// A class whose subclasses are intended to be "concrete" (MonoBehaviour) "markers" on the map.
     /// These markers may fill different roles : simple indicators of an in-game situation, or "parameter" indicators for Tasks, like an area to target,
@@ -41,16 +40,16 @@ namespace Core.MapMarkers
 
         #region ISelectable implementation
 
-        private EasyObserver<string, (Selector,bool)> onSelectionStateChange = new EasyObserver<string, (Selector, bool)>();
+        private EasyObserver<string, (Selector,bool,int)> onSelectionStateChange = new EasyObserver<string, (Selector, bool, int)>();
 
-        public EasyObserver<string, (Selector,bool)> GetOnSelectionStateChangeObserver()
+        public EasyObserver<string, (Selector,bool,int)> GetOnSelectionStateChangeObserver()
         {
             return onSelectionStateChange;
         }
         
-        void ISelectable.InvokeOnSelectionStateChange(Selector selector, bool b)
+        void ISelectable.InvokeOnSelectionStateChange(Selector selector, bool newSelectionState, int channel)
         {
-            onSelectionStateChange.Invoke((selector, b));
+            onSelectionStateChange.Invoke((selector, newSelectionState, channel));
         }
 
         #endregion
@@ -64,7 +63,7 @@ namespace Core.MapMarkers
             onDestroyed.SubscribeEventHandlerMethod(key, action);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action)
+        public void SubscribeOnDestructionLate(string key, Action action)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
         }
@@ -74,7 +73,7 @@ namespace Core.MapMarkers
             onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        public void SubscribeOnDestructionLate(string key, Action action, bool combineActionsIfKeyAlreadyExists)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
         }

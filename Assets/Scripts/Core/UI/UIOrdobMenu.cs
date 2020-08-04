@@ -92,7 +92,7 @@ namespace Core.UI
             
             foreach (var v in trackedUnitsTVEs)
             {
-                if (v.GetAssociatedUnit() == uToAdd.GetParentNode())
+                if (v.GetAssociatedUnit() == uToAdd.GetParentUnit())
                 {
                     res = Instantiate<UIOrdobTreeViewElement>(
                         GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().uiOrdobTreeViewElementPrefab,
@@ -122,7 +122,7 @@ namespace Core.UI
         private void UpdateTreeViewElementParent(Unit u)
         {
             UIOrdobTreeViewElement ugwTve = trackedUnitsTVEs.Find((_) => { return _.GetAssociatedUnit() == u; });
-            UIOrdobTreeViewElement ugwParentTve = trackedUnitsTVEs.Find((_) => { return _.GetAssociatedUnit() == u.GetParentNode(); });
+            UIOrdobTreeViewElement ugwParentTve = trackedUnitsTVEs.Find((_) => { return _.GetAssociatedUnit() == u.GetParentUnit(); });
             
             if (ugwParentTve == null)
                 ugwParentTve = treeViewRootElement;

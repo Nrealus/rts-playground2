@@ -24,14 +24,11 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private Formation subjectAsFormation { get { return GetTaskPlan().GetSubject() as Formation; } }
-
-        private TaskParams _taskParams = TaskParams.DefaultParam();
-
-        private MapMarkerWrapper<MoveTaskMarker> _moveTaskMarkerWrapper;
+        private UnitTeam subjectAsTeam { get { return GetTaskPlan().GetSubject() as UnitTeam; } }
 
         public int currentWaypointIndex;
         public bool endedPath;
+        
         private List<MoveTaskMarker> childrenMoveTaskMarkers = new List<MoveTaskMarker>();
 
         #endregion
@@ -44,6 +41,7 @@ namespace Core.Tasks
         
         #region Overriden instance methods and functions
 
+        private MapMarkerWrapper<MoveTaskMarker> _moveTaskMarkerWrapper;
         protected override TaskMarker InstanceGetTaskMarker()
         {
             return _moveTaskMarkerWrapper?.Value;
@@ -59,7 +57,7 @@ namespace Core.Tasks
             return _moveTaskMarkerWrapper.Value.waypointMarkersList;
         }
 
-
+        private TaskParams _taskParams = TaskParams.DefaultParam();
         protected override TaskParams InstanceGetParameters()
         {   
             return _taskParams;
@@ -70,9 +68,9 @@ namespace Core.Tasks
             if (task is MoveTask)
             {
                 MoveTask mvtsk = task as MoveTask;
-                var chu = childrenMoveTaskMarkers.Select((_) => (_.GetTask().GetSubject() as Formation).GetUnit());
-                if (mvtsk.subjectAsFormation.GetUnit() == subjectAsFormation.GetUnit()
-                || mvtsk.subjectAsFormation.GetChildFormations().Select((_) => _.GetUnit()).Intersect(chu).Count() > 0)
+                var chus = childrenMoveTaskMarkers.Select((_) => (_.GetTask().GetSubject() as UnitTeam).GetUnit());
+                if (mvtsk.subjectAsTeam.GetUnit() == subjectAsTeam.GetUnit()
+                || mvtsk.subjectAsTeam.GetSubTeams().Select((_) => _.GetUnit()).Intersect(chus).Count() > 0)
                     return false;
             }
             bool b = true;
@@ -92,35 +90,27 @@ namespace Core.Tasks
                 SubscribeOnDestruction("clearchildrenmovetaskmarkers", () => childrenMoveTaskMarkers.Clear());
     
                 UpdateFormationFacing(GetTaskMarker().GetWorldPosition());
-                subjectAsFormation.FormTest();
 
-                MoveTask currentTaskAsMoveTask = GetTaskPlan().GetCurrentTaskInPlan() as MoveTask;
+                if (!subjectAsTeam.IsVirtualTeam())
+                    subjectAsTeam.GetUnit().GetFormation().FormTest();
 
-                foreach (var chf in subjectAsFormation.GetChildFormations())
+                foreach (var chf in subjectAsTeam.GetSubTeams())
                 {
-
-                    /*foreach (var us in chf.GetUnit().GetChildNodes())
-                    {
-                        (new Formation(us)).ChangeParentTo(chf);
-                    }*/
-                    
                     Vector3 wpos;
-                    wpos = chf.GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
+                    wpos = chf.GetUnit().GetFormation().GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
 
                     var prevtm = GetTaskMarker().GetPreviousTaskMarker()?.GetTask() as MoveTask;
-
+                    
                     TaskMarker chprevtm;
                     if (prevtm != null)
-                        chprevtm = prevtm.childrenMoveTaskMarkers.Where((_) => (Formation)_.GetTask().GetSubject() == chf).FirstOrDefault();
+                        chprevtm = prevtm.childrenMoveTaskMarkers.Where((_) => (UnitTeam)_.GetTask().GetSubject() == chf).FirstOrDefault();
                     else
                         chprevtm = null;
 
                     MoveTaskMarker tm = TaskMarker.CreateInstanceAtWorldPosition<MoveTaskMarker>(wpos);
-                    tm.AddWaypoint(WaypointMarker.CreateWaypointMarker(wpos));
+                    tm.AddWaypointMarker(WaypointMarker.CreateWaypointMarker(wpos));
 
-                    TaskPlan2 tp = tm.InsertAssociatedTaskInPlan(chf, chprevtm);
-                    if (!tp.IsPlanBeingExecuted())
-                        tp.StartPlanExecution();
+                    TaskPlan2 chtp = tm.InsertAssociatedTaskIntoPlan(chf, chprevtm);
 
                     tm.SubscribeOnDestruction("removefromparentmovetaskmarkerslist",() => childrenMoveTaskMarkers.Remove(tm));                    
                     childrenMoveTaskMarkers.Add(tm);
@@ -150,46 +140,12 @@ namespace Core.Tasks
                 if(GetTaskPlan().GetCurrentTaskInPlan() == this)
                 {
                     SetPhase(TaskPhase.WaitToStartExecution);
+
                     foreach (var chmtm in childrenMoveTaskMarkers)
                     {
                         chmtm.GetTask().TryStartExecution();
                     }
                     return true;
-                }
-                else
-                {
-                    /*if (InstanceGetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.InstantOverrideAll))
-                    {
-                        // "delete" orders that start after the starting time of this order
-                        foreach (var ow in GetSubject(GetRefWrapper()).GetTaskPlan().GetAllActiveTasksFromPlan())
-                        {
-                            if (ow != GetRefWrapper() && GetSubject(GetRefWrapper()).GetTaskPlan().IsActiveTaskInPlanAfterOther(GetRefWrapper(), ow))
-                            {
-                                EndExecution(ow);
-                                foreach (var chf in unitWrapper.GetFormation().GetChildFormations())
-                                {
-                                    chf.unitWrapper.GetTaskPlan().StopPlanExecution();
-                                }
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        
-                        if (GetSubject(GetRefWrapper()).GetTaskPlan().GetFirstInlineActiveTaskInPlan() != null)
-                        {
-                            SetPhase(GetRefWrapper(), Task.OrderPhase.WaitToStartExecution);  
-                            foreach (var chf in unitWrapper.GetFormation().GetChildFormations())
-                            {
-                                chf.unitWrapper.GetTaskPlan().StartPlanExecution();
-                            }
-                            return true;
-                        }
-                        
-                        return false;
-                    }*/
-                    return false;
                 }
             }
 
@@ -202,30 +158,30 @@ namespace Core.Tasks
 
         protected override void EnterExecution()
         {
+            GetParameters().plannedStartingTime = TimeHandler.CurrentTime() + new TimeStruct(0,0,15);
+        }
+        /*protected override void EnterExecution()
+        {
             base.EnterExecution();
             foreach (var chmtm in childrenMoveTaskMarkers)
             {
                 //chmtm.GetTaskAsMoveTask().waypointMarkersList = waypointMarkersList;
                 //change screen positions of children task markers accordingly
             }
-        }
+        }*/
 
         private bool _endedPathForAll;
         protected override void UpdateExecution()
         {
-            if (subjectAsFormation.IsLeaf())
+            if (subjectAsTeam.IsLeaf())
             {
                 _endedPathForAll = true;
-                //foreach (var uw in Unit.GetUnitPieceWrappersInUnit(unitWrapper))
-                //foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(Task.GetSubject(GetRefWrapper()).GetTaskSubjectAsReferenceWrapperSpecific<UnitWrapper>()))
+                if (IsInPhase(TaskPhase.Execution))
                 {
-                    if (IsInPhase(TaskPhase.Execution))
+                    if (GetSubject() != null && PathExists() && !PathFinished())
                     {
-                        if (GetSubject() != null && PathExists() && !PathFinished(/*uw*/))
-                        {
-                            NavigateAlongPath(/*uw*/);
-                            _endedPathForAll = false;
-                        }
+                        NavigateAlongPath();
+                        _endedPathForAll = false;
                     }
                 }
 
@@ -261,11 +217,11 @@ namespace Core.Tasks
 
             var targetPos = wpos;//GetUnitSubject().GetFormation().GetAcceptableMovementTargetPosition(wpos);
 
-            subjectAsFormation.GetUnit().myMover.MoveToPosition(targetPos, s);
+            subjectAsTeam.GetUnit().myMover.MoveToPosition(targetPos, s);
 
             UpdateFormationFacing(targetPos);
 
-            if (subjectAsFormation.GetUnit().myMover.DistanceConditionToPosition(targetPos, 0.02f))
+            if (subjectAsTeam.GetUnit().myMover.DistanceConditionToPosition(targetPos, 0.02f))
             {
                 currentWaypointIndex++;
             }
@@ -273,11 +229,13 @@ namespace Core.Tasks
         
         private void UpdateFormationFacing(Vector3 targetPos)
         {
-            subjectAsFormation./*GetUnit().GetFormation().*/facingAngle =
-                Vector3.SignedAngle(
-                Vector3.right,
-                targetPos - subjectAsFormation.GetUnit().myMover.transform.position, Vector3.down);
-
+            if (!subjectAsTeam.IsVirtualTeam())
+            {
+                subjectAsTeam.GetUnit().GetFormation().facingAngle =
+                    Vector3.SignedAngle(
+                    Vector3.right,
+                    targetPos - subjectAsTeam.GetUnit().myMover.transform.position, Vector3.down);
+            }
         }
 
         #endregion

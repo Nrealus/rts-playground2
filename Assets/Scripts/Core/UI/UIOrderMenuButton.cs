@@ -104,9 +104,9 @@ namespace Core.UI
                         if (b)
                         {
                             if (_taskSubject == null)
-                                _taskSubject = PrepareAndGetSubjectFromSelected(selected);
+                                _taskSubject = UnitTeam.PrepareAndCreateTeamFromSelected(selected);
 
-                            TaskPlan2 taskPlan = taskMarker.InsertAssociatedTaskInPlan(_taskSubject, _lastPlacedTaskMarkerWrapper?.Value);
+                            TaskPlan2 taskPlan = taskMarker.InsertAssociatedTaskIntoPlan(_taskSubject, _lastPlacedTaskMarkerWrapper?.Value);
 
                             if (!taskPlan.IsPlanBeingExecuted())
                                 taskPlan.StartPlanExecution();
@@ -115,7 +115,7 @@ namespace Core.UI
                             {
                                 /*if (_lastPlacedTaskMarkerWrapper == null)
                                 {
-                                    var tm = taskSubject.GetPlans().FirstOrDefault()?.GetCurrentTaskInPlan()?.GetTaskMarker();
+                                    var tm = ITaskSubject.GetPlans().FirstOrDefault()?.GetCurrentTaskInPlan()?.GetTaskMarker();
                                     if (tm != null)
                                         _lastPlacedTaskMarkerWrapper = new MapMarkerWrapper<TaskMarker>(tm);
                                 }
@@ -145,7 +145,7 @@ namespace Core.UI
             }
         }
 
-        private ITaskSubject PrepareAndGetSubjectFromSelected(List<ISelectable> selectedEntities)
+        /*private ITaskSubject PrepareAndGetSubjectFromSelected(List<ISelectable> selectedEntities)
         {
             Formation res;
             if (selectedEntities.Count == 1)
@@ -174,7 +174,7 @@ namespace Core.UI
                 }
             }
             return res;
-        }
+        }*/
 
     }
 }

@@ -20,12 +20,8 @@ namespace Core.Tasks
 
         void RemoveAndEndPlan(TaskPlan2 taskPlan);
 
-        IEnumerable<TaskPlan2> GetPlans();
-
-        //TaskPlan2 GetTaskPlan();
-
-        //void SetTaskPlan(TaskPlan2 taskPlan);
-
+        List<TaskPlan2> GetPlans();
+        
     }
     
 }

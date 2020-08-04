@@ -9,6 +9,7 @@ using Nrealus.Extensions;
 using Nrealus.Extensions.Observer;
 using Core.Units;
 using Nrealus.Extensions.ReferenceWrapper;
+using Core.Selection;
 
 namespace Core.Tasks
 {
@@ -27,7 +28,7 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private RefWrapper<ITaskSubject> _taskSubject;
+        private RefWrapper <ITaskSubject> _taskSubject;
         public ITaskSubject GetSubject() { return _taskSubject?.Value; }
 
         private List<Task> tasks = new List<Task>();
@@ -36,7 +37,7 @@ namespace Core.Tasks
 
         public TaskPlan2(ITaskSubject subject)
         {
-            _taskSubject = new RefWrapper<ITaskSubject>(subject);
+            _taskSubject = new RefWrapper <ITaskSubject>(subject);
         }
 
         public void StartPlanExecution()

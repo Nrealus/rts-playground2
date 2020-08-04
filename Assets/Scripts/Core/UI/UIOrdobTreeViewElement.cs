@@ -76,7 +76,7 @@ namespace Core.UI
                     GetAssociatedUnit().ChangeParentTo(null);
             }
             else
-                GetAssociatedUnit().ChangeParentTo(GetAssociatedUnit().GetParentNode());
+                GetAssociatedUnit().ChangeParentTo(GetAssociatedUnit().GetParentUnit());
         }
 
         public override void OnPressInOrOut(bool inOrOut, PointerEventData data)

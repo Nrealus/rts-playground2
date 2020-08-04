@@ -43,13 +43,13 @@ namespace Core.Tasks
 
         public TimeStruct plannedStartingTime { get; /*private*/ set; }
 
-        private List<ITaskSubject> paramSubjects = new List<ITaskSubject>();
+        private List <ITaskSubject> paramSubjects = new List <ITaskSubject>();
 
         #endregion
 
         #region Public functions and methods
         
-        public List<ITaskSubject> GetParameterSubjects()
+        public List <ITaskSubject> GetParameterSubjects()
         {
             return paramSubjects;
         }
@@ -66,7 +66,7 @@ namespace Core.Tasks
                 executionMode.Remove(TaskExecutionMode.InstantOverrideAll);
         }
 
-        public void AddParameterSubjects(IEnumerable<ITaskSubject> subjs)
+        public void AddParameterSubjects(IEnumerable <ITaskSubject> subjs)
         {
             foreach(var v in subjs)
                 AddParameterSubject(v);
@@ -82,9 +82,9 @@ namespace Core.Tasks
             }
         }
 
-        public void RemoveParameterSubjects(IEnumerable<ITaskSubject> subjs)
+        public void RemoveParameterSubjects(IEnumerable <ITaskSubject> subjs)
         {
-            foreach (var v in new List<ITaskSubject>(subjs))
+            foreach (var v in new List <ITaskSubject>(subjs))
                 RemoveParameterSubject(v);
         }
 

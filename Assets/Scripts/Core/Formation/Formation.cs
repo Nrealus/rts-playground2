@@ -13,137 +13,22 @@ using System.Text;
 namespace Core.Formations
 {
 
-    public class Formation : ITaskSubject
+    public class Formation
     {
         
-        #region ITaskSubject implementation
-
-        private List<TaskPlan2> _localPlans = new List<TaskPlan2>();
-        private List<TaskPlan2> plans
-        {
-            get
-            {
-                if (IsNominalFormation())
-                    return _localPlans;
-                else
-                    return GetUnit().GetNominalFormation()._localPlans;
-            }
-        }
-        
-        private static int _instcount2;
-        private Dictionary<TaskPlan2,string> removePlanKeyDict = new Dictionary<TaskPlan2, string>();
-        public TaskPlan2 AddNewPlan()
-        {
-            _instcount2++;
-
-            TaskPlan2 res = null;
-
-            res = new TaskPlan2(this);
-            plans.Add(res);
-
-            if (!IsNominalFormation())
-                _localPlans.Add(res);            
-
-            removePlanKeyDict.Add(res, new StringBuilder("removeplan").Append(_instcount2).ToString());
-            SubscribeOnDestruction(removePlanKeyDict[res], () => RemoveAndEndPlan(res));
-
-            return res;
-        }
-
-        public void RemoveAndEndPlan(TaskPlan2 taskPlan)
-        {
-            if (plans.Remove(taskPlan))
-            {
-                if (!IsNominalFormation())
-                    _localPlans.Remove(taskPlan);            
-                
-                taskPlan.EndPlanExecution();
-                UnsubscribeOnDestruction(removePlanKeyDict[taskPlan]);
-
-                if (_localPlans.Count == 0)
-                    DestroyThis();
-            }
-        }
-
-        public IEnumerable<TaskPlan2> GetPlans()
-        {
-            return plans;
-        }
-        
-        #endregion
-        
-        #region IDestroyable implementation
-        
-        private EasyObserver<string> onDestroyed = new EasyObserver<string>();
-
-        public void SubscribeOnDestruction(string key, Action action)
-        {
-            onDestroyed.SubscribeEventHandlerMethod(key, action);
-        }
-
-        public void SubscribeOnDestructionLate(string key, Action action)
-        {
-            onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
-        }
-
-        public void SubscribeOnDestruction(string key, Action action, bool combineActionsIfKeyAlreadyExists)
-        {
-            onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
-        }
-
-        public void SubscribeOnDestructionLate(string key, Action action, bool combineActionsIfKeyAlreadyExists)
-        {
-            onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
-        }
-
-        public void UnsubscribeOnDestruction(string key)
-        {
-            onDestroyed.UnsubscribeEventHandlerMethod(key);
-        }
-
-        public void DestroyThis()
-        {
-            onDestroyed.Invoke();
-        }
-
-        #endregion
-
         #region Tree structure
 
         private Dictionary<string, Action> _actDict = new Dictionary<string,Action>();        
-        //private Stack<ObservedValue<Formation>> _parents = new Stack<ObservedValue<Formation>>();
         private ObservedValue<Formation> _parent = new ObservedValue<Formation>(null);
-
-        /*public void SubscribeOnParentChange(string key, Action action)
-        {
-            if (!_actDict.ContainsKey(key))
-            {
-                _actDict.Add(key, action);
-                _parents[0].OnValueChange += action;
-            }
-        }
-
-        public void UnsubscribeOnParentChange(string key)
-        {
-            _parent[0].OnValueChange -= _actDict[key];
-        }*/
 
         public Formation GetParentFormation()
         {
-            //return _parents.Peek().Value;
             return _parent.Value;
-            /*if (unit.GetParentNode() != null)
-                return unit.GetParentNode().GetFormation();
-            return null;*/
         }
 
-        public void Internal_SetParentNode(Formation newParent)
+        public void Internal_SetParentFormation(Formation newParent)
         {
-            /*var onp = new ObservedValue<Formation>(newParent);
-            _parents.Push(onp);*/
             _parent.Value = newParent;
-            /*onp.OnValueChange += 
-            _parents.Insert(0, onp);*/
         }
 
         public bool IsRoot()
@@ -153,103 +38,40 @@ namespace Core.Formations
 
         public bool IsLeaf()
         {
-            return GetChildFormations().Count == 0;
+            return GetSubFormations().Count == 0;
         }
 
         private List<Formation> _childNodes = new List<Formation>();
-        public List<Formation> GetChildFormations()
+        public List<Formation> GetSubFormations()
         {
             return _childNodes;
-            //return unit.GetChildNodes().Select((_) => { return _.GetFormation(); } ).ToList();
         }
 
-        private/*public*/ void AddChild(Formation child)
+        private void AddSubFormation(Formation child)
         {
             if (child.GetParentFormation() != null)
-                child.GetParentFormation().RemoveChild(child);
-            child.Internal_SetParentNode(this);
-            GetChildFormations().Add(child);
+                child.GetParentFormation().RemoveSubFormation(child);
+            child.Internal_SetParentFormation(this);
+            GetSubFormations().Add(child);
         }
 
-        private/*public*/ void AddChildren(IEnumerable<Formation> children)
+        private void RemoveSubFormation(Formation child)
         {
-            foreach (Formation child in children)
-                AddChild(child);
-        }
-
-        private/*public*/ void RemoveChild(Formation child)
-        {
-            child.Internal_SetParentNode(null);
-            GetChildFormations().Remove(child);
-        }
-
-        private/*public*/ void RemoveChildren(IEnumerable<Formation> children)
-        {
-            foreach (Formation child in children)
-                RemoveChild(child);
+            child.Internal_SetParentFormation(null);
+            GetSubFormations().Remove(child);
         }
 
         public void ChangeParentTo(Formation newParent)
         {
             if (newParent != null)
             {
-                newParent.AddChild(this);
+                newParent.AddSubFormation(this);
             }
             else
             {
                 if (GetParentFormation() != null)
-                    GetParentFormation().RemoveChild(this);
+                    GetParentFormation().RemoveSubFormation(this);
             }
-        }
-
-        public List<Formation> GetSiblingFormations()
-        {
-            var p = GetParentFormation();
-            if (p != null)
-                return /*p.GetUnit().GetFormation()*/p.GetChildFormations();
-            var res = new List<Formation>();
-            res.Add(this);
-            return res;
-        }
-
-        public List<Formation> GetLeafChildren()
-        {
-            return GetChildFormations().Where(x => x.IsLeaf()).ToList();
-        }
-
-        public List<Formation> GetNonLeafChildren()
-        {
-            return GetChildFormations().Where(x => !x.IsLeaf()).ToList();
-        }
-
-        public Formation GetRootNode()
-        {
-            if (GetParentFormation() == null)
-                return this;
-
-            return GetParentFormation().GetRootNode();
-        }
-        
-        private Queue<Formation> _bfsqueue = new Queue<Formation>();
-        public List<Formation> BFSList()
-        {
-            List<Formation> result = new List<Formation>();
-
-            _bfsqueue.Enqueue(this);
-
-            while (_bfsqueue.Count > 0)
-            {
-                result.Add(_bfsqueue.Peek());
-
-                var a = _bfsqueue.Dequeue().GetChildFormations();
-                var c = a.Count;
-                for (int k = 0; k < c; k++)
-                    _bfsqueue.Enqueue(a[k]);
-            }
-
-            _bfsqueue.Clear();
-
-            return result;
         }
 
         #endregion
@@ -273,11 +95,6 @@ namespace Core.Formations
 
         private UnitWrapper _unitWrapper;
         public Unit GetUnit() { return _unitWrapper.Value; }
-
-        public bool IsNominalFormation()
-        {
-            return GetUnit().GetNominalFormation() != this;
-        }
 
         #region Formation shape functions
 
@@ -328,8 +145,6 @@ namespace Core.Formations
         private string reattachFormationToNewParentKey;
         private void InitUnit(Unit unit)
         {
-            //_parents.Push(new ObservedValue<Formation>(null));
-
             _instcount++;
             reattachFormationToNewParentKey = new StringBuilder("reattachformationtonewparent").Append(_instcount).ToString();
 
@@ -337,15 +152,7 @@ namespace Core.Formations
             GetUnit().SubscribeOnParentChange(reattachFormationToNewParentKey,
             () =>
             {
-                //if (GetUnit().GetParentNode() != null)
-                {
-                    if (IsNominalFormation())
-                        ChangeParentTo(GetUnit().GetParentNode()?.GetNominalFormation());
-                    else
-                    {
-                        ChangeParentTo(GetUnit().GetParentNode()?.GetLocalAuxiliaryFormationByChildren(new List<Unit>() { GetUnit() }));
-                    }
-                }
+                ChangeParentTo(GetUnit().GetParentUnit()?.GetFormation());
             });
             
             //SubscribeOnDestruction("unsubreattachtonewparent", () => GetUnit().UnsubscribeOnDestruction(reattachFormationToNewParentKey));
@@ -389,7 +196,7 @@ namespace Core.Formations
 
         public void FormTest()
         {
-            var chn = GetChildFormations();
+            var chn = GetSubFormations();
             
             var n = chn.Count;
 
@@ -402,72 +209,7 @@ namespace Core.Formations
                 }
             }
         }
-
-        /*public void FormColumn()
-        {
-            var chn = GetChildFormations(); // 
-
-            var n = chn.Count;
-
-            if (n > 0)
-            {
-                ColumnDispatcher comparer = new ColumnDispatcher(chn);
-
-                var sortedChn = comparer.Output();
-
-                // basically greedy algorithm for optimisation.
-                // Possible use of something more elaborate ? (dyn. prog., linear optimisation techniques, bab...)
-                // (future ai considerations....)
-
-                for(int i = 0; i<n; i++)
-                {
-                    (Formation,float) ch = sortedChn[i];
-                    ch.Item1.GetFormationData().depthOffsetToParentNominalFraction = ch.Item2;
-                }
-            }
-        }*/
-   
+        
     }
-
-    /*public class ColumnDispatcher
-    {
-        private List<Formation> formationsList;
-
-        public ColumnDispatcher(List<Formation> formationsList)
-        {
-            this.formationsList = new List<Formation>(formationsList);
-        }
-
-        private float Evaluate(Formation form)
-        {
-            int n = formationsList.Count; // could be needed for more complex evaluation ? (depending on other formations in the list etc... : "multi-agent" ?)
-            
-            if (form.GetFormationData().formationRole == Formation.GetFormationData().FormationRole.AdvanceGuard)
-                return -1;
-
-            if (form.GetFormationData().formationRole == Formation.GetFormationData().FormationRole.MainGuard)
-                return 0f;
-
-            if (form.GetFormationData().formationRole == Formation.GetFormationData().FormationRole.HQ)
-                return 0.5f;
-
-            if (form.GetFormationData().formationRole == Formation.GetFormationData().FormationRole.RearGuard)
-                return 1f;
-
-            return 0;
-        }
-
-        public List<(Formation,float)> Output()
-        {
-            List<(Formation,float)> res = new List<(Formation,float)>();
-            
-            foreach (var f in formationsList)
-            {
-                res.Add((f,Evaluate(f)));
-            }
-
-            return res;
-        }
-    }*/
 
 }

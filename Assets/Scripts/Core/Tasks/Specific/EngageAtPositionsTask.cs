@@ -16,266 +16,161 @@ namespace Core.Tasks
     /// OUTDATED
     /// This "passive" order (See OrderPlan) can specify targets for units. WIP (as most things but here especially - UnitROE stuff on the horizon..?)
     /// </summary>
-    #if false
-    public class EngageAtPositionsTask : Task, IHasRefWrapper<TaskWrapper<EngageAtPositionsTask>>
+    public class EngageAtPositionsTask : Task2
     {
 
-        public new TaskWrapper<EngageAtPositionsTask> GetRefWrapper()
-        {
-            return _myWrapper as TaskWrapper<EngageAtPositionsTask>;
-        }
+        #region Main declarations
 
-        private List<MapMarkerWrapper<FirePositionMarker>> firePositionMarkerWrappersList = new List<MapMarkerWrapper<FirePositionMarker>>();
-
-        private TaskParams myParameters = TaskParams.DefaultParam();
-
-        private UnitWrapper unitWrapper;
-        private class UnitWrapperExecutionState
-        {
-            public int currentWaypointIndex;
-            public bool endedPath;
-
-        }
-        private Dictionary<UnitWrapper, UnitWrapperExecutionState> currentExecutionStatePerUnit = new Dictionary<UnitWrapper, UnitWrapperExecutionState>();
-
-
-        protected override ITaskSubject InstanceGetSubject()
-        {
-            return unitWrapper;
-        }
+        private UnitTeam subjectAsTeam { get { return GetTaskPlan().GetSubject() as UnitTeam; } }
         
-        private TaskPlan2 taskPlan;
-        protected override TaskPlan2 InstanceGetTaskPlan()
-        {
-            return taskPlan;
-        }
+        private List<UnitTeam> subjectsSubTeams { get { return subjectAsTeam.GetSubTeams(); }}
+        //private List<TargetTaskMarker> childrenTargetTaskMarkers = new List<TargetTaskMarker>();
 
-        /*protected override TaskMarkerWrapper InstanceGetTaskMarker()
-        {
-            throw new System.NotImplementedException();
-            //return unitWrapper;
-        }*/
-
-        protected override void InstanceSetSubject(ITaskSubject subject, TaskWrapper predecessor, TaskWrapper successor)
-        {
-           
-            unitWrapper = subject as UnitWrapper;
-
-            //unitWrapper.GetTaskPlan().QueuePassiveOrderToPlan(GetRefWrapper(), predecessor, successor);
-
-            SetPhase(GetRefWrapper(), OrderPhase.Staging);
-            
-            /*if (Order.IsInPhase(GetMyWrapper(), OrderPhase.Initial))
-            {
-                unitWrapper = orderable as UnitWrapper;
-                //orderMarkerWrapper = (new OrderMarker(_myWrapper)).GetMyWrapper<OrderMarker>();
-                //GetMyWrapper().SubscribeOnClearance(() => RemoveOrderMarkerAtClearance());
-                Order.SetPhase(GetMyWrapper(), OrderPhase.Registration);
-            }
-            else
-            {
-                Debug.LogError("should not happen");
-            }*/
-        }
-
-        protected override TaskParams InstanceGetParameters()
-        {
-            return myParameters;
-        }
-
-        /*protected override void InstanceSetTaskMarker(TaskMarkerWrapper taskMarkerWrapper)
-        {
-            //this.taskMarkerWrapper = taskMarkerWrapper;
-            
-            //Task.SetSubject(GetRefWrapper(), null, null, Task.GetTaskMarker(GetRefWrapper()).GetWrappedReference().GetTaskSubjects().GetEnumerator().Current);
-        }*/
-        
-        /*protected override void InstanceSetOrderParams(OrderParams orderParams)
-        {
-            myParameters = orderParams;
-        }*/
-
-        protected override bool InstanceTryStartExecution()
-        {
-            // replace some passive orders if certain case / situation (specific or not) ?
-
-            if (IsInPhase(GetRefWrapper(), OrderPhase.Staging))
-            {
-                SetPhase(GetRefWrapper(), OrderPhase.WaitToStartExecution);
-                return true;
-            }
-
-            return false;
-
-        }
-
-        /*protected override bool InstanceIsReadyToStartExecution(OrderExecutionMode mode)
-        {
-            if (Order.GetReceiver(GetMyWrapper()).IsCurrentOrder(GetMyWrapper())
-            && IsInPhase(GetMyWrapper(), OrderPhase.Staging))
-            {
-                return true;
-            }
-            else 
-            {
-                return false;
-            }
-
-            //return true;
-        }*/
-
+        #endregion
 
         public EngageAtPositionsTask()
         {
-            _myWrapper = new TaskWrapper<EngageAtPositionsTask>(this, () => {_myWrapper = null;});
+            CreateAndInitFSM();
+            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterSubjects(GetParameters().GetParameterSubjects()));
+        }
+        
+        #region Overriden instance methods and functions
 
-            GetParameters(GetRefWrapper()).isPassive = true;
-
-            CreateAndInitFSM();            
+        private MapMarkerWrapper<TargetTaskMarker> _targetTaskMarkerWrapper;
+        protected override TaskMarker InstanceGetTaskMarker()
+        {
+            return _targetTaskMarkerWrapper?.Value;
         }
 
-        /*public override void ClearWrapper()
+        protected override void InstanceSetTaskMarker(TaskMarker taskMarker)
         {
-            GetMyWrapper().DestroyWrappedReference();
-            _myWrapper = null;
-            //orderMarkerWrapper.WrappedObject.ClearWrapper();
-            //int c = waypointMarkerWrappersList.Count;
-            //for (int i = c-1; i>= 0; i--)
-            //{
-            //    waypointMarkerWrappersList[i].WrappedObject.ClearWrapper();
-            //}
-            
-        }*/
+            _targetTaskMarkerWrapper = new MapMarkerWrapper<TargetTaskMarker>(taskMarker as TargetTaskMarker);
+        }
 
-        protected override void InitPhasesFSM()
+        public List<FirePositionMarker> GetFirePositionMarkersList()
         {
-            
-            orderPhasesFSM.AddState(OrderPhase.Initial);
+            return _targetTaskMarkerWrapper.Value.firePositionMarkers;
+        }
 
-            orderPhasesFSM.AddState(OrderPhase.Staging);
+        private TaskParams _taskParams = TaskParams.DefaultParam();
+        protected override TaskParams InstanceGetParameters()
+        {   
+            return _taskParams;
+        }
 
-            orderPhasesFSM.AddState(OrderPhase.WaitToStartExecution,
-                () =>
-                {
-                    if(!Task.GetParameters(GetRefWrapper()).plannedStartingTime.isInitialized)
-                    {
-                        Task.SetPhase(GetRefWrapper(), Task.OrderPhase.Execution);
-                    }
-                    else if (TimeHandler.HasTimeJustPassed(Task.GetParameters(GetRefWrapper()).plannedStartingTime))
-                    //    || TimeHandler.HasTimeAlreadyPassed(Order.GetParameters(GetMyWrapper()).startingTime))
-                    {
-                        Task.SetPhase(GetRefWrapper(), Task.OrderPhase.Execution);                
-                    }
-                },
-                () =>
-                {
-                    if(TimeHandler.HasTimeJustPassed(Task.GetParameters(GetRefWrapper()).plannedStartingTime))
-                    {
-                        Task.SetPhase(GetRefWrapper(), Task.OrderPhase.Execution);
-                    }
-                });
-
-            orderPhasesFSM.AddState(OrderPhase.Execution,
-                () =>
-                {
-                    GetParameters(GetRefWrapper()).plannedStartingTime = TimeHandler.CurrentTime();                
-                },
-                () =>
-                {
-                    UpdateExecution();
-                });
-
-            orderPhasesFSM.AddState(OrderPhase.Pause);
-
-            orderPhasesFSM.AddState(OrderPhase.Cancelled);
-
-            orderPhasesFSM.AddState(OrderPhase.End,
-               null,
-               () =>
-               {
-                    SetPhase(GetRefWrapper(), OrderPhase.End2);
-               });
-
-            bool waitForReactionAtEnd = false;
-            TaskWrapper nextActiveOrder = null;
-
-            orderPhasesFSM.AddState(OrderPhase.End2,
-            () =>
+        public override bool CompatibleForParallelExecution(Task task)
+        {
+            bool b = true;
+            foreach (var v in childrenTargetTaskMarkers)
             {
-                if(Task.GetParameters(GetRefWrapper()).ContainsExecutionMode(TaskParams.TaskExecutionMode.WaitForReactionAtEnd))
+                b = b && v.GetTask().CompatibleForParallelExecution(task);
+            }
+            return true && b;
+            /*if (task is MoveTask)
+            {
+                MoveTask mvtsk = task as MoveTask;
+                var chus = childrenMoveTaskMarkers.Select((_) => (_.GetTask().GetSubject() as UnitTeam).GetUnit());
+                if (mvtsk.subjectAsTeam.GetUnit() == subjectAsTeam.GetUnit()
+                || mvtsk.subjectAsTeam.GetSubTeams().Select((_) => _.GetUnit()).Intersect(chus).Count() > 0)
+                    return false;
+            }
+            bool b = true;
+            foreach (var v in childrenMoveTaskMarkers)
+            {
+                b = b && v.GetTask().CompatibleForParallelExecution(task);
+            }
+            return true && b;*/
+        }
+
+        protected override void InstanceSetTaskPlan(TaskPlan2 taskPlan)
+        {
+            base.InstanceSetTaskPlan(taskPlan);
+
+            throw new System.NotImplementedException();
+            if (taskPlan != null)
+            {
+                /*SubscribeOnDestruction("clearchildrenmovetaskmarkers", () => childrenMoveTaskMarkers.Clear());
+
+                if (!subjectAsTeam.IsVirtualTeam())
+                    subjectAsTeam.GetUnit().GetFormation().FormTest();
+
+                foreach (var chf in subjectAsTeam.GetSubTeams())
                 {
-                    waitForReactionAtEnd = true;
-                }
-                
-                /*if (GetSubject(GetRefWrapper()).GetTaskPlan().GetNextInlinePassiveOrderInPlan(GetRefWrapper()) != null
-                    && GetParameters(GetSubject(GetRefWrapper()).GetTaskPlan().GetNextInlinePassiveOrderInPlan(GetRefWrapper())).ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
-                {
-                    nextActiveOrder = InstanceGetSubject().GetTaskPlan().GetNextInlinePassiveOrderInPlan(GetRefWrapper());
+                    Vector3 wpos;
+                    wpos = chf.GetUnit().GetFormation().GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
+
+                    var prevtm = GetTaskMarker().GetPreviousTaskMarker()?.GetTask() as MoveTask;
+                    
+                    TaskMarker chprevtm;
+                    if (prevtm != null)
+                        chprevtm = prevtm.childrenMoveTaskMarkers.Where((_) => (UnitTeam)_.GetTask().GetSubject() == chf).FirstOrDefault();
+                    else
+                        chprevtm = null;
+
+                    MoveTaskMarker tm = TaskMarker.CreateInstanceAtWorldPosition<MoveTaskMarker>(wpos);
+                    tm.AddWaypoint(WaypointMarker.CreateWaypointMarker(wpos));
+
+                    TaskPlan2 chtp = tm.InsertAssociatedTaskIntoPlan(chf, chprevtm);
+
+                    tm.SubscribeOnDestruction("removefromparentmovetaskmarkerslist",() => childrenMoveTaskMarkers.Remove(tm));                    
+                    childrenMoveTaskMarkers.Add(tm);
                 }*/
 
-            },
-            () =>
+                SetPhase(TaskPhase.Staging);
+            }
+            else
             {
-                if (waitForReactionAtEnd == false)
-                    SetPhase(GetRefWrapper(), OrderPhase.Disposed);
-            });
-
-            orderPhasesFSM.AddState(OrderPhase.Disposed,
-            () =>
-            {
-                GetRefWrapper().DestroyWrappedReference();
-
-                if (nextActiveOrder != null && nextActiveOrder.GetWrappedReference() != null)
-                    Task.TryStartExecution(nextActiveOrder);
-
-            });
-               
-            orderPhasesFSM.CurrentState = OrderPhase.Initial;
+                //childrenMoveTaskMarkers.Clear();
+            }
         }
+
+        protected override bool InstanceTryStartExecution()
+        {
+            if (IsInPhase(TaskPhase.Staging) && GetSubject() != null)
+            {
+                foreach (var plan in new List<TaskPlan2>(GetSubject().GetPlans()))
+                {
+                    if (plan.GetCurrentTaskInPlan() != this 
+                        && !CompatibleForParallelExecution(plan.GetCurrentTaskInPlan()))
+                    {
+                        plan.EndPlanExecution();
+                    }
+                }
+
+                if(GetTaskPlan().GetCurrentTaskInPlan() == this)
+                {
+                    SetPhase(TaskPhase.WaitToStartExecution);
+
+                    foreach (var chmtm in childrenTargetTaskMarkers)
+                    {
+                        chmtm.GetTask().TryStartExecution();
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        #endregion
+        
 
         #region Specific behaviour logic
 
-        public void AddFirePosition(MapMarkerWrapper<FirePositionMarker> firePositionWrapper)
+        protected override void UpdateExecution()
         {
-            if (firePositionWrapper != null && !firePositionMarkerWrappersList.Contains(firePositionWrapper))
-            {
-                firePositionWrapper.SubscribeOnClearance(() => RemoveClearedFirePositionWrapper(firePositionWrapper));
-                GetRefWrapper().SubscribeOnClearance(() => firePositionWrapper.DestroyWrappedReference());
-                firePositionMarkerWrappersList.Add(firePositionWrapper);
-            }
-        }
-
-        private void RemoveClearedFirePositionWrapper(MapMarkerWrapper<FirePositionMarker> firePositionWrapper)
-        {
-            if (firePositionMarkerWrappersList.Contains(firePositionWrapper))
-            {
-                firePositionMarkerWrappersList.Remove(firePositionWrapper);
-            }
-        }
-
-        /*private void RemoveOrderMarkerAtClearance()
-        {
-            orderMarkerWrapper.DestroyWrappedReference();
-            //GetMyWrapper().UnsubscribeOnClearance(() => RemoveOrderMarkerAtClearance());
-        }*/
-
-        private void UpdateExecution()
-        {
-            //foreach (var uw in Unit.GetUnitPieceWrappersInUnit(unitWrapper))
-            foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(unitWrapper))
+            /*foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(unitWrapper))
             {
                 if (Task.IsInPhase(GetRefWrapper(), OrderPhase.Execution))
                 {
                     EngageTargetsInPositionsROE(uw);
                 }
-            }
+            }*/
         }
-
 
         private float s = 5;
         private void EngageTargetsInPositionsROE(UnitWrapper unitWrapper)
         {
-            /**/
             s = Mathf.Max(s - Time.deltaTime, 0);
 
             if (s == 0)
@@ -283,16 +178,9 @@ namespace Core.Tasks
                 Debug.Log("Hello, engaging order still active");
                 s = 5;
             }
-            /*unitWrapper.WrappedObject.myMover.MoveToPosition(firePositionMarkerWrappersList[currentWaypointIndex].GetWrappedAs<WaypointMarker>().myPosition, s);
-            if (unitWrapper.WrappedObject.myMover.DistanceConditionToPosition(waypointMarkerWrappersList[currentWaypointIndex].GetWrappedAs<WaypointMarker>().myPosition, 0.02f))
-            {
-                waypointMarkerWrappersList[currentWaypointIndex].DestroyWrappedReference();
-                //currentWaypointIndex++;
-            }*/
         }
 
         #endregion
 
     }
-    #endif
 }

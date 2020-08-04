@@ -114,28 +114,26 @@ namespace Core.Units
             _parent.OnValueChange -= _actDict[key];
         }
 
-        public Unit GetThisNode() { return this; }
+        public Unit GetParentUnit() { return _parent.Value; }
 
-        public Unit GetParentNode() { return _parent.Value; }
-
-        public void Internal_SetParentNode(Unit newParent)
+        public void Internal_SetParentUnit(Unit newParent)
         {
             _parent.Value = newParent;
         }
 
         public bool IsLeaf()
         {
-            return GetChildNodes().Count == 0;
+            return GetSubUnits().Count == 0;
         }
 
         public bool IsRoot()
         {
-            return GetParentNode() == null;
+            return GetParentUnit() == null;
         }
 
         private List<Unit> _childNodes = new List<Unit>();
 
-        public List<Unit> GetChildNodes()
+        public List<Unit> GetSubUnits()
         {
             return _childNodes;
         }
@@ -145,98 +143,80 @@ namespace Core.Units
             _childNodes = childNodes;
         }
 
-        public List<Unit> GetLeafChildren()
+        public Unit GetRootUnit(ref int height)
         {
-            return GetChildNodes().Where(x => x.IsLeaf()).ToList();
-        }
-
-        public List<Unit> GetNonLeafChildren()
-        {
-            return GetChildNodes().Where(x => !x.IsLeaf()).ToList();
-        }
-
-        public Unit GetRootNode(ref int height)
-        {
-            if (GetParentNode() == null)
-                return GetThisNode();
+            if (GetParentUnit() == null)
+                return this;
 
             height++;
-            return GetParentNode().GetRootNode(ref height);
+            return GetParentUnit().GetRootUnit(ref height);
         }
 
-        public Unit GetRootNode()
+        public Unit GetRootUnit()
         {
             int _useless = 0;
-            return GetRootNode(ref _useless);
+            return GetRootUnit(ref _useless);
         }
 
         public List<Unit> GetAllAncestors()
         {
             var res = new List<Unit>();
-            var p = GetParentNode();
+            var p = GetParentUnit();
             while (p!=null)
             {
                res.Add(p);
-               p = p.GetParentNode();
+               p = p.GetParentUnit();
             }
             return res;
         }
 
-        private/*public*/ void AddChild(Unit child)
+        private void AddSubUnit(Unit child)
         {
-            if (child.GetParentNode() != null)
-                child.GetParentNode().RemoveChild(child);
-            child.Internal_SetParentNode(GetThisNode());
-            GetChildNodes().Add(child);
+            if (child.GetParentUnit() != null)
+                child.GetParentUnit().RemoveSubUnit(child);
+            child.Internal_SetParentUnit(this);
+            GetSubUnits().Add(child);
         }
 
-        private/*public*/ void AddChildren(IEnumerable<Unit> children)
+        private void RemoveSubUnit(Unit child)
+        {
+            child.Internal_SetParentUnit(null);
+            GetSubUnits().Remove(child);
+        }
+
+        private void RemoveSubUnits(IEnumerable<Unit> children)
         {
             foreach (Unit child in children)
-                AddChild(child);
-        }
-
-        private/*public*/ void RemoveChild(Unit child)
-        {
-            child.Internal_SetParentNode(null);
-            GetChildNodes().Remove(child);
-        }
-
-        private/*public*/ void RemoveChildren(IEnumerable<Unit> children)
-        {
-            foreach (Unit child in children)
-                RemoveChild(child);
+                RemoveSubUnit(child);
         }
 
         public void ChangeParentTo(Unit newParent)
         {
             if (newParent != null)
             {
-                newParent.AddChild(GetThisNode());
-                //Unit.WrappedObject.transform.SetParent(newParent.Unit.WrappedObject.transform);
+                newParent.AddSubUnit(this);
             }
             else
             {
-                if (GetParentNode() != null)
-                    GetParentNode().RemoveChild(GetThisNode());
-                //Unit.WrappedObject.transform.SetParent(null);
+                if (GetParentUnit() != null)
+                    GetParentUnit().RemoveSubUnit(this);
             }
         }
 
-        public List<Unit> GetAllDescendantsBFS()
+        public List<Unit> GetAllSubUnitsBFS()
         {
             List<Unit> result = new List<Unit>();
 
             Queue<Unit> bfsqueue = new Queue<Unit>();
-            var ch = GetChildNodes();
+            var ch = GetSubUnits();
             foreach (var v in ch)
                 bfsqueue.Enqueue(v);
 
             while (bfsqueue.Count > 0)
             {
-                result.Add(bfsqueue.Peek().GetThisNode());
+                result.Add(bfsqueue.Peek());
 
-                ch = bfsqueue.Dequeue().GetChildNodes();
+                ch = bfsqueue.Dequeue().GetSubUnits();
                 foreach (var v in ch)
                     bfsqueue.Enqueue(v);
             }
@@ -244,20 +224,15 @@ namespace Core.Units
             return result;
         }
 
-        public Unit GetLowestCommonAncestor(Unit unit)
-        {
-            return GetLowestCommonAncestor(new List<Unit>(){unit}, false);
-        }
-
-        public static Unit GetLowestCommonAncestor(List<Unit> units, bool flattenCopiedInputsToParent)
+        public static Unit GetLowestCommonAncestorUnit(List<Unit> units, bool flattenCopiedInputsToParent)
         {   
             if (units.Count == 1)
                 return units[0];
 
             int currentLowestKnownHeight = 0;
-            Unit root = units[0].GetRootNode(ref currentLowestKnownHeight);
+            Unit root = units[0].GetRootUnit(ref currentLowestKnownHeight);
 
-            Unit res = units[0].GetParentNode();
+            Unit res = units[0].GetParentUnit();
             
             if (res == null)
                 return null;
@@ -279,10 +254,10 @@ namespace Core.Units
                 if (h < currentLowestKnownHeight && h > 0)
                 {
                     currentLowestKnownHeight = h;
-                    res = u.GetParentNode();
+                    res = u.GetParentUnit();
                 }
 
-                var ch = u.GetChildNodes();
+                var ch = u.GetSubUnits();
                 unitsCopy.Remove(u); // implied : if contains u
 
                 if (unitsCopy.Count == 0)
@@ -301,30 +276,30 @@ namespace Core.Units
         public static void FlattenUnitsToParentIfAllSiblingsContained(List<Unit> units)
         {
             foreach (var u in new List<Unit>(units))
-                Flatten_Aux(units, u);
+                u.Flatten_Aux(units);
         }
 
-        private static void Flatten_Aux(List<Unit> units, Unit u)
+        private void Flatten_Aux(List<Unit> units)
         {
-            if (!units.Contains(u))
+            if (!units.Contains(this))
                 return;
 
-            var p = u.GetParentNode();
+            var p = GetParentUnit();
             if (p != null)
             {
-                var siblings = p.GetChildNodes();
+                var siblings = p.GetSubUnits();
                 if (units.Contains2(siblings))
                 {
                     units.Remove2(siblings);
                     units.Add(p);
-                    Flatten_Aux(units, p);
+                    p.Flatten_Aux(units);
                 }
             }
         }
 
         #endregion
 
-        #region Public functions 
+        #region Basic public functions 
 
         public bool IsSelected(Selector selector)
         {
@@ -337,87 +312,72 @@ namespace Core.Units
         }
 
         private Formation _nominalFormation;
-        public Formation GetNominalFormation()
+        public Formation GetFormation()
         {
             return _nominalFormation;
         }
 
-        private List<Formation> _localAuxiliaryFormations = new List<Formation>();
-        public List<Formation> GetAllLocalAuxiliaryFormations()
+        private List<TaskPlan2> _plans = new List<TaskPlan2>();
+        public List<TaskPlan2> GetPlans()
         {
-            return _localAuxiliaryFormations;
+            return _plans;
         }
-        public Formation GetLocalAuxiliaryFormationByChildren(IEnumerable<Unit> containedDirectChildrenUnits)
+
+        /*public UnitTeam GetTeamBySubTeamsUnits(List<Unit> units)
         {
-            Formation res = null;
-            foreach (var v in _localAuxiliaryFormations)
+            UnitTeam res = null;
+            foreach (var v in GetPlans())
             {
                 Debug.Log("hhhhhhhhhh1");
-                if (new HashSet<Unit>(v.GetChildFormations().Select((_) => _.GetUnit())) == new HashSet<Unit>(containedDirectChildrenUnits))
+                var team = v.GetSubject() as UnitTeam;
+                if (team.GetSubTeams().Select((_) => _.GetUnit()).ToList().EqualContentUnordered(units))
                 {
                     Debug.Log("hhhhhhhhhh2");
-                    res = v;
+                    res = team;
                     break;
                 }
             }
             return res;
-        }
+        }*/
 
-        public Formation AddOrGetLocalAuxiliaryFormation(IEnumerable<Unit> containedDirectChildrenUnits)
+        //public UnitTeam AddOrGetTeamBySubTeamsUnits(IEnumerable<Unit> units)
+        public UnitTeam CreateTeamBySubTeamsUnits(IEnumerable<Unit> units)
         {
-            Formation res = GetLocalAuxiliaryFormationByChildren(containedDirectChildrenUnits);
+            /*UnitTeam res = GetTeamBySubTeamsUnits(units);
 
             if (res == null)
             {
-                res = new Formation(this);
-                res.SubscribeOnDestruction("removelocalauxiliaryformation", () => _localAuxiliaryFormations.Remove(res));
-                // res.ChangeParentTo(null); no need to write it for real because it already happens by default.
-                // it's a "local" formation
-                // for now, no reason why they should have a parent
-                // alternative (but it's weird and kind of useless and complicates everything even more) : res.ChangeParentTo(GetParentNode()?.AddOrGetLocalAuxiliaryFormation(new List<Unit>() {this}));
-
-                _localAuxiliaryFormations.Add(res);
-
-                foreach (var u in containedDirectChildrenUnits)
+                res = new UnitTeam(this);
+                foreach (var v in units)
                 {
-                    //u.GetFormation().ResetFormationComposition();
-                    foreach (var ulaf in u.GetAllLocalAuxiliaryFormations())
-                    {
-                        if (ulaf.GetParentFormation() != res)
-                            ulaf.ChangeParentTo(res);
-                    }
-                    if (u.GetNominalFormation().GetParentFormation() != res)
-                        u.GetNominalFormation().ChangeParentTo(res);
+                    var cht = v.GenerateTeamFromStructure();
+                    cht.ChangeParentTo(res);
                 }
+            }*/
+            UnitTeam res = new UnitTeam(this);
+            foreach (var v in units)
+            {
+                var cht = v.GenerateTeamFromStructure();
+                cht.ChangeParentTo(res);
             }
             return res;
         }
 
-        public void ResetNominalFormationStructure()
+        public UnitTeam GenerateTeamFromStructure()
         {
-            foreach (var chu in GetChildNodes())
+            UnitTeam res;
+            res = new UnitTeam(this);
+            foreach (var v in GetSubUnits())
             {
-                chu.GetNominalFormation().ChangeParentTo(chu.GetParentNode().GetNominalFormation());
-                chu.ResetNominalFormationStructure();
+                var cht = v.GenerateTeamFromStructure();
+                cht.ChangeParentTo(res);
             }
+            return res;
         }
 
         public Vector3 GetPosition()
         {
-            return myMover.transform.position; //uw.GetWrappedReference().transform.position;
-            /*var l = uw.WrappedObject.unitPiecesWrappersList;
-            int c = l.Count;
-            Vector3 res = Vector3.zero;
-
-            if (c == 0)
-                throw new SystemException("what");
-
-            foreach(var v in l)
-            {
-                res += v.WrappedObject.transform.position;
-            }
-            res /= c;
-            return res;*/
+            return myMover.transform.position;
         }
 
         #endregion       
@@ -452,9 +412,9 @@ namespace Core.Units
             UIHandler.GetUIOrdobMenu().AddUnitToOrdob(this);
 
             _nominalFormation = new Formation(this, Formation.FormationRole.MainGuard, Formation.FormationType.Column);
-            GetNominalFormation().facingAngle = 0f;
-            GetNominalFormation().depthLength = 10f;
-            GetNominalFormation().frontLength = 5f;
+            GetFormation().facingAngle = 0f;
+            GetFormation().depthLength = 10f;
+            GetFormation().frontLength = 5f;
 
             _parent.Value = null;
             _parent.ForceInvokeOnValueChange();
@@ -476,28 +436,8 @@ namespace Core.Units
                                 selector.DeselectEntity(ps);
                                 selector.DeselectEntity(ps, 1);
                             }
-
-                            /*bool _b1 = true;
-                            var _ps = GetParentNode();
-                            while (_b1 && _ps != null)
-                            {
-                                foreach (var sibl in _ps.GetChildNodes())
-                                {
-                                    if (!sibl.IsSelected(selector))
-                                    {
-                                        _b1 = false;
-                                        break;
-                                    }
-                                    _b1 = true;
-                                }
-                                if (_b1)
-                                {
-                                    selector.SelectEntity(_ps, 1);
-                                    _ps = _ps.GetParentNode();
-                                }
-                            }*/
-
-                            foreach (var chn in GetAllDescendantsBFS())
+                            
+                            foreach (var chn in GetAllSubUnitsBFS())
                             {
                                 selector.DeselectEntity(chn);
                                 selector.SelectEntity(chn, 1);
@@ -512,7 +452,7 @@ namespace Core.Units
                             foreach (var ps in GetAllAncestors())
                                 selector.DeselectEntity(ps, 1);
 
-                            foreach (var chn in GetAllDescendantsBFS())
+                            foreach (var chn in GetAllSubUnitsBFS())
                                 selector.DeselectEntity(chn, 1);
                         }
                     }
@@ -521,14 +461,14 @@ namespace Core.Units
             SubscribeOnDestruction("clearnominalformation",
                 () => { _nominalFormation = null; });
             
-            SubscribeOnDestruction("clearlocalauxiliaryformations",
-                () => { _localAuxiliaryFormations.Clear(); });
+            /*SubscribeOnDestruction("clearlocalauxiliaryformations",
+                () => { _localAuxiliaryFormations.Clear(); });*/
 
             SubscribeOnDestruction("removefromunittree",
                 () =>
                 { 
                     ChangeParentTo(null);
-                    RemoveChildren(GetChildNodes());
+                    RemoveSubUnits(GetSubUnits());
                 });
             
             SubscribeOnDestruction("removeunitfromordob",
@@ -548,7 +488,7 @@ namespace Core.Units
         private void Update()
         {
 
-            var list = GetChildNodes();
+            var list = GetSubUnits();
             float c = list.Count;
             if (c > 0)
             {
@@ -579,7 +519,7 @@ namespace Core.Units
             if (IsSelected(GetUsedSelector()))
             {
                 mySprRenderer.color = factionAffiliation.GetFaction().baseColor;
-                foreach (Unit u in GetChildNodes())
+                foreach (Unit u in GetSubUnits())
                 {
                     var p = u.GetPosition(); // in the future, take the highest ranked unit in the group
                     Debug.DrawLine(transform.position, p, Color.white);
@@ -596,11 +536,9 @@ namespace Core.Units
             
             // Likely to change at least slightly when the notion of the "position" of a formation will be clarified
             // Most interesting idea for now : Weighted sum of positions of child formations...
-            DrawFormation(GetNominalFormation(), transform.position);
-            foreach (var form in _localAuxiliaryFormations)
-            {
-                DrawFormation(form, transform.position);
-            }
+            DrawFormation(GetFormation(), transform.position);
+            //foreach (var form in _localAuxiliaryFormations)
+            //    DrawFormation(form, transform.position);
         }
 
         private void DrawFormation(Formation formation, Vector3 center)

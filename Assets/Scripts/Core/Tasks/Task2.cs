@@ -19,31 +19,6 @@ namespace Core.Tasks
             return taskPlan;
         }
 
-        protected override bool InstanceTryStartExecution()
-        {
-            if (IsInPhase(TaskPhase.Staging))
-            {
-                if(GetTaskPlan().GetCurrentTaskInPlan() == this)
-                {
-                    SetPhase(TaskPhase.WaitToStartExecution);
-                    return true;
-                }
-                else
-                {
-                    if (GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.InstantOverrideAll))
-                    {
-                        GetTaskPlan().EndPlanExecution();
-                        SetPhase(Task.TaskPhase.WaitToStartExecution);  
-                        return true;
-                    }
-                    return false;
-                }
-            }
-
-            return false;
-        }
-
-
         protected override void InitPhasesFSM()
         {
             

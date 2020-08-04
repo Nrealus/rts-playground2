@@ -236,7 +236,7 @@ namespace Core.MapMarkers
         #endregion
     
     
-        public TaskPlan2 InsertAssociatedTaskInPlan(ITaskSubject subject, TaskMarker previousTaskMarker)
+        public virtual TaskPlan2 InsertAssociatedTaskIntoPlan(ITaskSubject subject, TaskMarker previousTaskMarker)
         {
             TaskPlan2 taskPlan;
             if (previousTaskMarker == null)

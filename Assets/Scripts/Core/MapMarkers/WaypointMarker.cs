@@ -25,13 +25,13 @@ namespace Core.MapMarkers
 
         #region Static "factory" functions
 
-        public static WaypointMarker CreateWaypointMarker(Vector3 position)
+        public static WaypointMarker CreateWaypointMarker(Vector3 worldPosition)
         {
             WaypointMarker res = Instantiate<WaypointMarker>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().waypointMarkerPrefab,
                 GameObject.Find("UI World Canvas").transform);
             
-            res.Init(position);
+            res.Init(worldPosition);
             
             return res;
         }

@@ -23,14 +23,14 @@ namespace Core.MapMarkers
     public class MoveTaskMarker : TaskMarker
     {
 
-        private TaskWrapper<MoveTask> _associatedTaskWrapper;
+        private TaskWrapper<MoveTask2> _associatedTaskWrapper;
         public override Task GetTask() { return _associatedTaskWrapper.Value; }
 
         #region Main declarations
 
         private string onPauseEventKey;
         private string onUnpauseEventKey;
-        private string onClearanceSubjectsKey;
+        private string onClearanceAgentsKey;
         
         public override TaskMarker GetPreviousTaskMarker() { return GetTask().GetTaskPlan()?.GetTaskInPlanBefore(GetTask())?.GetTaskMarker(); }
 
@@ -53,7 +53,7 @@ namespace Core.MapMarkers
 
             EventTrigger.Entry entry = new EventTrigger.Entry();
             entry.eventID = EventTriggerType.PointerClick;
-            entry.callback.AddListener((data) => { OnPointerClickDelegate((PointerEventData)data); entry.callback.RemoveAllListeners(); });
+            entry.callback.AddListener((data) => { OnPointerClickDelegate((PointerEventData)data); /*entry.callback.RemoveAllListeners();*/ });
             GetComponentInChildren<EventTrigger>().triggers.Add(entry);
 
             onPauseEventKey = (new StringBuilder("tmw")).Append(_instcount).ToString();
@@ -77,7 +77,7 @@ namespace Core.MapMarkers
             else
                 PlaceAtWorldPosition(position);
 
-            _associatedTaskWrapper = new TaskWrapper<MoveTask>(Task.CreateTask<MoveTask>());
+            _associatedTaskWrapper = new TaskWrapper<MoveTask2>(Task.CreateTask<MoveTask2>());
             //Task.CreateTaskWrapperAndSetReceiver<MoveTask>(myTaskSubjectsList[0]);
 
             GetTask().SetTaskMarker(this);

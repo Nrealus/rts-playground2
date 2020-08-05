@@ -30,7 +30,7 @@ namespace Core.MapMarkers
 
         private string onPauseEventKey;
         private string onUnpauseEventKey;
-        private string onClearanceSubjectsKey;
+        private string onClearanceAgentsKey;
         
         public override TaskMarker GetPreviousTaskMarker() { return GetTask().GetTaskPlan()?.GetTaskInPlanBefore(GetTask())?.GetTaskMarker(); }
 
@@ -53,7 +53,7 @@ namespace Core.MapMarkers
 
             EventTrigger.Entry entry = new EventTrigger.Entry();
             entry.eventID = EventTriggerType.PointerClick;
-            entry.callback.AddListener((data) => { OnPointerClickDelegate((PointerEventData)data); entry.callback.RemoveAllListeners(); });
+            entry.callback.AddListener((data) => { OnPointerClickDelegate((PointerEventData)data); /*entry.callback.RemoveAllListeners();*/ });
             GetComponentInChildren<EventTrigger>().triggers.Add(entry);
 
             onPauseEventKey = (new StringBuilder("tmw")).Append(_instcount).ToString();

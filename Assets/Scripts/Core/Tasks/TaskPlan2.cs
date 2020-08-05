@@ -28,36 +28,36 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private RefWrapper <ITaskSubject> _taskSubject;
-        public ITaskSubject GetSubject() { return _taskSubject?.Value; }
+        private RefWrapper <ITaskAgent> _taskAgent;
+        public ITaskAgent GetOwnerAgent() { return _taskAgent?.Value; }
 
         private List<Task> tasks = new List<Task>();
 
         #endregion
 
-        public TaskPlan2(ITaskSubject subject)
+        public TaskPlan2(ITaskAgent agent)
         {
-            _taskSubject = new RefWrapper <ITaskSubject>(subject);
+            _taskAgent = new RefWrapper <ITaskAgent>(agent);
         }
 
         public void StartPlanExecution()
         {
-            if (GetSubject() != null)
+            if (GetOwnerAgent() != null)
                 GetCurrentTaskInPlan().TryStartExecution();
         }
 
         public void EndPlanExecution()
         {
-            if (GetSubject() != null)
+            if (GetOwnerAgent() != null)
             {
-                GetSubject().RemoveAndEndPlan(this);
+                GetOwnerAgent().EndAndUnregisterOwnedPlan(this);
                 foreach (var v in new List<Task>(tasks))
                 {
                     v.EndExecution();
                     v.DestroyThis();
                 }
                 //tasks.Clear();
-                _taskSubject = null;
+                _taskAgent = null;
             }
         }
 

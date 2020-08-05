@@ -23,7 +23,7 @@ namespace Core.UI
     public class UIOrderMenuButton : MonoBehaviour
     {
         
-        private enum TaskTypeEnum { Move, Build, EngageAt}
+        private enum TaskTypeEnum { Move, Move2, EngageAt}
         [SerializeField]
         private TaskTypeEnum taskTypeAsEnumField;
 
@@ -66,18 +66,18 @@ namespace Core.UI
                     case TaskTypeEnum.Move :
                         UITaskMarkerCreationAndTaskBuilding<MoveTaskMarker>(selected);
                         break;
-                    /*case TaskTypeEnum.Build :
-                        CreateTaskMarker<MoveTaskMarker>(l);
+                    case TaskTypeEnum.Move2 :
+                        UITaskMarkerCreationAndTaskBuilding<MoveTaskMarker>(selected);
                         break;
                     case TaskTypeEnum.EngageAt :
-                        CreateTaskMarker<MoveTaskMarker>(l);
-                        break;*/
+                        UITaskMarkerCreationAndTaskBuilding<TargetTaskMarker>(selected);
+                        break;
                 }
             }
             on = desiredButtonState;
         }
 
-        private ITaskSubject _taskSubject;
+        private ITaskAgent _taskAgent;
         private MapMarkerWrapper<TaskMarker> _lastPlacedTaskMarkerWrapper;
         private void UITaskMarkerCreationAndTaskBuilding<T>(List<ISelectable> selected) where T : TaskMarker
         {
@@ -103,10 +103,10 @@ namespace Core.UI
                     {
                         if (b)
                         {
-                            if (_taskSubject == null)
-                                _taskSubject = UnitTeam.PrepareAndCreateTeamFromSelected(selected);
+                            if (_taskAgent == null)
+                                _taskAgent = UnitTeam.PrepareAndCreateTeamFromSelected(selected);
 
-                            TaskPlan2 taskPlan = taskMarker.InsertAssociatedTaskIntoPlan(_taskSubject, _lastPlacedTaskMarkerWrapper?.Value);
+                            TaskPlan2 taskPlan = taskMarker.InsertAssociatedTaskIntoPlan(_taskAgent, _lastPlacedTaskMarkerWrapper?.Value);
 
                             if (!taskPlan.IsPlanBeingExecuted())
                                 taskPlan.StartPlanExecution();
@@ -128,13 +128,13 @@ namespace Core.UI
                             }
                             else
                             {
-                                _taskSubject = null;
+                                _taskAgent = null;
                                 _lastPlacedTaskMarkerWrapper = null;
                             }
                         }
                         else
                         {
-                            _taskSubject = null;
+                            _taskAgent = null;
                             _lastPlacedTaskMarkerWrapper = null;
                             taskMarker.OnPlacementConfirmation.UnsubscribeEventHandlerMethod("onplacementconfirmationcallback");
                             //editedTaskPlan = null;

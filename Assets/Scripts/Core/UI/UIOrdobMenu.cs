@@ -32,20 +32,20 @@ namespace Core.UI
             
         }
 
-        public void AddUnitToOrdob(Unit uToAdd)
+        public void RegisterUnitToOrdob(Unit uToRegister)
         {
-            uToAdd.SubscribeOnParentChange("changeobui",
+            uToRegister.SubscribeOnParentChange("changeobui",
                 () =>
                 {
-                    if (trackedUnitsTVEs.Any((_) => { return _.GetAssociatedUnit() == uToAdd; }))
-                        UpdateTreeViewElementParent(uToAdd);
+                    if (trackedUnitsTVEs.Any((_) => { return _.GetAssociatedUnit() == uToRegister; }))
+                        UpdateTreeViewElementParent(uToRegister);
                     else
-                        AddUnitToOrdob_Aux(uToAdd);
+                        RegisterUnitToOrdob_Aux(uToRegister);
                 }
             );
         }
 
-        private void AddUnitToOrdob_Aux(Unit u)
+        private void RegisterUnitToOrdob_Aux(Unit u)
         {
             var tve = AddTreeViewElement(u);
             

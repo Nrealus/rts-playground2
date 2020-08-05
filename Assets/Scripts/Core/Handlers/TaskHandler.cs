@@ -75,11 +75,11 @@ namespace Core.Handlers
         /// This method registers a task to the "global" tasksList.
         /// This will allow these tasks to be updated. This method is intended to be called typically right after a task's creation, as it is now. (see Task)
         ///</summary>
-        public static bool AddToGlobalTasksList(Task task)
+        public static bool RegisterToGlobalTasksList(Task task)
         {
             if(!MyInstance.tasks.Contains(task))
             {
-                task.SubscribeOnDestruction("removefromglobal",() => RemoveFromGlobalTasksList(task));
+                task.SubscribeOnDestruction("removefromglobal",() => UnregisterFromGlobalTasksList(task));
                 MyInstance.tasks.Add(task);
                 //MyInstance.onTaskWrapperAddOrRemove.Invoke((wrapper, true));
                 return true;
@@ -91,7 +91,7 @@ namespace Core.Handlers
             }
         }
 
-        private static bool RemoveFromGlobalTasksList(Task task)
+        private static bool UnregisterFromGlobalTasksList(Task task)
         {
             if(MyInstance.tasks.Contains(task))
             {

@@ -21,9 +21,9 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private UnitTeam subjectAsTeam { get { return GetTaskPlan().GetSubject() as UnitTeam; } }
+        private UnitTeam agentAsTeam { get { return GetTaskPlan().GetOwnerAgent() as UnitTeam; } }
         
-        private List<UnitTeam> subjectsSubTeams { get { return subjectAsTeam.GetSubTeams(); }}
+        private List<UnitTeam> agentSubTeams { get { return agentAsTeam.GetSubTeams(); }}
         //private List<TargetTaskMarker> childrenTargetTaskMarkers = new List<TargetTaskMarker>();
 
         #endregion
@@ -31,11 +31,17 @@ namespace Core.Tasks
         public EngageAtPositionsTask()
         {
             CreateAndInitFSM();
-            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterSubjects(GetParameters().GetParameterSubjects()));
+            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterAgents(GetParameters().GetParameterAgents()));
         }
         
-        #region Overriden instance methods and functions
+        #region Instance methods and functions
 
+        private List<ITaskAgent> _subjectAgents = new List<ITaskAgent>();
+        public override List<ITaskAgent> GetSubjectAgents()
+        {
+            return _subjectAgents;
+        }
+        
         private MapMarkerWrapper<TargetTaskMarker> _targetTaskMarkerWrapper;
         protected override TaskMarker InstanceGetTaskMarker()
         {
@@ -60,91 +66,73 @@ namespace Core.Tasks
 
         public override bool CompatibleForParallelExecution(Task task)
         {
+            bool b = false;
+            foreach (var subAgent in GetSubjectAgents())
+            {
+                b = b || CompatibilityPerSubject(subAgent, task);
+            }
+            
+            return b;
+        }
+
+        private bool CompatibilityPerSubject(ITaskAgent subAgent, Task task)
+        {
             bool b = true;
-            foreach (var v in childrenTargetTaskMarkers)
+            if (task is MoveTask2)
             {
-                b = b && v.GetTask().CompatibleForParallelExecution(task);
+                var mvtsk = task as MoveTask2;
+                b = !task.GetSubjectAgents().Contains(subAgent);
             }
-            return true && b;
-            /*if (task is MoveTask)
-            {
-                MoveTask mvtsk = task as MoveTask;
-                var chus = childrenMoveTaskMarkers.Select((_) => (_.GetTask().GetSubject() as UnitTeam).GetUnit());
-                if (mvtsk.subjectAsTeam.GetUnit() == subjectAsTeam.GetUnit()
-                || mvtsk.subjectAsTeam.GetSubTeams().Select((_) => _.GetUnit()).Intersect(chus).Count() > 0)
-                    return false;
-            }
-            bool b = true;
-            foreach (var v in childrenMoveTaskMarkers)
-            {
-                b = b && v.GetTask().CompatibleForParallelExecution(task);
-            }
-            return true && b;*/
+            return b;
         }
 
         protected override void InstanceSetTaskPlan(TaskPlan2 taskPlan)
         {
             base.InstanceSetTaskPlan(taskPlan);
 
-            throw new System.NotImplementedException();
             if (taskPlan != null)
             {
-                /*SubscribeOnDestruction("clearchildrenmovetaskmarkers", () => childrenMoveTaskMarkers.Clear());
-
-                if (!subjectAsTeam.IsVirtualTeam())
-                    subjectAsTeam.GetUnit().GetFormation().FormTest();
-
-                foreach (var chf in subjectAsTeam.GetSubTeams())
+                foreach (var sbt in agentAsTeam.GetAllSubTeamsBFS())
                 {
-                    Vector3 wpos;
-                    wpos = chf.GetUnit().GetFormation().GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
-
-                    var prevtm = GetTaskMarker().GetPreviousTaskMarker()?.GetTask() as MoveTask;
-                    
-                    TaskMarker chprevtm;
-                    if (prevtm != null)
-                        chprevtm = prevtm.childrenMoveTaskMarkers.Where((_) => (UnitTeam)_.GetTask().GetSubject() == chf).FirstOrDefault();
-                    else
-                        chprevtm = null;
-
-                    MoveTaskMarker tm = TaskMarker.CreateInstanceAtWorldPosition<MoveTaskMarker>(wpos);
-                    tm.AddWaypoint(WaypointMarker.CreateWaypointMarker(wpos));
-
-                    TaskPlan2 chtp = tm.InsertAssociatedTaskIntoPlan(chf, chprevtm);
-
-                    tm.SubscribeOnDestruction("removefromparentmovetaskmarkerslist",() => childrenMoveTaskMarkers.Remove(tm));                    
-                    childrenMoveTaskMarkers.Add(tm);
-                }*/
+                    AddSubjectAgent(sbt);
+                }
 
                 SetPhase(TaskPhase.Staging);
-            }
-            else
-            {
-                //childrenMoveTaskMarkers.Clear();
             }
         }
 
         protected override bool InstanceTryStartExecution()
         {
-            if (IsInPhase(TaskPhase.Staging) && GetSubject() != null)
+            if (IsInPhase(TaskPhase.Staging) && GetOwnerAgent() != null)
             {
-                foreach (var plan in new List<TaskPlan2>(GetSubject().GetPlans()))
+                Debug.Log("hhhhhh");
+                bool b = true;
+
+                foreach (var subAgent in new List<ITaskAgent>(GetSubjectAgents()))
                 {
-                    if (plan.GetCurrentTaskInPlan() != this 
-                        && !CompatibleForParallelExecution(plan.GetCurrentTaskInPlan()))
+                    foreach (var plan in new List<TaskPlan2>(subAgent.GetOwnedPlans()))
                     {
-                        plan.EndPlanExecution();
+                        if (plan.GetCurrentTaskInPlan() != this
+                            && !CompatibilityPerSubject(subAgent, plan.GetCurrentTaskInPlan()))
+                        {
+                            //b = false;
+                            plan.EndPlanExecution();
+                        }                        
+                    }
+                    foreach (var task in new List<Task>(subAgent.GetTasksWhereIsInternalSubject()))
+                    {
+                        if (task != this
+                            && !CompatibilityPerSubject(subAgent, task))
+                        {
+                            task.GetTaskPlan().EndPlanExecution();
+                            //b = false;
+                        }
                     }
                 }
 
-                if(GetTaskPlan().GetCurrentTaskInPlan() == this)
+                if(GetTaskPlan().GetCurrentTaskInPlan() == this && b)
                 {
                     SetPhase(TaskPhase.WaitToStartExecution);
-
-                    foreach (var chmtm in childrenTargetTaskMarkers)
-                    {
-                        chmtm.GetTask().TryStartExecution();
-                    }
                     return true;
                 }
             }
@@ -159,17 +147,19 @@ namespace Core.Tasks
 
         protected override void UpdateExecution()
         {
-            /*foreach (var uw in Unit.GetMyselfAndSubUnitsWrappers(unitWrapper))
+            if (IsInPhase(TaskPhase.Execution))
             {
-                if (Task.IsInPhase(GetRefWrapper(), OrderPhase.Execution))
+                foreach (var subag in GetSubjectAgents())
                 {
-                    EngageTargetsInPositionsROE(uw);
+                    var ut = (subag as UnitTeam);
+
+                    EngageTargetsInPositionsROE(ut);
                 }
-            }*/
+            }
         }
 
         private float s = 5;
-        private void EngageTargetsInPositionsROE(UnitWrapper unitWrapper)
+        private void EngageTargetsInPositionsROE(UnitTeam ut)
         {
             s = Mathf.Max(s - Time.deltaTime, 0);
 

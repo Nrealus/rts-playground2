@@ -33,7 +33,7 @@ namespace Core.Tasks
     }
     
     /// <summary>
-    /// The base class for all tasks. They are part of a TaskPlan, and their subject - at least for now - is always the subject of the plan.
+    /// The base class for all tasks. They are part of a TaskPlan, and their agent - at least for now - is always the agent of the plan.
     /// It provides the structure for tasks, notably in the form of protected abstract or virtual methods to be implemented by "concrete" subclasses.
     /// A Task subclass should be instaciated from the "factory" generic function "CreateTask".
     /// With time, some things that may become very common subclasses may be bundled into an "intermediate" abstract subclass (like Task2), or even into this one.
@@ -72,6 +72,11 @@ namespace Core.Tasks
 
         public void DestroyThis()
         {
+            foreach (var v in new List<ITaskAgent>(GetSubjectAgents()))
+            {
+                RemoveSubjectAgent(v);
+            }
+
             onDestroyed.Invoke();
         }
 
@@ -88,9 +93,19 @@ namespace Core.Tasks
                     MoveTask t = new MoveTask();
                     return t as T;
                 }
+                case Type taskType when taskType == typeof(MoveTask2):
+                {
+                    MoveTask2 t = new MoveTask2();
+                    return t as T;
+                }
+                case Type taskType when taskType == typeof(EngageAtPositionsTask):
+                {
+                    EngageAtPositionsTask t = new EngageAtPositionsTask();
+                    return t as T;
+                }
                 default:
                     throw new ArgumentException(
-                    message: "not a recognized type of order");
+                    message: "Not a recognized type of task");
                     //return null;
             }
 
@@ -100,7 +115,7 @@ namespace Core.Tasks
         {
             T res = Internal_CreateTask<T>();
             
-            TaskHandler.AddToGlobalTasksList(res);
+            TaskHandler.RegisterToGlobalTasksList(res);
             
             return res;
         }
@@ -204,8 +219,6 @@ namespace Core.Tasks
 
         #endregion
 
-        #region Setters
-
         public void SetTaskMarker(TaskMarker taskMarker)
         {
             InstanceSetTaskMarker(taskMarker);
@@ -216,10 +229,6 @@ namespace Core.Tasks
             InstanceSetTaskPlan(taskPlan);
         }
         
-        #endregion
-
-        #region Getters
-
         public TaskMarker GetTaskMarker()
         {
             return InstanceGetTaskMarker();
@@ -230,11 +239,25 @@ namespace Core.Tasks
             return InstanceGetTaskPlan();
         }
 
-        public ITaskSubject GetSubject()
+        public ITaskAgent GetOwnerAgent()
         {
-            return GetTaskPlan().GetSubject();
+            return GetTaskPlan().GetOwnerAgent();
         }
         
+        public void AddSubjectAgent(ITaskAgent agent)
+        {
+            GetSubjectAgents().Add(agent);
+            agent.RegisterTaskWhereAgentIsSubject(this);
+        }
+
+        public void RemoveSubjectAgent(ITaskAgent agent)
+        {
+            if (GetSubjectAgents().Remove(agent))
+                agent.UnregisterTaskWhereAgentIsSubject(this);
+        }
+
+        public abstract List<ITaskAgent> GetSubjectAgents();
+
         /*public Vector3 GetTaskLocation()
         {
             if (GetSubject() is Unit)
@@ -252,8 +275,6 @@ namespace Core.Tasks
         {
             return GetSubject(taskWrapper) != null && GetSubject(taskWrapper).IsWrappedObjectNotNull();
         }*/
-
-        #endregion
         
         public enum TaskPhase
         {   Initial, Staging,

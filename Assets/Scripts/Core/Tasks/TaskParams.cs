@@ -43,15 +43,15 @@ namespace Core.Tasks
 
         public TimeStruct plannedStartingTime { get; /*private*/ set; }
 
-        private List <ITaskSubject> paramSubjects = new List <ITaskSubject>();
+        private List <ITaskAgent> paramAgents = new List <ITaskAgent>();
 
         #endregion
 
         #region Public functions and methods
         
-        public List <ITaskSubject> GetParameterSubjects()
+        public List <ITaskAgent> GetParameterAgents()
         {
-            return paramSubjects;
+            return paramAgents;
         }
 
         public bool ContainsExecutionMode(TaskExecutionMode mode)
@@ -66,31 +66,31 @@ namespace Core.Tasks
                 executionMode.Remove(TaskExecutionMode.InstantOverrideAll);
         }
 
-        public void AddParameterSubjects(IEnumerable <ITaskSubject> subjs)
+        public void AddParameterAgents(IEnumerable <ITaskAgent> subjs)
         {
             foreach(var v in subjs)
-                AddParameterSubject(v);
+                AddParameterAgent(v);
         }
 
-        public void AddParameterSubject(ITaskSubject subj)
+        public void AddParameterAgent(ITaskAgent subj)
         {
-            if (!paramSubjects.Contains(subj))
+            if (!paramAgents.Contains(subj))
             {
-                paramSubjects.Add(subj);
+                paramAgents.Add(subj);
                 subj.SubscribeOnDestruction(removeParamSubjKey,
-                () => RemoveParameterSubject(subj));
+                () => RemoveParameterAgent(subj));
             }
         }
 
-        public void RemoveParameterSubjects(IEnumerable <ITaskSubject> subjs)
+        public void RemoveParameterAgents(IEnumerable <ITaskAgent> subjs)
         {
-            foreach (var v in new List <ITaskSubject>(subjs))
-                RemoveParameterSubject(v);
+            foreach (var v in new List <ITaskAgent>(subjs))
+                RemoveParameterAgent(v);
         }
 
-        public void RemoveParameterSubject(ITaskSubject subj)
+        public void RemoveParameterAgent(ITaskAgent subj)
         {
-            if (paramSubjects.Remove(subj))
+            if (paramAgents.Remove(subj))
             {
                 subj.UnsubscribeOnDestruction(removeParamSubjKey);
             }

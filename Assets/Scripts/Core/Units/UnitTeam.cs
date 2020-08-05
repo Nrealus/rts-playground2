@@ -18,7 +18,7 @@ using System.Text;
 
 namespace Core.Units
 {
-    public class UnitTeam : ITaskSubject
+    public class UnitTeam : ITaskAgent
     {
         
         public static UnitTeam PrepareAndCreateTeamFromSelected(List<ISelectable> selectedEntities)
@@ -131,34 +131,40 @@ namespace Core.Units
         public void DestroyThis()
         {
             onDestroyed.Invoke();
+            
+            foreach(var v in new List<Task>(GetTasksWhereIsInternalSubject()))
+            {
+                UnregisterTaskWhereAgentIsSubject(v);
+            }
         }
 
         #endregion
 
-        #region ITaskSubject implementation
+        #region ITaskAgent implementation
 
         private static int _instcount2;
         private Dictionary<TaskPlan2,string> removePlanKeyDict = new Dictionary<TaskPlan2, string>();
-        public TaskPlan2 AddNewPlan()
+        public TaskPlan2 CreateAndRegisterNewOwnedPlan()
         {
             _instcount2++;
 
             TaskPlan2 res = null;
 
             res = new TaskPlan2(this);
-            GetPlans().Add(res);
+            GetOwnedPlans().Add(res);
+
             if (IsVirtualTeam())
                 _localPlans.Add(res);
 
             removePlanKeyDict.Add(res, new StringBuilder("removeplan").Append(_instcount2).ToString());
-            SubscribeOnDestruction(removePlanKeyDict[res], () => RemoveAndEndPlan(res));
+            SubscribeOnDestruction(removePlanKeyDict[res], () => EndAndUnregisterOwnedPlan(res));
 
             return res;
         }
 
-        public void RemoveAndEndPlan(TaskPlan2 taskPlan)
+        public void EndAndUnregisterOwnedPlan(TaskPlan2 taskPlan)
         {
-            if (GetPlans().Remove(taskPlan))
+            if (GetOwnedPlans().Remove(taskPlan))
             {
                 //if (!IsNominalFormation())
                 _localPlans.Remove(taskPlan);            
@@ -172,12 +178,41 @@ namespace Core.Units
         }
 
         private List<TaskPlan2> _localPlans = new List<TaskPlan2>();
-        public List<TaskPlan2> GetPlans()
+        public List<TaskPlan2> GetOwnedPlans()
         {
             if (IsVirtualTeam())
                 return _localPlans;
             else
-                return GetUnit().GetPlans();
+                return GetUnit().GetPlansOwnedByEquivalentTeams();
+        }
+
+        private static int _instcount3;
+        private Dictionary<Task,string> _removeTaskWhereSubjectKeyDict = new Dictionary<Task, string>();
+        public void RegisterTaskWhereAgentIsSubject(Task task) // storing collection should be shared too
+        {
+            _instcount3++;
+
+            //GetUnit().Internal_GetTaskWhereEquivalentTeamsAreSubjectsDict().Add(task,
+            //_removeTaskWhereSubjectKeyDict.Add(task, new StringBuilder("removetaskwheresubject").Append(_instcount3).ToString());
+
+            GetTasksWhereIsInternalSubject().Add(task);
+        }
+
+        public void UnregisterTaskWhereAgentIsSubject(Task task)
+        {
+            if (GetTasksWhereIsInternalSubject().Remove(task))
+            {
+                _tasksWhereInternalSubject.Remove(task);
+            }
+        }
+
+        private List<Task> _tasksWhereInternalSubject = new List<Task>();
+        public List<Task> GetTasksWhereIsInternalSubject() // storing collection should be shared too
+        {
+            if (IsVirtualTeam())
+                return _tasksWhereInternalSubject;
+            else
+                return GetUnit().Internal_GetTasksWhereEquivalentTeamsAreSubjects();
         }
 
         private ObservedValue<UnitTeam> _parent = new ObservedValue<UnitTeam>(null);
@@ -232,6 +267,27 @@ namespace Core.Units
                 if (GetParentTeam() != null)
                     GetParentTeam().RemoveSubTeam(this);
             }
+        }
+
+        public List<UnitTeam> GetAllSubTeamsBFS()
+        {
+            List<UnitTeam> result = new List<UnitTeam>();
+
+            Queue<UnitTeam> bfsqueue = new Queue<UnitTeam>();
+            var ch = GetSubTeams();
+            foreach (var v in ch)
+                bfsqueue.Enqueue(v);
+
+            while (bfsqueue.Count > 0)
+            {
+                result.Add(bfsqueue.Peek());
+
+                ch = bfsqueue.Dequeue().GetSubTeams();
+                foreach (var v in ch)
+                    bfsqueue.Enqueue(v);
+            }
+
+            return result;
         }
 
         #endregion

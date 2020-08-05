@@ -24,7 +24,7 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private UnitTeam subjectAsTeam { get { return GetTaskPlan().GetSubject() as UnitTeam; } }
+        private UnitTeam agentAsTeam { get { return GetTaskPlan().GetOwnerAgent() as UnitTeam; } }
 
         public int currentWaypointIndex;
         public bool endedPath;
@@ -36,10 +36,22 @@ namespace Core.Tasks
         public MoveTask()
         {
             CreateAndInitFSM();
-            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterSubjects(GetParameters().GetParameterSubjects()));
+            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterAgents(GetParameters().GetParameterAgents()));
         }
         
-        #region Overriden instance methods and functions
+        #region Instance methods and functions
+
+        private List<ITaskAgent> _subjectAgents = new List<ITaskAgent>();
+        public override List<ITaskAgent> GetSubjectAgents()
+        {
+            List<ITaskAgent> res = new List<ITaskAgent>();
+            foreach (var v in childrenMoveTaskMarkers)
+            {
+                res.Add(v.GetTask().GetOwnerAgent());
+            }
+            return res;
+            //return _subjectAgents;
+        }
 
         private MapMarkerWrapper<MoveTaskMarker> _moveTaskMarkerWrapper;
         protected override TaskMarker InstanceGetTaskMarker()
@@ -68,9 +80,9 @@ namespace Core.Tasks
             if (task is MoveTask)
             {
                 MoveTask mvtsk = task as MoveTask;
-                var chus = childrenMoveTaskMarkers.Select((_) => (_.GetTask().GetSubject() as UnitTeam).GetUnit());
-                if (mvtsk.subjectAsTeam.GetUnit() == subjectAsTeam.GetUnit()
-                || mvtsk.subjectAsTeam.GetSubTeams().Select((_) => _.GetUnit()).Intersect(chus).Count() > 0)
+                var chus = childrenMoveTaskMarkers.Select((_) => (_.GetTask().GetOwnerAgent() as UnitTeam).GetUnit());
+                if (mvtsk.agentAsTeam.GetUnit() == agentAsTeam.GetUnit()
+                || mvtsk.agentAsTeam.GetSubTeams().Select((_) => _.GetUnit()).Intersect(chus).Count() > 0)
                     return false;
             }
             bool b = true;
@@ -91,10 +103,10 @@ namespace Core.Tasks
     
                 UpdateFormationFacing(GetTaskMarker().GetWorldPosition());
 
-                if (!subjectAsTeam.IsVirtualTeam())
-                    subjectAsTeam.GetUnit().GetFormation().FormTest();
+                if (!agentAsTeam.IsVirtualTeam())
+                    agentAsTeam.GetUnit().GetFormation().FormTest();
 
-                foreach (var chf in subjectAsTeam.GetSubTeams())
+                foreach (var chf in agentAsTeam.GetSubTeams())
                 {
                     Vector3 wpos;
                     wpos = chf.GetUnit().GetFormation().GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
@@ -103,7 +115,7 @@ namespace Core.Tasks
                     
                     TaskMarker chprevtm;
                     if (prevtm != null)
-                        chprevtm = prevtm.childrenMoveTaskMarkers.Where((_) => (UnitTeam)_.GetTask().GetSubject() == chf).FirstOrDefault();
+                        chprevtm = prevtm.childrenMoveTaskMarkers.FirstOrDefault((_) => (UnitTeam)_.GetTask().GetOwnerAgent() == chf);
                     else
                         chprevtm = null;
 
@@ -126,9 +138,9 @@ namespace Core.Tasks
 
         protected override bool InstanceTryStartExecution()
         {
-            if (IsInPhase(TaskPhase.Staging) && GetSubject() != null)
+            if (IsInPhase(TaskPhase.Staging) && GetOwnerAgent() != null)
             {
-                foreach (var plan in new List<TaskPlan2>(GetSubject().GetPlans()))
+                foreach (var plan in new List<TaskPlan2>(GetOwnerAgent().GetOwnedPlans()))
                 {
                     if (plan.GetCurrentTaskInPlan() != this 
                         && !CompatibleForParallelExecution(plan.GetCurrentTaskInPlan()))
@@ -173,12 +185,12 @@ namespace Core.Tasks
         private bool _endedPathForAll;
         protected override void UpdateExecution()
         {
-            if (subjectAsTeam.IsLeaf())
+            if (agentAsTeam.IsLeaf())
             {
                 _endedPathForAll = true;
                 if (IsInPhase(TaskPhase.Execution))
                 {
-                    if (GetSubject() != null && PathExists() && !PathFinished())
+                    if (GetOwnerAgent() != null && PathExists() && !PathFinished())
                     {
                         NavigateAlongPath();
                         _endedPathForAll = false;
@@ -217,11 +229,11 @@ namespace Core.Tasks
 
             var targetPos = wpos;//GetUnitSubject().GetFormation().GetAcceptableMovementTargetPosition(wpos);
 
-            subjectAsTeam.GetUnit().myMover.MoveToPosition(targetPos, s);
+            agentAsTeam.GetUnit().myMover.MoveToPosition(targetPos, s);
 
             UpdateFormationFacing(targetPos);
 
-            if (subjectAsTeam.GetUnit().myMover.DistanceConditionToPosition(targetPos, 0.02f))
+            if (agentAsTeam.GetUnit().myMover.DistanceConditionToPosition(targetPos, 0.02f))
             {
                 currentWaypointIndex++;
             }
@@ -229,12 +241,12 @@ namespace Core.Tasks
         
         private void UpdateFormationFacing(Vector3 targetPos)
         {
-            if (!subjectAsTeam.IsVirtualTeam())
+            if (!agentAsTeam.IsVirtualTeam())
             {
-                subjectAsTeam.GetUnit().GetFormation().facingAngle =
+                agentAsTeam.GetUnit().GetFormation().facingAngle =
                     Vector3.SignedAngle(
                     Vector3.right,
-                    targetPos - subjectAsTeam.GetUnit().myMover.transform.position, Vector3.down);
+                    targetPos - agentAsTeam.GetUnit().myMover.transform.position, Vector3.down);
             }
         }
 

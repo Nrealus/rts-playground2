@@ -318,10 +318,22 @@ namespace Core.Units
         }
 
         private List<TaskPlan2> _plans = new List<TaskPlan2>();
-        public List<TaskPlan2> GetPlans()
+        public List<TaskPlan2> GetPlansOwnedByEquivalentTeams()
         {
             return _plans;
         }
+
+        private List<Task> _tasks = new List<Task>();
+        public List<Task> Internal_GetTasksWhereEquivalentTeamsAreSubjects()
+        {
+            return _tasks;
+        }
+
+        /*private Dictionary<Task,string> _removeTaskWhereSubjectKeyDict = new Dictionary<Task, string>();
+        public Dictionary<Task,string> Internal_GetTaskWhereEquivalentTeamsAreSubjectsDict()
+        {
+            return _removeTaskWhereSubjectKeyDict;
+        }*/
 
         /*public UnitTeam GetTeamBySubTeamsUnits(List<Unit> units)
         {
@@ -409,7 +421,7 @@ namespace Core.Units
             myMover = GetComponent<UnitMover>();
             mySprRenderer = GetComponentInChildren<SpriteRenderer>();
             
-            UIHandler.GetUIOrdobMenu().AddUnitToOrdob(this);
+            UIHandler.GetUIOrdobMenu().RegisterUnitToOrdob(this);
 
             _nominalFormation = new Formation(this, Formation.FormationRole.MainGuard, Formation.FormationType.Column);
             GetFormation().facingAngle = 0f;

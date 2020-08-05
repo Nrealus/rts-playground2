@@ -236,12 +236,12 @@ namespace Core.MapMarkers
         #endregion
     
     
-        public virtual TaskPlan2 InsertAssociatedTaskIntoPlan(ITaskSubject subject, TaskMarker previousTaskMarker)
+        public virtual TaskPlan2 InsertAssociatedTaskIntoPlan(ITaskAgent agent, TaskMarker previousTaskMarker)
         {
             TaskPlan2 taskPlan;
             if (previousTaskMarker == null)
             {
-                taskPlan = subject.AddNewPlan();
+                taskPlan = agent.CreateAndRegisterNewOwnedPlan();
                 taskPlan.AddTaskToPlan(GetTask());
             }
             else

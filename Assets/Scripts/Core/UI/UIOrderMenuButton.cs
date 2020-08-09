@@ -77,7 +77,7 @@ namespace Core.UI
             on = desiredButtonState;
         }
 
-        private ITaskAgent _taskAgent;
+        private IActorGroup _actorGroup;
         private MapMarkerWrapper<TaskMarker> _lastPlacedTaskMarkerWrapper;
         private void UITaskMarkerCreationAndTaskBuilding<T>(List<ISelectable> selected) where T : TaskMarker
         {
@@ -103,10 +103,10 @@ namespace Core.UI
                     {
                         if (b)
                         {
-                            if (_taskAgent == null)
-                                _taskAgent = UnitTeam.PrepareAndCreateTeamFromSelected(selected);
+                            if (_actorGroup == null)
+                                _actorGroup = UnitGroup.PrepareAndCreateGroupFromSelected(selected);
 
-                            TaskPlan2 taskPlan = taskMarker.InsertAssociatedTaskIntoPlan(_taskAgent, _lastPlacedTaskMarkerWrapper?.Value);
+                            TaskPlan2 taskPlan = taskMarker.InsertAssociatedTaskIntoPlan(_actorGroup, _lastPlacedTaskMarkerWrapper?.Value);
 
                             if (!taskPlan.IsPlanBeingExecuted())
                                 taskPlan.StartPlanExecution();
@@ -128,13 +128,13 @@ namespace Core.UI
                             }
                             else
                             {
-                                _taskAgent = null;
+                                _actorGroup = null;
                                 _lastPlacedTaskMarkerWrapper = null;
                             }
                         }
                         else
                         {
-                            _taskAgent = null;
+                            _actorGroup = null;
                             _lastPlacedTaskMarkerWrapper = null;
                             taskMarker.OnPlacementConfirmation.UnsubscribeEventHandlerMethod("onplacementconfirmationcallback");
                             //editedTaskPlan = null;

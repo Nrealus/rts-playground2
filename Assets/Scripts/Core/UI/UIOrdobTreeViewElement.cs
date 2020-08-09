@@ -76,7 +76,7 @@ namespace Core.UI
                     GetAssociatedUnit().ChangeParentTo(null);
             }
             else
-                GetAssociatedUnit().ChangeParentTo(GetAssociatedUnit().GetParentUnit());
+                GetAssociatedUnit().ChangeParentTo(GetAssociatedUnit().GetParentActorAsUnit());
         }
 
         public override void OnPressInOrOut(bool inOrOut, PointerEventData data)
@@ -102,7 +102,7 @@ namespace Core.UI
         {
             var id = binder.AddNewEventAndSubscribeMethodToIt(action);
             onPressedInBind.SubscribeEventHandlerMethod("bindpress",
-                (_) => binder.InvokeEvent(id, this, new SimpleEventArgs(_)));
+                _ => binder.InvokeEvent(id, this, new SimpleEventArgs(_)));
             onUnbind += () => UnbindPressEvent(binder, id);
         }
 

@@ -42,7 +42,6 @@ namespace Core.MapMarkers
 
         #region Initialisation
 
-        private static int _instcount = 0;
         private void InitPreparation()
         {
             ready = true;
@@ -78,11 +77,9 @@ namespace Core.MapMarkers
                 PlaceAtWorldPosition(position);
 
             _associatedTaskWrapper = new TaskWrapper(Task.CreateTask<EngageAtPositionsTask>());
-            //Task.CreateTaskWrapperAndSetReceiver<MoveTask>(myTaskSubjectsList[0]);
 
             GetTask().SetTaskMarker(this);
             GetTask().SubscribeOnDestruction("taskmarkerclear", DestroyThis);
-            //GetRefWrapper().SubscribeOnClearance(DestroyMe);
 
         }
 
@@ -145,9 +142,9 @@ namespace Core.MapMarkers
                         ConfirmPositioning(false);
                         DestroyThis();
                     }
-                    else// if (myTaskSubjectsList.Count > 0)
-                    {            
-                        //GetTaskAsMoveTask().AddWaypoints(waypointMarkersList);
+                    else
+                    {
+
                         AddTargetMarker(FirePositionMarker.CreateFirePositionMarker(GetWorldPosition(), 10f));
 
                         if (!Input.GetKey(KeyCode.LeftShift))
@@ -181,12 +178,12 @@ namespace Core.MapMarkers
         {
             if (!firePositionMarkers.Contains(wp))
             {
-                SubscribeOnDestruction(wp.GetInstanceID().ToString(), () => RemoveClearedTargetMarker(wp));
+                SubscribeOnDestruction(wp.GetInstanceID().ToString(), () => RemoveTargetMarker(wp));
                 this.firePositionMarkers.Add(wp);
             }
         }
 
-        private void RemoveClearedTargetMarker(FirePositionMarker wp)
+        private void RemoveTargetMarker(FirePositionMarker wp)
         {
             if (firePositionMarkers.Contains(wp))
             {

@@ -37,7 +37,7 @@ namespace Core.UI
             uToRegister.SubscribeOnParentChange("changeobui",
                 () =>
                 {
-                    if (trackedUnitsTVEs.Any((_) => { return _.GetAssociatedUnit() == uToRegister; }))
+                    if (trackedUnitsTVEs.Any(_ => { return _.GetAssociatedUnit() == uToRegister; }))
                         UpdateTreeViewElementParent(uToRegister);
                     else
                         RegisterUnitToOrdob_Aux(uToRegister);
@@ -73,13 +73,13 @@ namespace Core.UI
             trackedUnitsTVEs.Add(tve);
         }
 
-        public void RemoveUnitFromOrdob(Unit uToRemove)
+        public void UnregisterUnitFromOrdob(Unit uToRemove)
         {
             uToRemove.UnsubscribeOnParentChange("changeobui");
             var bndr = trackedUnitsBinders[uToRemove];
             UnbindSelectionEvent(bndr, uToRemove);
 
-            var r = trackedUnitsTVEs.Find((_) => { return _.GetAssociatedUnit() == uToRemove; });
+            var r = trackedUnitsTVEs.Find(_ => { return _.GetAssociatedUnit() == uToRemove; });
             
             trackedUnitsTVEs.Remove(r);       
             
@@ -92,7 +92,7 @@ namespace Core.UI
             
             foreach (var v in trackedUnitsTVEs)
             {
-                if (v.GetAssociatedUnit() == uToAdd.GetParentUnit())
+                if (v.GetAssociatedUnit() == uToAdd.GetParentActorAsUnit())
                 {
                     res = Instantiate<UIOrdobTreeViewElement>(
                         GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().uiOrdobTreeViewElementPrefab,
@@ -121,8 +121,8 @@ namespace Core.UI
         
         private void UpdateTreeViewElementParent(Unit u)
         {
-            UIOrdobTreeViewElement ugwTve = trackedUnitsTVEs.Find((_) => { return _.GetAssociatedUnit() == u; });
-            UIOrdobTreeViewElement ugwParentTve = trackedUnitsTVEs.Find((_) => { return _.GetAssociatedUnit() == u.GetParentUnit(); });
+            UIOrdobTreeViewElement ugwTve = trackedUnitsTVEs.Find(_ => { return _.GetAssociatedUnit() == u; });
+            UIOrdobTreeViewElement ugwParentTve = trackedUnitsTVEs.Find(_ => { return _.GetAssociatedUnit() == u.GetParentActorAsUnit(); });
             
             if (ugwParentTve == null)
                 ugwParentTve = treeViewRootElement;
@@ -137,7 +137,7 @@ namespace Core.UI
             {
                 var id = binder.AddNewEventAndSubscribeMethodToIt(action);
                 u.GetOnSelectionStateChangeObserver().SubscribeEventHandlerMethod("doactiontreeview",
-                    (_) => { if(_.Item3 == 0) binder.InvokeEvent(id, u, null); });
+                    _ => { if(_.Item3 == 0) binder.InvokeEvent(id, u, null); });
                 trackedUnitsBinders.Add(u, binder);
             }
         }

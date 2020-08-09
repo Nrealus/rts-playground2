@@ -31,7 +31,7 @@ namespace Core.Tasks
                 UpdateExecutionWaitingTimeToStart);
 
             orderPhasesFSM.AddState(TaskPhase.Execution,
-                EnterExecution,
+                null/*EnterExecution*/,
                 UpdateExecution);
 
             orderPhasesFSM.AddState(TaskPhase.Paused);
@@ -43,8 +43,7 @@ namespace Core.Tasks
                 { });
 
             orderPhasesFSM.AddState(TaskPhase.End,
-               () => 
-               { },
+               null/*EnterEnd*/,
                () =>
                {
                     SetPhase(TaskPhase.End2);
@@ -62,11 +61,15 @@ namespace Core.Tasks
                     waitForReactionAtEnd = true;
                 }
 
-                if (GetTaskPlan().GetTaskInPlanAfter(this) != null
+                if (GetTaskPlan()?.GetTaskInPlanAfter(this) != null
                     && GetTaskPlan().GetTaskInPlanAfter(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
                 {
                     nextActiveOrder = new TaskWrapper(GetTaskPlan().GetTaskInPlanAfter(this));
                 }
+                /*else
+                {
+                    GetTaskPlan().EndPlanExecution();
+                }*/
             },
             () =>
             {
@@ -107,12 +110,17 @@ namespace Core.Tasks
             }
         }
 
-        protected virtual void EnterExecution()
+        /*protected virtual void EnterExecution()
         {
-            GetParameters().plannedStartingTime = TimeHandler.CurrentTime();
-        }
+            //GetParameters().plannedStartingTime = TimeHandler.CurrentTime();
+        }*/
 
         protected abstract void UpdateExecution();
+
+        /*protected virtual void EnterEnd()
+        {
+
+        }*/
 
     }
 }

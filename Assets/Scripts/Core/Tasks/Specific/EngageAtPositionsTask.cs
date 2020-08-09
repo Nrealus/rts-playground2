@@ -21,26 +21,23 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private UnitTeam agentAsTeam { get { return GetTaskPlan().GetOwnerAgent() as UnitTeam; } }
+        private UnitGroup actorGroupAsUG { get { return GetTaskPlan().GetActorGroup() as UnitGroup; } }
         
-        private List<UnitTeam> agentSubTeams { get { return agentAsTeam.GetSubTeams(); }}
-        //private List<TargetTaskMarker> childrenTargetTaskMarkers = new List<TargetTaskMarker>();
-
         #endregion
 
         public EngageAtPositionsTask()
         {
             CreateAndInitFSM();
-            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterAgents(GetParameters().GetParameterAgents()));
+            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterActors(GetParameters().GetParameterActors()));
         }
         
         #region Instance methods and functions
 
-        private List<ITaskAgent> _subjectAgents = new List<ITaskAgent>();
+        /*private List<ITaskAgent> _subjectAgents = new List<ITaskAgent>();
         public override List<ITaskAgent> GetSubjectAgents()
         {
             return _subjectAgents;
-        }
+        }*/
         
         private MapMarkerWrapper<TargetTaskMarker> _targetTaskMarkerWrapper;
         protected override TaskMarker InstanceGetTaskMarker()
@@ -64,24 +61,38 @@ namespace Core.Tasks
             return _taskParams;
         }
 
-        public override bool CompatibleForParallelExecution(Task task)
+        public int SolveParallelCompatibilityConflicts()
+        {
+            foreach (var pl in new List<TaskPlan2>(actorGroupAsUG.GetThisGroupPlans()))
+            {
+                if (pl.GetCurrentTaskInPlan() != this)
+                {
+                    UnitGroup ug = pl.GetCurrentTaskInPlan().GetActorGroup() as UnitGroup;
+
+                }
+            }
+
+            return 0;
+        }
+
+        public bool CompatibleForParallelExecution(Task task)
         {
             bool b = false;
-            foreach (var subAgent in GetSubjectAgents())
+            /*foreach (var subAgent in GetSubjectAgents())
             {
                 b = b || CompatibilityPerSubject(subAgent, task);
-            }
+            }*/
             
             return b;
         }
 
-        private bool CompatibilityPerSubject(ITaskAgent subAgent, Task task)
+        private bool CompatibilityPerActor(IActor actor, Task task)
         {
             bool b = true;
             if (task is MoveTask2)
             {
                 var mvtsk = task as MoveTask2;
-                b = !task.GetSubjectAgents().Contains(subAgent);
+                //b = !task.GetSubjectAgents().Contains(subAgent);
             }
             return b;
         }
@@ -92,10 +103,10 @@ namespace Core.Tasks
 
             if (taskPlan != null)
             {
-                foreach (var sbt in agentAsTeam.GetAllSubTeamsBFS())
+                /*foreach (var sbt in agentAsTeam.GetAllSubTeamsBFS())
                 {
                     AddSubjectAgent(sbt);
-                }
+                }*/
 
                 SetPhase(TaskPhase.Staging);
             }
@@ -103,36 +114,18 @@ namespace Core.Tasks
 
         protected override bool InstanceTryStartExecution()
         {
-            if (IsInPhase(TaskPhase.Staging) && GetOwnerAgent() != null)
+            if (IsInPhase(TaskPhase.Staging) && actorGroupAsUG != null)
             {
-                Debug.Log("hhhhhh");
-                bool b = true;
+                SolveParallelCompatibilityConflicts();
 
-                foreach (var subAgent in new List<ITaskAgent>(GetSubjectAgents()))
-                {
-                    foreach (var plan in new List<TaskPlan2>(subAgent.GetOwnedPlans()))
-                    {
-                        if (plan.GetCurrentTaskInPlan() != this
-                            && !CompatibilityPerSubject(subAgent, plan.GetCurrentTaskInPlan()))
-                        {
-                            //b = false;
-                            plan.EndPlanExecution();
-                        }                        
-                    }
-                    foreach (var task in new List<Task>(subAgent.GetTasksWhereIsInternalSubject()))
-                    {
-                        if (task != this
-                            && !CompatibilityPerSubject(subAgent, task))
-                        {
-                            task.GetTaskPlan().EndPlanExecution();
-                            //b = false;
-                        }
-                    }
-                }
-
-                if(GetTaskPlan().GetCurrentTaskInPlan() == this && b)
+                if(GetTaskPlan().GetCurrentTaskInPlan() == this)
                 {
                     SetPhase(TaskPhase.WaitToStartExecution);
+
+                    /*foreach (var chmtm in subActorsMoveTasks)
+                    {
+                        chmtm.Value.TryStartExecution();
+                    }*/
                     return true;
                 }
             }
@@ -147,26 +140,23 @@ namespace Core.Tasks
 
         protected override void UpdateExecution()
         {
-            if (IsInPhase(TaskPhase.Execution))
+            foreach (var u in actorGroupAsUG.GetActorsAsUnits())
             {
-                foreach (var subag in GetSubjectAgents())
-                {
-                    var ut = (subag as UnitTeam);
+                //var ut = (subag as UnitTeam);
 
-                    EngageTargetsInPositionsROE(ut);
-                }
+                EngageTargetsInPositionsROE(u);
             }
         }
 
-        private float s = 5;
-        private void EngageTargetsInPositionsROE(UnitTeam ut)
+        private float s = 2;
+        private void EngageTargetsInPositionsROE(Unit u)
         {
             s = Mathf.Max(s - Time.deltaTime, 0);
 
             if (s == 0)
             {
                 Debug.Log("Hello, engaging order still active");
-                s = 5;
+                s = 2;
             }
         }
 

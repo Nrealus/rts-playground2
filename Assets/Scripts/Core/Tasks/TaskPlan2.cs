@@ -28,36 +28,42 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private RefWrapper <ITaskAgent> _taskAgent;
-        public ITaskAgent GetOwnerAgent() { return _taskAgent?.Value; }
+        private RefWrapper <IActorGroup> _group;
+        public IActorGroup GetActorGroup() { return _group?.Value; }
 
         private List<Task> tasks = new List<Task>();
 
         #endregion
 
-        public TaskPlan2(ITaskAgent agent)
+        public TaskPlan2(IActorGroup group)
         {
-            _taskAgent = new RefWrapper <ITaskAgent>(agent);
+            _group = new RefWrapper <IActorGroup>(group);
         }
 
         public void StartPlanExecution()
         {
-            if (GetOwnerAgent() != null)
+            if (GetActorGroup() != null)
+            {
                 GetCurrentTaskInPlan().TryStartExecution();
+            }
         }
 
+        private bool ending = false;
         public void EndPlanExecution()
         {
-            if (GetOwnerAgent() != null)
+            if (GetActorGroup() != null)
             {
-                GetOwnerAgent().EndAndUnregisterOwnedPlan(this);
-                foreach (var v in new List<Task>(tasks))
+                ending = true;
+                foreach (var t in new List<Task>(tasks))
                 {
-                    v.EndExecution();
-                    v.DestroyThis();
+                    t.EndExecution();
+                    RemoveTaskFromPlan(t);
                 }
                 //tasks.Clear();
-                _taskAgent = null;
+                Debug.Log("ended plan");
+                GetActorGroup().UnregisterOwnedPlan(this);
+
+                _group = null;
             }
         }
 
@@ -108,7 +114,10 @@ namespace Core.Tasks
 
         public bool AddTaskToPlan(Task t)
         {
-            if (t != null && !tasks.Contains(t))
+            if (t.GetTaskPlan() != null)
+                throw new Exception("task already has a plan");
+
+            if (t != null && !tasks.Contains(t) && t.GetTaskPlan() == null)
             {
                 tasks.Add(t);
 
@@ -126,15 +135,16 @@ namespace Core.Tasks
 
         private bool RemoveTaskFromPlan(Task t)
         {
-            if(tasks.Contains(t))
+            if(tasks.Remove(t))
             {
-                tasks.Remove(t);
-
                 t.SetTaskPlan(null);
 
                 t.UnsubscribeOnDestruction("removetask");
                 //RemoveOnClearance(t);
                 
+                if (!ending && tasks.Count == 0)
+                    EndPlanExecution();
+
                 return true;
             }
             else

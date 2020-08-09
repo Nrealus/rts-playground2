@@ -72,10 +72,10 @@ namespace Core.Tasks
 
         public void DestroyThis()
         {
-            foreach (var v in new List<ITaskAgent>(GetSubjectAgents()))
+            /*foreach (var v in new List<ITaskAgent>(GetSubjectAgents()))
             {
                 RemoveSubjectAgent(v);
-            }
+            }*/
 
             onDestroyed.Invoke();
         }
@@ -119,45 +119,6 @@ namespace Core.Tasks
             
             return res;
         }
-
-        /*private static TaskWrapper<T> Internal_CreateTaskWrapper<T>() where T : Task
-        {
-            switch (typeof(T))
-            {
-                case Type taskType when taskType == typeof(MoveTask):
-                {
-                    MoveTask t = new MoveTask();
-                    TaskWrapper<MoveTask> wrapper = t.GetRefWrapper();
-                    return wrapper as TaskWrapper<T>;
-                }
-                /*case Type taskType when taskType == typeof(BuildTask):
-                {
-                    BuildTask t = new BuildTask();
-                    TaskWrapper<BuildTask> wrapper = t.GetRefWrapper();
-                    return wrapper as TaskWrapper<T>;
-                }
-                case Type taskType when taskType == typeof(EngageAtPositionsTask):
-                {
-                    EngageAtPositionsTask t = new EngageAtPositionsTask();
-                    TaskWrapper<EngageAtPositionsTask> wrapper = t.GetRefWrapper();
-                    return wrapper as TaskWrapper<T>;
-                }
-                default:
-                    throw new ArgumentException(
-                    message: "not a recognized type of order");
-                    //return null;
-            }
-
-        } 
-
-        public static TaskWrapper<T> CreateTaskWrapper<T>() where T : Task
-        {
-            TaskWrapper<T> res = Internal_CreateTaskWrapper<T>();
-            
-            TaskHandler.AddToGlobalTaskWrapperList(res);
-            
-            return res;
-        }*/
 
         #endregion
 
@@ -239,42 +200,20 @@ namespace Core.Tasks
             return InstanceGetTaskPlan();
         }
 
-        public ITaskAgent GetOwnerAgent()
+        public IActorGroup GetActorGroup()
         {
-            return GetTaskPlan().GetOwnerAgent();
-        }
-        
-        public void AddSubjectAgent(ITaskAgent agent)
-        {
-            GetSubjectAgents().Add(agent);
-            agent.RegisterTaskWhereAgentIsSubject(this);
+            return GetTaskPlan().GetActorGroup();
         }
 
-        public void RemoveSubjectAgent(ITaskAgent agent)
+        public T GetActorGroup<T>() where T : IActorGroup
         {
-            if (GetSubjectAgents().Remove(agent))
-                agent.UnregisterTaskWhereAgentIsSubject(this);
+            return (T) GetTaskPlan().GetActorGroup();
         }
-
-        public abstract List<ITaskAgent> GetSubjectAgents();
-
-        /*public Vector3 GetTaskLocation()
-        {
-            if (GetSubject() is Unit)
-                return (GetSubject() as Unit).GetPosition();
-            else
-                return Vector3.zero
-        }*/
 
         public TaskParams GetParameters()
         {
             return InstanceGetParameters();
         }
-
-        /*public static bool SubjectExists(Task task)
-        {
-            return GetSubject(taskWrapper) != null && GetSubject(taskWrapper).IsWrappedObjectNotNull();
-        }*/
         
         public enum TaskPhase
         {   Initial, Staging,
@@ -300,7 +239,7 @@ namespace Core.Tasks
             InstanceUpdate();
         }
 
-        public abstract bool CompatibleForParallelExecution(Task task);
+        //public abstract bool CompatibleForParallelExecution(Task task);
 
         #region Abstract instance methods
 

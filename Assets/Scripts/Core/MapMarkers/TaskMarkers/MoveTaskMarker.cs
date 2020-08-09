@@ -23,7 +23,7 @@ namespace Core.MapMarkers
     public class MoveTaskMarker : TaskMarker
     {
 
-        private TaskWrapper<MoveTask2> _associatedTaskWrapper;
+        private TaskWrapper<MoveTask> _associatedTaskWrapper;
         public override Task GetTask() { return _associatedTaskWrapper.Value; }
 
         #region Main declarations
@@ -42,7 +42,6 @@ namespace Core.MapMarkers
 
         #region Initialisation
 
-        private static int _instcount = 0;
         private void InitPreparation()
         {
             ready = true;
@@ -77,12 +76,10 @@ namespace Core.MapMarkers
             else
                 PlaceAtWorldPosition(position);
 
-            _associatedTaskWrapper = new TaskWrapper<MoveTask2>(Task.CreateTask<MoveTask2>());
-            //Task.CreateTaskWrapperAndSetReceiver<MoveTask>(myTaskSubjectsList[0]);
+            _associatedTaskWrapper = new TaskWrapper<MoveTask>(Task.CreateTask<MoveTask>());
 
             GetTask().SetTaskMarker(this);
             GetTask().SubscribeOnDestruction("taskmarkerclear", DestroyThis);
-            //GetRefWrapper().SubscribeOnClearance(DestroyMe);
 
         }
 
@@ -93,6 +90,7 @@ namespace Core.MapMarkers
             UIHandler.UnsubscribeOnPause(onPauseEventKey);
             UIHandler.UnsubscribeOnUnpause(onUnpauseEventKey);
             base.DestroyThis();
+            //GetTask()?.DestroyThis();
             _associatedTaskWrapper = null;
         }
 
@@ -145,9 +143,8 @@ namespace Core.MapMarkers
                         ConfirmPositioning(false);
                         DestroyThis();
                     }
-                    else// if (myTaskSubjectsList.Count > 0)
-                    {            
-                        //GetTaskAsMoveTask().AddWaypoints(waypointMarkersList);
+                    else
+                    {
                         AddWaypointMarker(WaypointMarker.CreateWaypointMarker(GetWorldPosition()));
 
                         ExitPlacementUIMode();
@@ -178,12 +175,12 @@ namespace Core.MapMarkers
         {
             if (!waypointMarkersList.Contains(wp))
             {
-                SubscribeOnDestruction(wp.GetInstanceID().ToString(), () => RemoveClearedWaypointMarker(wp));
+                SubscribeOnDestruction(wp.GetInstanceID().ToString(), () => RemoveWaypointMarker(wp));
                 this.waypointMarkersList.Add(wp);
             }
         }
 
-        private void RemoveClearedWaypointMarker(WaypointMarker wp)
+        private void RemoveWaypointMarker(WaypointMarker wp)
         {
             if (waypointMarkersList.Contains(wp))
             {

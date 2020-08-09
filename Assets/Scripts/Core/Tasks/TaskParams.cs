@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Nrealus.Extensions;
 using System.Text;
+using Core.Units;
 
 namespace Core.Tasks
 {
@@ -43,15 +44,15 @@ namespace Core.Tasks
 
         public TimeStruct plannedStartingTime { get; /*private*/ set; }
 
-        private List <ITaskAgent> paramAgents = new List <ITaskAgent>();
+        private List <IActorGroup> paramActors = new List <IActorGroup>();
 
         #endregion
 
         #region Public functions and methods
         
-        public List <ITaskAgent> GetParameterAgents()
+        public List <IActorGroup> GetParameterActors()
         {
-            return paramAgents;
+            return paramActors;
         }
 
         public bool ContainsExecutionMode(TaskExecutionMode mode)
@@ -59,40 +60,40 @@ namespace Core.Tasks
             return executionMode.Contains(mode);
         }
 
-        public void AddExecutionMode(TaskExecutionMode mode) // Subject to change when this class will get more formal
+        public void AddExecutionMode(TaskExecutionMode mode) // Actorect to change when this class will get more formal
         {
             executionMode.Add(mode);
             if (ContainsExecutionMode(TaskExecutionMode.InstantOverrideAll) && mode == TaskExecutionMode.Chain)
                 executionMode.Remove(TaskExecutionMode.InstantOverrideAll);
         }
 
-        public void AddParameterAgents(IEnumerable <ITaskAgent> subjs)
+        public void AddParameterActors(IEnumerable<IActorGroup> actors)
         {
-            foreach(var v in subjs)
-                AddParameterAgent(v);
+            foreach(var v in actors)
+                AddParameterActor(v);
         }
 
-        public void AddParameterAgent(ITaskAgent subj)
+        public void AddParameterActor(IActorGroup actor)
         {
-            if (!paramAgents.Contains(subj))
+            if (!paramActors.Contains(actor))
             {
-                paramAgents.Add(subj);
-                subj.SubscribeOnDestruction(removeParamSubjKey,
-                () => RemoveParameterAgent(subj));
+                paramActors.Add(actor);
+                actor.SubscribeOnDestruction(removeParamActorKey,
+                () => RemoveParameterAgent(actor));
             }
         }
 
-        public void RemoveParameterAgents(IEnumerable <ITaskAgent> subjs)
+        public void RemoveParameterActors(IEnumerable<IActorGroup> actors)
         {
-            foreach (var v in new List <ITaskAgent>(subjs))
+            foreach (var v in new List <IActorGroup>(actors))
                 RemoveParameterAgent(v);
         }
 
-        public void RemoveParameterAgent(ITaskAgent subj)
+        public void RemoveParameterAgent(IActorGroup actor)
         {
-            if (paramAgents.Remove(subj))
+            if (paramActors.Remove(actor))
             {
-                subj.UnsubscribeOnDestruction(removeParamSubjKey);
+                actor.UnsubscribeOnDestruction(removeParamActorKey);
             }
         }
 
@@ -101,11 +102,11 @@ namespace Core.Tasks
         #region Initialisation
 
         private static int _instcount;
-        private string removeParamSubjKey;
+        private string removeParamActorKey;
         public TaskParams()
         {
             _instcount++;
-            removeParamSubjKey = new StringBuilder("removeparamsubj").Append(_instcount).ToString();
+            removeParamActorKey = new StringBuilder("removeparamactor").Append(_instcount).ToString();
         }
 
         #endregion

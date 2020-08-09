@@ -53,7 +53,7 @@ namespace Core.Handlers
 
         public static void SubscribeOnAddedTaskWrapper(string key, Action<TaskWrapper> action)
         {
-            MyInstance.onTaskWrapperAddOrRemove.SubscribeToEvent(key,(_) => { if (_.Item2) { action(_.Item1); } });
+            MyInstance.onTaskWrapperAddOrRemove.SubscribeToEvent(key,_ => { if (_.Item2) { action(_.Item1); } });
         }
 
         public static void UnsubscribeOnAddedTaskWrapper(string key)
@@ -63,7 +63,7 @@ namespace Core.Handlers
 
         public static void SubscribeOnRemovedTaskWrapper(string key,Action<TaskWrapper> action)
         {
-            MyInstance.onTaskWrapperAddOrRemove.SubscribeToEvent(key,(_) => { if (!_.Item2) { action(_.Item1); } });
+            MyInstance.onTaskWrapperAddOrRemove.SubscribeToEvent(key,_ => { if (!_.Item2) { action(_.Item1); } });
         }
 
         public static void UnsubscribeOnRemovedTaskWrapper(string key)

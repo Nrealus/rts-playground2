@@ -24,28 +24,23 @@ namespace Core.Tasks
 
         #region Main declarations
 
-        private UnitTeam agentAsTeam { get { return GetTaskPlan().GetOwnerAgent() as UnitTeam; } }
+        private UnitGroup actorGroupAsUG { get { return GetTaskPlan().GetActorGroup() as UnitGroup; } }
+        private List<Unit> units { get { return actorGroupAsUG.GetActorsAsUnits(); }}
 
         public int currentWaypointIndex;
         public bool endedPath;
-        
-        //private List<MoveTaskMarker> childrenMoveTaskMarkers = new List<MoveTaskMarker>();
+
+        private List<MoveTaskMarker> subActorsMoveTaskMarkers = new List<MoveTaskMarker>();
 
         #endregion
 
         public MoveTask2()
         {
             CreateAndInitFSM();
-            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterAgents(GetParameters().GetParameterAgents()));
+            SubscribeOnDestructionLate("clearparams", () => GetParameters().RemoveParameterActors(GetParameters().GetParameterActors()));
         }
         
         #region Instance methods and functions
-
-        private List<ITaskAgent> _subjectAgents = new List<ITaskAgent>();
-        public override List<ITaskAgent> GetSubjectAgents()
-        {
-            return _subjectAgents;
-        }
 
         private MapMarkerWrapper<MoveTaskMarker> _moveTaskMarkerWrapper;
         protected override TaskMarker InstanceGetTaskMarker()
@@ -69,9 +64,26 @@ namespace Core.Tasks
             return _taskParams;
         }
 
-        public override bool CompatibleForParallelExecution(Task task)
+        public bool CompatibleForParallelExecution(Task task)
         {
             bool b = false;
+            /*if (task is MoveTask2)
+            {
+                MoveTask2 mvtsk = task as MoveTask2;
+
+                var v = units
+
+                var chus = subActorsMoveTaskMarkers.Select(_ => _.GetTask().GetActorGroup<UnitGroup>().GetActors()[0]);
+                if (mvtsk.unit == unit
+                || mvtsk.actorGroupAsUG.GetSubGroups().Select(_ => _.GetActors()[0]).Intersect(chus).Count() > 0)
+                    return false;
+            }
+            bool b = true;
+            foreach (var v in subActorsMoveTaskMarkers)
+            {
+                b = b && v.GetTask().CompatibleForParallelExecution(task);
+            }
+            return true && b;*/
             /*foreach (var subAgent in GetSubjectAgents())
             {
                 b = b || CompatibilityPerSubject(subAgent, task);
@@ -80,19 +92,54 @@ namespace Core.Tasks
             return b;
         }
 
-        private bool CompatibilityPerSubjectAgent(ITaskAgent subAgent, Task task)
+        public bool SolveParallelCompatibilityConflicts()
+        {
+            foreach (var pl in new List<TaskPlan2>(actorGroupAsUG.GetActorsGroupsAndSubGroupsPlans(true, true)))
+            {
+                if (pl.GetCurrentTaskInPlan() != this)
+                {
+                    MoveTask2 mvtsk = pl.GetCurrentTaskInPlan() as MoveTask2;
+                    UnitGroup ug = mvtsk.GetActorGroup() as UnitGroup;
+                    if (mvtsk != null/* && ug != null*/)
+                    {
+                        foreach (var u in new List<Unit>(units))
+                        {
+                            if (mvtsk.units.Contains(u))
+                                ug.RemoveUnitFromGroup(u);
+                        }
+                        /*var intsect = mvtsk.units.Intersect(units);
+                        foreach (var u in intsect)
+                        {
+                            ug.RemoveUnitFromGroup(u);
+                        }*/
+                    }
+
+                    if (ug != null && ug.GetActors().Count == 0)
+                    {
+                        foreach (var subg in new List<UnitGroup>(ug.GetSubGroupsAsUG()))
+                            subg.ChangeParentTo(null);
+                        
+                        pl.EndPlanExecution();
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /*private bool CompatibilityPerActor(IActor actor, Task task)
         {
             bool b = true;
             if (task is MoveTask2)
             {
                 var mvtsk = task as MoveTask2;
-                var subut = (subAgent as UnitTeam);
+                var subut = (actor as UnitGroup);
 
-                b = !((task.GetOwnerAgent() as UnitTeam).GetUnit() == subut.GetUnit()
-                    || task.GetSubjectAgents().Where((_) => (_ as UnitTeam).GetUnit() == subut.GetUnit()).Count() > 0);
+                //b = !((task.GetAgent() as UnitTeam).GetUnit() == subut.GetUnit()
+                //    || mvtsk.agentAsTeam.GetUnits().Where(_ => (_ as UnitTeam).GetUnit() == subut.GetUnit()).Count() > 0);
             }
             return b;
-        }
+        }*/
 
         protected override void InstanceSetTaskPlan(TaskPlan2 taskPlan)
         {
@@ -100,14 +147,60 @@ namespace Core.Tasks
 
             if (taskPlan != null)
             {
-                /*if (!agentAsTeam.IsVirtualTeam())
-                    agentAsTeam.GetUnit().GetFormation().FormTest();*/
-                AddSubjectAgent(GetOwnerAgent());
+                Debug.Log("setting task plan to task");
 
-                foreach (var sbt in agentAsTeam.GetAllSubTeamsBFS())
+                SubscribeOnDestruction("clearchildrenmovetaskmarkers", () => subActorsMoveTaskMarkers.Clear());
+    
+                foreach (var u in units)
+                {
+                    /*actorGroupAsUG.SubscribeOnUnitRemovalFromGroup(u,
+                        _ => 
+                        {
+                            subActorsMoveTaskMarkers.Remove(u);
+                            actorGroupAsUG.UnsubscribeOnUnitRemovalFromGroup(_);
+                        });*/
+
+                    //UpdateFormationFacing(u, GetTaskMarker().GetWorldPosition());
+                    //u.GetFormation().FormTest();
+                }
+
+                foreach (var subg in actorGroupAsUG.GetSubGroupsAsUG())
+                {
+                    Vector3 wpos;
+                    wpos = subg.GetActorsAsUnits()[0].GetFormation().GetParentFormation().GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
+
+                    var prevtm = GetTaskMarker().GetPreviousTaskMarker()?.GetTask() as MoveTask2;
+                    
+                    TaskMarker chprevtm;
+                    if (prevtm != null)
+                        chprevtm = prevtm.subActorsMoveTaskMarkers.FirstOrDefault(_ => (UnitGroup)_.GetTask().GetActorGroup() == subg);
+                    else
+                        chprevtm = null;
+
+                    MoveTaskMarker tm = TaskMarker.CreateInstanceAtWorldPosition<MoveTaskMarker>(wpos);
+                    tm.AddWaypointMarker(WaypointMarker.CreateWaypointMarker(wpos));
+
+                    TaskPlan2 chtp = tm.InsertAssociatedTaskIntoPlan(subg, chprevtm);
+
+                    tm.SubscribeOnDestruction("removefromparentmovetaskmarkerslist",() => subActorsMoveTaskMarkers.Remove(tm));                    
+                    subActorsMoveTaskMarkers.Add(tm);
+                }
+
+                SetPhase(TaskPhase.Staging);
+            }
+            else
+            {
+                subActorsMoveTaskMarkers.Clear();
+            }
+
+            if (taskPlan != null)
+            {
+                //AddSubjectAgent(GetAgent());
+
+                /*foreach (var sbt in agentAsTeam.GetAllSubTeamsBFS())
                 {
                     AddSubjectAgent(sbt);
-                }
+                }*/
 
                 /*foreach (var subAgent in GetSubjectAgents())
                 {
@@ -121,13 +214,34 @@ namespace Core.Tasks
                     wpos = (subAgent as UnitTeam).GetUnit().GetFormation().GetAcceptableMovementTargetPosition(GetTaskMarker().GetWorldPosition());
                 }*/
 
-                SetPhase(TaskPhase.Staging);
+                //SetPhase(TaskPhase.Staging);
             }
         }
 
         protected override bool InstanceTryStartExecution()
         {
-            if (IsInPhase(TaskPhase.Staging) && GetOwnerAgent() != null)
+            
+            if (IsInPhase(TaskPhase.Staging) && actorGroupAsUG != null)
+            {
+                SolveParallelCompatibilityConflicts();
+
+                if(GetTaskPlan().GetCurrentTaskInPlan() == this)
+                {
+                    // for testing purposes
+                    //GetParameters().plannedStartingTime = TimeHandler.CurrentTime() + new TimeStruct(0,0,10);
+
+                    SetPhase(TaskPhase.WaitToStartExecution);
+
+                    foreach (var chmtm in subActorsMoveTaskMarkers)
+                        chmtm.GetTask().TryStartExecution();
+
+                    return true;
+                }
+            }
+
+            return false;
+
+            /*if (IsInPhase(TaskPhase.Staging) && GetActorGroup() != null)
             {
                 bool b = true;
 
@@ -149,7 +263,7 @@ namespace Core.Tasks
                             && !CompatibilityPerSubjectAgent(subAgent, task))
                         {
                             Debug.Log(task.GetSubjectAgents().Count);
-                            task.RemoveSubjectAgent(task.GetSubjectAgents().First((_) => (_ as UnitTeam).GetUnit() == (subAgent as UnitTeam).GetUnit())/*subAgent*/);
+                            task.RemoveSubjectAgent(task.GetSubjectAgents().First(_ => (_ as UnitTeam).GetUnit() == (subAgent as UnitTeam).GetUnit()));
                             Debug.Log(task.GetSubjectAgents().Count);
                             //task.GetTaskPlan().EndPlanExecution();
                             //b = false;
@@ -162,100 +276,94 @@ namespace Core.Tasks
                     SetPhase(TaskPhase.WaitToStartExecution);
                     return true;
                 }
-            }
-
-            return false;
+            }*/
         }
 
         #endregion
 
         #region Specific behaviour logic
 
-        protected override void EnterExecution()
-        {
-            //GetParameters().plannedStartingTime = TimeHandler.CurrentTime() + new TimeStruct(0,0,15);
-        }
-        /*protected override void EnterExecution()
-        {
-            base.EnterExecution();
-            foreach (var chmtm in childrenMoveTaskMarkers)
-            {
-                //chmtm.GetTaskAsMoveTask().waypointMarkersList = waypointMarkersList;
-                //change screen positions of children task markers accordingly
-            }
-        }*/
-
-        private bool _endedPathForAll;
+        private bool _ended = false;
         protected override void UpdateExecution()
         {
-            _endedPathForAll = true;
-            if (IsInPhase(TaskPhase.Execution))
-            {                
-                foreach (var subag in GetSubjectAgents())
+            if (actorGroupAsUG.IsLeaf())
+            {
+                if (IsInPhase(TaskPhase.Execution))
                 {
-                    var ut = (subag as UnitTeam);
-
-                    if (!ut.IsVirtualTeam())
-                        ut.GetUnit().GetFormation().FormTest();
-                
-                    if (/*GetOwnerAgent() != null && */PathExists(ut) && !PathFinished(ut))
+                    foreach (var u in units)
                     {
-                        Vector3 wpos;
-                        wpos = ut.GetUnit().GetFormation().GetAcceptableMovementTargetPosition(GetWaypointMarkersList()[currentWaypointIndex].transform.position);
-                
-                        NavigateAlongPath(ut, wpos);
-                        _endedPathForAll = false;
+                        if (PathExists(u) && !PathFinished(u))
+                        {
+                            Vector3 wpos;
+                            //wpos = u.GetFormation().GetAcceptableMovementTargetPosition(GetWaypointMarkersList()[currentWaypointIndex].transform.position);
+                            wpos = GetWaypointMarkersList()[currentWaypointIndex].transform.position;
+
+                            NavigateAlongPath(u, wpos);
+                            
+                            _ended = false;
+                        }
+                        else
+                        {
+                            _ended = true;
+                        }
                     }
                 }
-
-                if (GetSubjectAgents().Count == 1 && !(GetOwnerAgent() as UnitTeam).IsLeaf())
+            }
+            else
+            {
+                _ended = false;
+                foreach (var v in subActorsMoveTaskMarkers)
                 {
-                    _endedPathForAll = true;
+                    _ended = true;
+                    if (!(v.GetTask() as MoveTask2)._ended)
+                    {
+                        _ended = false;
+                        break;//&& v.GetTask().IsInPhase(Task.TaskPhase.Disposed);
+                    }
                 }
             }
 
-            if (_endedPathForAll)
+            if (_ended && actorGroupAsUG.GetParentGroup() == null)
             {
+                Debug.Log("hhhhhh");
                 EndExecution();
             }
+
         }
 
-        private bool PathExists(UnitTeam ut)
+        private bool PathExists(Unit u)
         {
             return true;
         }
         
-        private bool PathFinished(UnitTeam ut)
+        private bool PathFinished(Unit u)
         {
             return currentWaypointIndex >= GetWaypointMarkersList().Count;
         }
 
         private float s = 0.05f;
-        private void NavigateAlongPath(UnitTeam ut, Vector3 wpos)
+        private void NavigateAlongPath(Unit u, Vector3 wpos)
         {   
             //var wpos = GetWaypointMarkersList()[currentWaypointIndex].transform.position;
 
             var targetPos = wpos;//GetUnitSubject().GetFormation().GetAcceptableMovementTargetPosition(wpos);
 
-            ut.GetUnit().myMover.MoveToPosition(targetPos, s);
+            u.myMover.MoveToPosition(targetPos, s);
 
-            UpdateFormationFacing(ut, targetPos);
+            //UpdateFormationFacing(u, targetPos);
 
-            if (ut.GetUnit().myMover.DistanceConditionToPosition(targetPos, 0.02f))
+            if (u.myMover.DistanceConditionToPosition(targetPos, 0.02f))
             {
                 currentWaypointIndex++;
             }
         }
         
-        private void UpdateFormationFacing(UnitTeam ut, Vector3 targetPos)
+        private void UpdateFormationFacing(Unit u, Vector3 targetPos)
         {
-            if (!ut.IsVirtualTeam())
-            {
-                ut.GetUnit().GetFormation().facingAngle =
-                    Vector3.SignedAngle(
-                    Vector3.right,
-                    targetPos - agentAsTeam.GetUnit().myMover.transform.position, Vector3.down);
-            }
+            u.GetFormation().facingAngle =
+                Vector3.SignedAngle(
+                Vector3.right,
+                targetPos - u.myMover.transform.position, Vector3.down);
         }
 
         #endregion

@@ -66,7 +66,7 @@ namespace Core.Handlers
 
         public static void SubscribeOnPause(string key, Action onPause)
         {
-            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, (_) => { if (_ == true) {onPause();} });
+            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, _ => { if (_ == true) {onPause();} });
         }
 
         public static void UnsubscribeOnPause(string key)
@@ -76,7 +76,7 @@ namespace Core.Handlers
 
         public static void SubscribeOnUnpause(string key, Action onUnpause)
         {
-            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, (_) => { if (_ == false) {onUnpause();} });
+            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, _ => { if (_ == false) {onUnpause();} });
         }
 
         public static void UnsubscribeOnUnpause(string key)

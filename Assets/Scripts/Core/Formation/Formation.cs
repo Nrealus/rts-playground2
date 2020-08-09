@@ -152,7 +152,7 @@ namespace Core.Formations
             GetUnit().SubscribeOnParentChange(reattachFormationToNewParentKey,
             () =>
             {
-                ChangeParentTo(GetUnit().GetParentUnit()?.GetFormation());
+                ChangeParentTo(GetUnit().GetParentActorAsUnit()?.GetFormation());
             });
             
             //SubscribeOnDestruction("unsubreattachtonewparent", () => GetUnit().UnsubscribeOnDestruction(reattachFormationToNewParentKey));
@@ -180,19 +180,6 @@ namespace Core.Formations
         }
 
         #endregion
-
-        /*public void ResetFormationComposition()
-        {
-            foreach (var v in new List<Formation>(GetChildFormations()))
-            {
-                v.ChangeParentTo(v.GetUnit().GetParentNode()?.GetFormation());
-            }
-            foreach (var v in GetUnit().GetChildNodes())
-            {
-                v.GetFormation().ChangeParentTo(this/*GetUnit().GetFormation()*);
-                v.GetFormation().ResetFormationComposition();
-            }
-        }*/
 
         public void FormTest()
         {

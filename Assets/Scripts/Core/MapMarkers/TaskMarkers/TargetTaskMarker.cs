@@ -18,12 +18,12 @@ namespace Core.MapMarkers
     /****** Author : nrealus ****** Last documentation update : 25-07-2020 ******/
 
     /// <summary>
-    /// A subclass of TaskMarker, specific to MoveTask tasks. (NEEDS MORE DETAILS)
+    /// A subclass of TaskMarker (NEEDS MORE DETAILS)
     /// </summary>   
-    public class MoveTaskMarker : TaskMarker
+    public class TargetTaskMarker : TaskMarker
     {
 
-        private TaskWrapper<MoveTask> _associatedTaskWrapper;
+        private TaskWrapper<Task> _associatedTaskWrapper;
         public override Task GetTask() { return _associatedTaskWrapper.Value; }
 
         #region Main declarations
@@ -34,7 +34,7 @@ namespace Core.MapMarkers
         
         public override TaskMarker GetPreviousTaskMarker() { return GetTask().GetTaskPlan()?.GetTaskInPlanBefore(GetTask())?.GetTaskMarker(); }
 
-        public List<WaypointMarker> waypointMarkersList = new List<WaypointMarker>();
+        public List<FirePositionMarker> firePositionMarkers = new List<FirePositionMarker>();
 
         private Color initialColor; 
 
@@ -76,7 +76,7 @@ namespace Core.MapMarkers
             else
                 PlaceAtWorldPosition(position);
 
-            _associatedTaskWrapper = new TaskWrapper<MoveTask>(Task.CreateTask<MoveTask>());
+            _associatedTaskWrapper = new TaskWrapper(Task.CreateTask<EngageAtPositionsTask>());
 
             GetTask().SetTaskMarker(this);
             GetTask().SubscribeOnDestruction("taskmarkerclear", DestroyThis);
@@ -90,7 +90,6 @@ namespace Core.MapMarkers
             UIHandler.UnsubscribeOnPause(onPauseEventKey);
             UIHandler.UnsubscribeOnUnpause(onUnpauseEventKey);
             base.DestroyThis();
-            //GetTask()?.DestroyThis();
             _associatedTaskWrapper = null;
         }
 
@@ -145,10 +144,14 @@ namespace Core.MapMarkers
                     }
                     else
                     {
-                        AddWaypointMarker(WaypointMarker.CreateWaypointMarker(GetWorldPosition()));
 
-                        ExitPlacementUIMode();
-                        ConfirmPositioning(true);
+                        AddTargetMarker(FirePositionMarker.CreateFirePositionMarker(GetWorldPosition(), 10f));
+
+                        if (!Input.GetKey(KeyCode.LeftShift))
+                        {
+                            ExitPlacementUIMode();
+                            ConfirmPositioning(true);
+                        }
                     }
                 }
                 else
@@ -171,20 +174,20 @@ namespace Core.MapMarkers
 
         #endregion
 
-        public void AddWaypointMarker(WaypointMarker wp)
+        public void AddTargetMarker(FirePositionMarker wp)
         {
-            if (!waypointMarkersList.Contains(wp))
+            if (!firePositionMarkers.Contains(wp))
             {
-                SubscribeOnDestruction(wp.GetInstanceID().ToString(), () => RemoveWaypointMarker(wp));
-                this.waypointMarkersList.Add(wp);
+                SubscribeOnDestruction(wp.GetInstanceID().ToString(), () => RemoveTargetMarker(wp));
+                this.firePositionMarkers.Add(wp);
             }
         }
 
-        private void RemoveWaypointMarker(WaypointMarker wp)
+        private void RemoveTargetMarker(FirePositionMarker wp)
         {
-            if (waypointMarkersList.Contains(wp))
+            if (firePositionMarkers.Contains(wp))
             {
-                waypointMarkersList.Remove(wp);
+                firePositionMarkers.Remove(wp);
                 UnsubscribeOnDestruction(wp.GetInstanceID().ToString());
                 wp.DestroyThis();
             }

@@ -51,17 +51,9 @@ namespace Core.MapMarkers
             return SelectionHandler.GetUsedSelector();
         }
 
-        public static T CreateInstanceAtWorldPosition<T>(Vector3 worldPosition) where T : TaskMarker
-        {
-            return CreateInstanceAtWorldPosition<T>(worldPosition, null);
-        }
+        #region Static "factory" functions
 
-        public static T CreateInstanceAtScreenPosition<T>(Vector3 screenPosition) where T : TaskMarker
-        {
-            return CreateInstanceAtScreenPosition<T>(screenPosition, null);
-        }
-
-        public static T CreateInstanceAtWorldPosition<T>(Vector3 worldPosition, TaskMarker previousTaskMarker)
+        public static T CreateInstanceAtWorldPosition<T>(Vector3 worldPosition)
             where T : TaskMarker
         {
             T res = Instantiate(
@@ -69,12 +61,12 @@ namespace Core.MapMarkers
                 GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>())
                 .gameObject.AddComponent<T>();
 
-            res.Init(worldPosition, previousTaskMarker, false);
+            res.Init(worldPosition, false);
 
             return res;
         }
 
-        public static T CreateInstanceAtScreenPosition<T>(Vector3 screenPosition, TaskMarker previousTaskMarker)
+        public static T CreateInstanceAtScreenPosition<T>(Vector3 screenPosition)
             where T : TaskMarker
         {
             T res = Instantiate(
@@ -82,22 +74,14 @@ namespace Core.MapMarkers
                 GameObject.Find("UI Screen Canvas").GetComponent<RectTransform>())
                 .gameObject.AddComponent<T>();
 
-            res.Init(screenPosition, previousTaskMarker, true);
+            res.Init(screenPosition, true);
 
             return res;
         }
 
-        public Vector3 GetScreenPosition()
-        {
-            return GetMyCamera().WorldToScreenPoint(transform.position);
-        }
+        #endregion
 
-        public Vector3 GetWorldPosition()
-        {
-            return GetMyCamera().GetPointedPositionPhysRaycast(GetScreenPosition());
-        }
-
-        protected static int _instcount = 0;
+        #region Main declarations
 
         protected bool isEditing = false;
 
@@ -108,7 +92,16 @@ namespace Core.MapMarkers
         //public event Action OnExitPlacementUIMode;
         public EasyObserver<string, bool> OnPlacementConfirmation = new EasyObserver<string, bool>();
 
-        protected virtual void Init(Vector3 position, TaskMarker previousTaskMarker, bool screenPosTrue)
+        protected bool ready = false;
+        protected bool expanded = false;
+        protected bool paused = false;
+
+        #endregion
+
+        #region Initialisation
+
+        protected static int _instcount = 0;
+        protected virtual void Init(Vector3 position, bool screenPosTrue)
         {
         }
 
@@ -128,13 +121,26 @@ namespace Core.MapMarkers
         {
             var id = binder.AddNewEventAndSubscribeMethodToIt(action);
             GetOnSelectionStateChangeObserver().SubscribeEventHandlerMethod("whateverkey", 
-                (_) => binder.InvokeEvent(id,this, new SimpleEventArgs(_.Item2)), true);
+                _ => { if (_.Item3 == 0) binder.InvokeEvent(id,this, new SimpleEventArgs(_.Item2)); }, true);
         }
 
+        #endregion
+
+        #region Public functions
+        
+        public Vector3 GetScreenPosition()
+        {
+            return GetMyCamera().WorldToScreenPoint(transform.position);
+        }
+
+        public Vector3 GetWorldPosition()
+        {
+            return GetMyCamera().GetPointedPositionPhysRaycast(GetScreenPosition());
+        }
+
+        public abstract TaskMarker GetPreviousTaskMarker();
 
         public abstract Task GetTask();
-
-        //public abstract IEnumerable<ITaskSubject> GetTaskSubjects();
 
         public void EnterPlacementUIMode()
         {
@@ -152,8 +158,9 @@ namespace Core.MapMarkers
             OnPlacementConfirmation.Invoke(confirmationStatus);            
         }
 
-        protected bool ready = false;
-        protected bool expanded = false;
+        #endregion
+
+        #region Protected behaviour methods
 
         private void Update()
         {
@@ -179,28 +186,18 @@ namespace Core.MapMarkers
             }
         }
 
-        protected virtual void DrawUpdate(Color _initialColor)
+        protected virtual void DrawUpdate(Color initialColor)
         {
             if (uiGraphic != null)
             {
-                uiGraphic.color = _initialColor;
+                uiGraphic.color = initialColor;
                 
                 if (GetUsedSelector().IsSelected(this))
                 {
-                    uiGraphic.color = factionAffiliation.MyFaction.baseColor;
+                    uiGraphic.color = factionAffiliation.GetFaction().baseColor;
                 }
-                /*else if (GetUsedSelector().IsHighlighted(GetRefWrapper()))
-                {
-                    graphic.color = 
-                        new Color(factionAffiliation.MyFaction.baseColor.r,
-                                factionAffiliation.MyFaction.baseColor.g,
-                                factionAffiliation.MyFaction.baseColor.b,
-                                factionAffiliation.MyFaction.baseColor.a/2);
-                }*/
             }
         }
-
-        protected bool paused = false;   
 
         protected void Expand()
         {
@@ -216,17 +213,38 @@ namespace Core.MapMarkers
             expanded = false;
         }
 
-        protected void PlaceAtScreenPosition(Vector3 screenPosition)
+        public void PlaceAtScreenPosition(Vector3 screenPosition)
         {
             GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(GetScreenCanvasRT(),
                 GetMyCamera().ScreenToViewportPoint(screenPosition)); 
         }
         
-        protected void PlaceAtWorldPosition(Vector3 worldPosition)
+        public void PlaceAtWorldPosition(Vector3 worldPosition)
         {
-            GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(GetScreenCanvasRT(),
-                GetMyCamera().WorldToViewportPoint(worldPosition));
-            //PlaceAtScreenPosition(GetMyCamera().WorldToScreenPoint(worldPosition));
+            //GetComponent<RectTransform>().SetPositionOfPivotFromViewportPosition(GetScreenCanvasRT(),
+            //    GetMyCamera().WorldToViewportPoint(worldPosition));
+            PlaceAtScreenPosition(GetMyCamera().WorldToScreenPoint(worldPosition));
+        }
+
+        #endregion
+    
+    
+        public virtual TaskPlan2 InsertAssociatedTaskIntoPlan(IActorGroup actor, TaskMarker previousTaskMarker)
+        {
+            TaskPlan2 taskPlan;
+            if (previousTaskMarker == null)
+            {
+                taskPlan = actor.CreateAndRegisterNewOwnedPlan();
+                taskPlan.AddTaskToPlan(GetTask());
+            }
+            else
+            {
+                GetTask().GetParameters().AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
+
+                taskPlan = previousTaskMarker.GetTask().GetTaskPlan();
+                taskPlan.AddTaskToPlan(GetTask());
+            }
+            return taskPlan;
         }
 
     }

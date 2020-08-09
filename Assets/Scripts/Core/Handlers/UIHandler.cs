@@ -23,15 +23,6 @@ namespace Core.Handlers
     public class UIHandler : MonoBehaviour
     {
 
-        public struct PointerInfo
-        {
-            public PointerEventData pointerEventData;
-            public Vector3 pointedPositionWorld;
-            public Vector3 pointedPositionScreen;
-        }
-        
-        public PointerInfo pointerInfo = new PointerInfo();
-        
         private static Camera _cam;
         public Camera GetMyCamera()
         {
@@ -60,13 +51,22 @@ namespace Core.Handlers
                 return _instance;
             }
         }
+        public struct PointerInfo
+        {
+            public PointerEventData pointerEventData;
+            public Vector3 pointedPositionWorld;
+            public Vector3 pointedPositionScreen;
+        }
+        
+        public PointerInfo pointerInfo = new PointerInfo();
+
+        private bool paused = false;
 
         private EasyObserver<string,bool> onPausedOrNot = new EasyObserver<string, bool>();
-        private bool paused = false;
 
         public static void SubscribeOnPause(string key, Action onPause)
         {
-            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, (_) => { if (_ == true) {onPause();} });
+            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, _ => { if (_ == true) {onPause();} });
         }
 
         public static void UnsubscribeOnPause(string key)
@@ -76,7 +76,7 @@ namespace Core.Handlers
 
         public static void SubscribeOnUnpause(string key, Action onUnpause)
         {
-            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, (_) => { if (_ == false) {onUnpause();} });
+            MyInstance.onPausedOrNot.SubscribeEventHandlerMethod(key, _ => { if (_ == false) {onUnpause();} });
         }
 
         public static void UnsubscribeOnUnpause(string key)

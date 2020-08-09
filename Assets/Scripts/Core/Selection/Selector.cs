@@ -44,22 +44,32 @@ namespace Core.Selection
         public enum SelectionModes { Default, Additive, Subtractive };
         public SelectionModes selectionMode = SelectionModes.Default;
 
-        private List<ISelectable> selectedEntities = new List<ISelectable>();
+        private List<ISelectable>[] selectedEntities = new List<ISelectable>[2] { new List<ISelectable>(), new List<ISelectable>()};
         private List<ISelectable> preselectedEntities = new List<ISelectable>();
 
         public bool IsSelected(ISelectable selectable)
         {
-            return selectedEntities.Contains(selectable);
+            return IsSelected(selectable, 0);
         }
 
-        public bool IsHighlighted(ISelectable selectable)
+        public bool IsSelected(ISelectable selectable, int channel)
+        {
+            return selectedEntities[channel].Contains(selectable);
+        }
+
+        public bool IsPreselected(ISelectable selectable)
         {
             return preselectedEntities.Contains(selectable);
         }
 
         public List<ISelectable> GetCurrentlySelectedEntities()
         {
-            return /*new List<ISelectable>(*/selectedEntities;//);
+            return GetCurrentlySelectedEntities(0);
+        }
+
+        public List<ISelectable> GetCurrentlySelectedEntities(int channel)
+        {
+            return selectedEntities[channel];
         }
 
         /*public List<T> GetCurrentlySelectedEntitiesAs<T>() where T : class
@@ -74,8 +84,13 @@ namespace Core.Selection
 
         public List<ISelectable> GetCurrentlySelectedEntitiesOfType<T>()
         {
+            return GetCurrentlySelectedEntitiesOfType<T>(0);
+        }
+
+        public List<ISelectable> GetCurrentlySelectedEntitiesOfType<T>(int channel)
+        {
             var res = new List<ISelectable>();
-            foreach(var v in selectedEntities)
+            foreach(var v in selectedEntities[channel])
             {
                 if (v is T)
                     res.Add(v);
@@ -85,8 +100,13 @@ namespace Core.Selection
 
         public List<T> GetCurrentlySelectedEntitiesOfTypeAndCast<T>()
         {
+            return GetCurrentlySelectedEntitiesOfTypeAndCast<T>(0);
+        }
+        
+        public List<T> GetCurrentlySelectedEntitiesOfTypeAndCast<T>(int channel)
+        {
             var res = new List<T>();
-            foreach(var v in selectedEntities)
+            foreach(var v in selectedEntities[channel])
             {
                 if (v is T)
                     res.Add((T)v);
@@ -96,23 +116,33 @@ namespace Core.Selection
 
         public void SelectEntity(ISelectable selectable)
         {
-            if (!selectedEntities.Contains(selectable))
+            SelectEntity(selectable, 0);
+        }
+        
+        public void SelectEntity(ISelectable selectable, int channel)
+        {
+            if (!selectedEntities[channel].Contains(selectable))
             {
-                selectable.InvokeOnSelectionStateChange(this, true);
-                selectedEntities.Add(selectable);
+                selectable.InvokeOnSelectionStateChange(this, true, channel);
+                selectedEntities[channel].Add(selectable);
                 //onEntitySelectionStateChanged?.Invoke(selectable, true);
-                selectable.SubscribeOnDestruction("deselect",() => DeselectEntity(selectable));
+                selectable.SubscribeOnDestruction("deselect"+channel.ToString(),() => DeselectEntity(selectable, channel));
             }
         }
 
         public void DeselectEntity(ISelectable selectable)
         {
-            if (selectedEntities.Contains(selectable))
+            DeselectEntity(selectable, 0);
+        }
+
+        public void DeselectEntity(ISelectable selectable, int channel)
+        {
+            if (selectedEntities[channel].Contains(selectable))
             {
-                selectable.InvokeOnSelectionStateChange(this, false);
-                selectable.UnsubscribeOnDestruction("deselect");
+                selectable.InvokeOnSelectionStateChange(this, false, channel);
+                selectable.UnsubscribeOnDestruction("deselect"+channel.ToString());
                 //onEntitySelectionStateChanged?.Invoke(selectable, false);
-                selectedEntities.Remove(selectable);
+                selectedEntities[channel].Remove(selectable);
             }
         }
 
@@ -136,10 +166,15 @@ namespace Core.Selection
 
         private void DeselectAndDepreselectEveryone()
         {
+            DeselectAndDepreselectEveryone(0);
+        }
+
+        private void DeselectAndDepreselectEveryone(int channel)
+        {
             int i;
-            int c = selectedEntities.Count;
+            int c = selectedEntities[channel].Count;
             for (i = c-1; i >= 0; i--)
-                DeselectEntity(selectedEntities[i]);
+                DeselectEntity(selectedEntities[channel][i], channel);
 
             c = preselectedEntities.Count;
             for (i = c-1; i >= 0; i--)

@@ -18,9 +18,9 @@ namespace Core.Selection
     /// </summary>   
     public interface ISelectable : IDestroyable
     {
-        EasyObserver<string,(Selector, bool)> GetOnSelectionStateChangeObserver();
+        EasyObserver<string,(Selector, bool, int)> GetOnSelectionStateChangeObserver();
 
-        void InvokeOnSelectionStateChange(Selector selector, bool b);
+        void InvokeOnSelectionStateChange(Selector selector, bool newSelectionState, int channel);
     }
 
 }

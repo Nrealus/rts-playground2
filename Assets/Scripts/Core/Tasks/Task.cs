@@ -20,7 +20,7 @@ namespace Core.Tasks
     {
         public TaskWrapper(Task obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
 
@@ -28,12 +28,12 @@ namespace Core.Tasks
     {
         public TaskWrapper(T obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
     
     /// <summary>
-    /// The base class for all tasks. They are part of a TaskPlan, and their subject - at least for now - is always the subject of the plan.
+    /// The base class for all tasks. They are part of a TaskPlan, and their agent - at least for now - is always the agent of the plan.
     /// It provides the structure for tasks, notably in the form of protected abstract or virtual methods to be implemented by "concrete" subclasses.
     /// A Task subclass should be instaciated from the "factory" generic function "CreateTask".
     /// With time, some things that may become very common subclasses may be bundled into an "intermediate" abstract subclass (like Task2), or even into this one.
@@ -50,7 +50,7 @@ namespace Core.Tasks
             onDestroyed.SubscribeEventHandlerMethod(key, action);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action)
+        public void SubscribeOnDestructionLate(string key, Action action)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
         }
@@ -60,7 +60,7 @@ namespace Core.Tasks
             onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        public void SubscribeOnDestructionLate(string key, Action action, bool combineActionsIfKeyAlreadyExists)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
         }
@@ -72,6 +72,11 @@ namespace Core.Tasks
 
         public void DestroyThis()
         {
+            /*foreach (var v in new List<ITaskAgent>(GetSubjectAgents()))
+            {
+                RemoveSubjectAgent(v);
+            }*/
+
             onDestroyed.Invoke();
         }
 
@@ -88,9 +93,19 @@ namespace Core.Tasks
                     MoveTask t = new MoveTask();
                     return t as T;
                 }
+                case Type taskType when taskType == typeof(MoveTask2):
+                {
+                    MoveTask2 t = new MoveTask2();
+                    return t as T;
+                }
+                case Type taskType when taskType == typeof(EngageAtPositionsTask):
+                {
+                    EngageAtPositionsTask t = new EngageAtPositionsTask();
+                    return t as T;
+                }
                 default:
                     throw new ArgumentException(
-                    message: "not a recognized type of order");
+                    message: "Not a recognized type of task");
                     //return null;
             }
 
@@ -100,53 +115,14 @@ namespace Core.Tasks
         {
             T res = Internal_CreateTask<T>();
             
-            TaskHandler.AddToGlobalTasksList(res);
+            TaskHandler.RegisterToGlobalTasksList(res);
             
             return res;
         }
 
-        /*private static TaskWrapper<T> Internal_CreateTaskWrapper<T>() where T : Task
-        {
-            switch (typeof(T))
-            {
-                case Type taskType when taskType == typeof(MoveTask):
-                {
-                    MoveTask t = new MoveTask();
-                    TaskWrapper<MoveTask> wrapper = t.GetRefWrapper();
-                    return wrapper as TaskWrapper<T>;
-                }
-                /*case Type taskType when taskType == typeof(BuildTask):
-                {
-                    BuildTask t = new BuildTask();
-                    TaskWrapper<BuildTask> wrapper = t.GetRefWrapper();
-                    return wrapper as TaskWrapper<T>;
-                }
-                case Type taskType when taskType == typeof(EngageAtPositionsTask):
-                {
-                    EngageAtPositionsTask t = new EngageAtPositionsTask();
-                    TaskWrapper<EngageAtPositionsTask> wrapper = t.GetRefWrapper();
-                    return wrapper as TaskWrapper<T>;
-                }
-                default:
-                    throw new ArgumentException(
-                    message: "not a recognized type of order");
-                    //return null;
-            }
-
-        } 
-
-        public static TaskWrapper<T> CreateTaskWrapper<T>() where T : Task
-        {
-            TaskWrapper<T> res = Internal_CreateTaskWrapper<T>();
-            
-            TaskHandler.AddToGlobalTaskWrapperList(res);
-            
-            return res;
-        }*/
-
         #endregion
 
-        #region Basic methods
+        #region FSM control methods
 
         public bool TryStartExecution()
         {
@@ -157,7 +133,7 @@ namespace Core.Tasks
         {
             if (IsInPhase(Task.TaskPhase.Execution))
             {
-                SetPhase(Task.TaskPhase.Pause);
+                SetPhase(Task.TaskPhase.Paused);
                 return true;
             }
             else
@@ -168,7 +144,7 @@ namespace Core.Tasks
 
         public bool UnpauseExecution()
         {
-            if (IsInPhase(Task.TaskPhase.Pause))
+            if (IsInPhase(Task.TaskPhase.Paused))
             {
                 SetPhase(Task.TaskPhase.Execution);
                 return true;
@@ -192,39 +168,6 @@ namespace Core.Tasks
             return true;
         }
 
-        public void SetTaskPlan(TaskPlan2 taskPlan)
-        {
-            InstanceSetTaskPlan(taskPlan);
-        }
-
-        public TaskPlan2 GetTaskPlan()
-        {
-            return InstanceGetTaskPlan();
-        }
-
-        public ITaskSubject GetSubject()
-        {
-            return GetTaskPlan().GetSubject();
-        }
-        
-        public Vector3 GetTaskLocation()
-        {
-            if (GetSubject() is Unit)
-                return (GetSubject() as Unit).GetPosition();
-            else
-                return Vector3.zero;
-        }
-
-        public TaskParams GetParameters()
-        {
-            return InstanceGetParameters();
-        }
-
-        /*public static bool SubjectExists(Task task)
-        {
-            return GetSubject(taskWrapper) != null && GetSubject(taskWrapper).IsWrappedObjectNotNull();
-        }*/
-
         public void SetPhase(TaskPhase phase)
         {
             InstanceSetPhase(phase);
@@ -234,18 +177,49 @@ namespace Core.Tasks
         {
             return InstanceIsInPhase(phase);
         }
-        
-        public void Update()
-        {
-            InstanceUpdate();
-        }
 
         #endregion
 
+        public void SetTaskMarker(TaskMarker taskMarker)
+        {
+            InstanceSetTaskMarker(taskMarker);
+        }
+
+        public void SetTaskPlan(TaskPlan2 taskPlan)
+        {
+            InstanceSetTaskPlan(taskPlan);
+        }
+        
+        public TaskMarker GetTaskMarker()
+        {
+            return InstanceGetTaskMarker();
+        }
+
+        public TaskPlan2 GetTaskPlan()
+        {
+            return InstanceGetTaskPlan();
+        }
+
+        public IActorGroup GetActorGroup()
+        {
+            return GetTaskPlan().GetActorGroup();
+        }
+
+        public T GetActorGroup<T>() where T : IActorGroup
+        {
+            return (T) GetTaskPlan().GetActorGroup();
+        }
+
+        public TaskParams GetParameters()
+        {
+            return InstanceGetParameters();
+        }
+        
         public enum TaskPhase
-        {   Initial,
-            /*Registration,*/ Staging,// ReadyForExecution, NotReadyForExecution,
-            WaitToStartExecution, Execution, Pause, Cancelled, End, End2, Disposed,  
+        {   Initial, Staging,
+            WaitToStartExecution, Execution,
+            Paused, Cancelled, End,
+            End2, Disposed,  
         }
         protected StateMachine<TaskPhase> orderPhasesFSM;
 
@@ -254,9 +228,26 @@ namespace Core.Tasks
             //BaseConstructor(); <-- NO : BECAUSE C# CALLS CONSTRUCTORS "FROM TOP TO BOTTOM" (base then derived)
         }
 
-        #region Protected/Private abstract instance methods
+        protected void CreateAndInitFSM()
+        {
+            orderPhasesFSM = new StateMachine<TaskPhase>();
+            InitPhasesFSM();
+        }
+
+        public void Update()
+        {
+            InstanceUpdate();
+        }
+
+        //public abstract bool CompatibleForParallelExecution(Task task);
+
+        #region Abstract instance methods
+
+        protected abstract void InstanceSetTaskMarker(TaskMarker taskMarker);
 
         protected abstract void InstanceSetTaskPlan(TaskPlan2 taskPlan);
+
+        protected abstract TaskMarker InstanceGetTaskMarker();
 
         protected abstract TaskPlan2 InstanceGetTaskPlan();
 
@@ -284,14 +275,6 @@ namespace Core.Tasks
         {
             orderPhasesFSM.Update();
         }
-
-        protected void CreateAndInitFSM()
-        {
-            orderPhasesFSM = new StateMachine<TaskPhase>();
-            InitPhasesFSM();
-        }
-
-        //public abstract void SetOptions(OrderOptions options);
 
         #endregion
         

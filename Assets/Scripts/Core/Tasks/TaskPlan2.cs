@@ -9,6 +9,7 @@ using Nrealus.Extensions;
 using Nrealus.Extensions.Observer;
 using Core.Units;
 using Nrealus.Extensions.ReferenceWrapper;
+using Core.Selection;
 
 namespace Core.Tasks
 {
@@ -24,69 +25,54 @@ namespace Core.Tasks
     /// </summary>
     public class TaskPlan2
     {
-        
-        /*#region Local Clearance
 
-        private EasyObserver<Task> onClearance = new EasyObserver<Task>();
-        public void Clear()
-        {
-            onClearance.Invoke();
-            onClearance.UnsubscribeAllEventHandlerMethods();
-            //GetSubject().RemoveFromPlans(this);
-        }
+        #region Main declarations
 
-        private void AddOnClearance(Task key, Action action)
-        {
-            onClearance.SubscribeEventHandlerMethod(key,action);
-        }
-
-        private void RemoveOnClearance(Task key)
-        {
-            onClearance.UnsubscribeEventHandlerMethod(key);
-        }
-
-        #endregion*/
-
-        private static int _counter;
-        private string _instKey;
-        public TaskPlan2(ITaskSubject taskSubject)
-        {
-            _counter++;
-            _instKey = new StringBuilder("unsubontaskplansubjectchange").Append(_counter).ToString();
-
-            SetSubject(taskSubject);
-        }
-
-        private RefWrapper<ITaskSubject> _taskSubject;
-        public ITaskSubject GetSubject() { return _taskSubject?.Value; }
-
-        /*private*/public void SetSubject(ITaskSubject subject)
-        {
-            if (GetSubject() != null)
-            {
-                //GetSubject().Remove(this);
-                GetSubject().UnsubscribeOnDestruction(_instKey);
-            }
-
-            _taskSubject = new RefWrapper<ITaskSubject>(subject);
-
-            GetSubject().SubscribeOnDestruction(_instKey, () => SetSubject(null) );
-
-            //GetSubject().AddToPlans(this);
-        }
+        private RefWrapper <IActorGroup> _group;
+        public IActorGroup GetActorGroup() { return _group?.Value; }
 
         private List<Task> tasks = new List<Task>();
 
-        public void StartPlanExecution()
+        #endregion
+
+        public TaskPlan2(IActorGroup group)
         {
-            if (GetSubject() != null)
-                GetCurrentTaskInPlan().TryStartExecution();
+            _group = new RefWrapper <IActorGroup>(group);
         }
 
-        public void StopPlanExecution()
+        public void StartPlanExecution()
         {
-            GetCurrentTaskInPlan().EndExecution();
+            if (GetActorGroup() != null)
+            {
+                GetCurrentTaskInPlan().TryStartExecution();
+            }
         }
+
+        private bool ending = false;
+        public void EndPlanExecution()
+        {
+            if (GetActorGroup() != null)
+            {
+                ending = true;
+                foreach (var t in new List<Task>(tasks))
+                {
+                    t.EndExecution();
+                    RemoveTaskFromPlan(t);
+                }
+                //tasks.Clear();
+                Debug.Log("ended plan");
+                GetActorGroup().UnregisterOwnedPlan(this);
+
+                _group = null;
+            }
+        }
+
+        public bool IsPlanBeingExecuted()
+        {
+            return GetCurrentTaskInPlan()?.IsInPhase(Task.TaskPhase.Execution) ?? false;
+        }
+
+        #region Tasks collection manipulation
 
         public Task GetCurrentTaskInPlan()
         {
@@ -104,7 +90,7 @@ namespace Core.Tasks
                 return null;
         }
 
-        public Task GetTaskInPlanFollowing(Task tw)
+        public Task GetTaskInPlanAfter(Task tw)
         {
             var c = tasks.Count;
             for(int i = 0; i < c; i++)
@@ -115,9 +101,23 @@ namespace Core.Tasks
             return null;
         }
 
+        public Task GetTaskInPlanBefore(Task tw)
+        {
+            var c = tasks.Count;
+            for(int i = 0; i < c; i++)
+            {
+                if (tasks[i] == tw && i >= 1)
+                    return tasks[i-1];
+            }
+            return null;
+        }
+
         public bool AddTaskToPlan(Task t)
         {
-            if (t != null && !tasks.Contains(t))
+            if (t.GetTaskPlan() != null)
+                throw new Exception("task already has a plan");
+
+            if (t != null && !tasks.Contains(t) && t.GetTaskPlan() == null)
             {
                 tasks.Add(t);
 
@@ -135,15 +135,16 @@ namespace Core.Tasks
 
         private bool RemoveTaskFromPlan(Task t)
         {
-            if(tasks.Contains(t))
+            if(tasks.Remove(t))
             {
-                tasks.Remove(t);
-
                 t.SetTaskPlan(null);
 
                 t.UnsubscribeOnDestruction("removetask");
                 //RemoveOnClearance(t);
                 
+                if (!ending && tasks.Count == 0)
+                    EndPlanExecution();
+
                 return true;
             }
             else
@@ -151,6 +152,8 @@ namespace Core.Tasks
                 return false;    
             }
         }
+
+        #endregion
 
     }
 

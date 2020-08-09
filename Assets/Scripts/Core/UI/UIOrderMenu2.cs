@@ -29,8 +29,6 @@ namespace Core.UI
             return _cam;
         }
 
-        public GameObject editTasksParent;
-
         private Selector mySelector;
 
         private void Start()

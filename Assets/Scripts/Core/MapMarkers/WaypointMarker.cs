@@ -23,28 +23,39 @@ namespace Core.MapMarkers
             return _cam;
         }
 
-        public static WaypointMarker CreateInstance(Vector3 position)
+        #region Static "factory" functions
+
+        public static WaypointMarker CreateWaypointMarker(Vector3 worldPosition)
         {
             WaypointMarker res = Instantiate<WaypointMarker>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().waypointMarkerPrefab,
                 GameObject.Find("UI World Canvas").transform);
             
-            res.Init(position);
+            res.Init(worldPosition);
             
             return res;
         }
         
+        #endregion
+
+        #region Main declarations
+
         public float moveSpeed = 0.5f;
         public float offset = 5f;
         public bool following;
 
         public Vector3 followedScreenPosition;
+
+        #endregion
+
         private void Init(Vector3 position)
         {
             transform.position = position;
 
             following = false;
         }
+
+        #region Behaviour methods
 
         private Vector3 sp, wp;
         private void Update() 
@@ -82,11 +93,7 @@ namespace Core.MapMarkers
             }
         }
 
-        private void DestroyMe()
-        {
-            Destroy(gameObject);
-            //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearance(DestroyMarkerTransform);
-            //GetMyWrapper<WaypointMarker>().UnsubscribeOnClearanceAll();
-        }
+        #endregion
+
     }
 }

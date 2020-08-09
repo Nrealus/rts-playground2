@@ -110,7 +110,7 @@ namespace Nrealus.Extensions
             OnTransformParentChanged();
         }
 
-        public abstract void OnDestroyMe();
+        public abstract void OnDestruction();
 
         public void DestroyMe()
         {
@@ -138,7 +138,7 @@ namespace Nrealus.Extensions
                     t.SetParent(p.childrenRoot);
                 }
                 
-                OnDestroyMe();
+                OnDestruction();
 
                 Destroy(gameObject);
             }

@@ -24,33 +24,33 @@ namespace Core.Units
     {
         public UnitWrapper(Unit obj) : base(obj)
         { 
-            obj.SubscribeOnDestructionAtEnd("destroywrapper", DestroyRef, true);
+            obj.SubscribeOnDestructionLate("destroywrapper", DestroyRef, true);
         }
     }
     
     ///<summary>
     /// Main Unity component for units.
     ///</summary>
-    [Serializable]
-    public class Unit : MonoBehaviour, ISelectable, ITaskSubject//, ITreeNodeBase<Unit>
+    public class Unit : MonoBehaviour, ISelectable, IActor 
     {
 
-        #region ITaskSubject implementation
-        
-        #endregion
+        private Selector GetUsedSelector()
+        {
+            return SelectionHandler.GetUsedSelector();
+        }
         
         #region ISelectable implementation
 
-        private EasyObserver<string, (Selector,bool)> onSelectionStateChange = new EasyObserver<string, (Selector, bool)>();
+        private EasyObserver<string, (Selector,bool,int)> onSelectionStateChange = new EasyObserver<string, (Selector, bool, int)>();
 
-        public EasyObserver<string, (Selector,bool)> GetOnSelectionStateChangeObserver()
+        public EasyObserver<string, (Selector,bool,int)> GetOnSelectionStateChangeObserver()
         {
             return onSelectionStateChange;
         }
         
-        void ISelectable.InvokeOnSelectionStateChange(Selector selector, bool b)
+        void ISelectable.InvokeOnSelectionStateChange(Selector selector, bool newSelectionState, int channel)
         {
-            onSelectionStateChange.Invoke((selector, b));
+            onSelectionStateChange.Invoke((selector, newSelectionState, channel));
         }
 
         #endregion
@@ -64,7 +64,7 @@ namespace Core.Units
             onDestroyed.SubscribeEventHandlerMethod(key, action);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action)
+        public void SubscribeOnDestructionLate(string key, Action action)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action);
         }
@@ -74,7 +74,7 @@ namespace Core.Units
             onDestroyed.SubscribeEventHandlerMethod(key, action, combineActionsIfKeyAlreadyExists);
         }
 
-        public void SubscribeOnDestructionAtEnd(string key, Action action, bool combineActionsIfKeyAlreadyExists)
+        public void SubscribeOnDestructionLate(string key, Action action, bool combineActionsIfKeyAlreadyExists)
         {
             onDestroyed.SubscribeEventHandlerMethodAtEnd(key, action, combineActionsIfKeyAlreadyExists);
         }
@@ -86,21 +86,31 @@ namespace Core.Units
 
         public void DestroyThis()
         {
-            Destroy(gameObject);
-
-            //foreach (var v in unitPiecesWrappersList) 
-            //    RemoveUnitPieceFromUnit(v, this);
+            UIHandler.GetUIOrdobMenu().UnregisterUnitFromOrdob(this);
 
             onDestroyed.Invoke();
+            
+            foreach (var partgrp in new List<UnitGroup>(GetParticipatedGroupsAsUG()))
+                partgrp.RemoveUnitFromGroup(this);
+
+            ChangeParentTo(null);
+            foreach (var suba in new List<Unit>(GetSubActorsAsUnits()))
+                suba.ChangeParentTo(null);
+
+            _nominalFormation = null;
+            
+            Destroy(gameObject);
 
             GetOnSelectionStateChangeObserver().UnsubscribeAllEventHandlerMethods();
         }
 
         #endregion
 
-        #region Tree Structure
+        #region IActor implementation + related functions
 
-        private Dictionary<string,Action> _actDict = new Dictionary<string,Action>();        
+        #region Parent actor
+
+        private Dictionary<string,Action> _actDict = new Dictionary<string,Action>();
         private ObservedValue<Unit> _parent = new ObservedValue<Unit>(null);
 
         public void SubscribeOnParentChange(string key, Action action)
@@ -117,123 +127,321 @@ namespace Core.Units
             _parent.OnValueChange -= _actDict[key];
         }
 
-        public Unit GetThisNode() { return this; }
+        public Unit GetParentActorAsUnit() { return _parent.Value; }
 
-        public Unit GetParentNode() { return _parent.Value; }
+        public IActor GetParentActor() { return _parent.Value; }
 
-        public void Internal_SetParentNode(Unit newParent)
+        public void Internal_SetParentActor(Unit newParent)
         {
             _parent.Value = newParent;
         }
 
-        public bool IsLeaf()
-        {
-            return GetChildNodes().Count == 0;
-        }
-
-        public bool IsRoot()
-        {
-            return GetParentNode() == null;
-        }
-
-        private List<Unit> _childNodes;
-
-        public List<Unit> GetChildNodes()
-        {
-            return _childNodes;
-        }
-        
-        public void SetChildNodes(List<Unit> childNodes)
-        {
-            _childNodes = childNodes;
-        }
-
-        public List<Unit> GetLeafChildren()
-        {
-            return GetChildNodes().Where(x => x.IsLeaf()).ToList();
-        }
-
-        public List<Unit> GetNonLeafChildren()
-        {
-            return GetChildNodes().Where(x => !x.IsLeaf()).ToList();
-        }
-
-        public Unit GetRootNode()
-        {
-            if (GetParentNode() == null)
-                return GetThisNode();
-
-            return GetParentNode().GetRootNode();
-        }
-
-        public void AddChild(Unit child)
-        {
-            if (child.GetParentNode() != null)
-                child.GetParentNode().RemoveChild(child);
-            child.Internal_SetParentNode(GetThisNode());
-            GetChildNodes().Add(child);
-        }
-
-        public void AddChildren(IEnumerable<Unit> children)
-        {
-            foreach (Unit child in children)
-                AddChild(child);
-        }
-
-        public void RemoveChild(Unit child)
-        {
-            child.Internal_SetParentNode(null);
-            GetChildNodes().Remove(child);
-        }
-
-        public void RemoveChildren(IEnumerable<Unit> children)
-        {
-            foreach (Unit child in children)
-                RemoveChild(child);
-        }
-
-        public void ChangeParentTo(Unit newParent)
+        public void ChangeParentTo(IActor newParent)
         {
             if (newParent != null)
             {
-                newParent.AddChild(GetThisNode());
-                //Unit.WrappedObject.transform.SetParent(newParent.Unit.WrappedObject.transform);
+                (newParent as Unit).Internal_AddSubActor(this);
             }
             else
             {
-                if (GetParentNode() != null)
-                    GetParentNode().RemoveChild(GetThisNode());
-                //Unit.WrappedObject.transform.SetParent(null);
+                if (GetParentActorAsUnit() != null)
+                    GetParentActorAsUnit().Internal_RemoveSubActor(this);
             }
-        }
-        
-        private Queue<Unit> _bfsqueue = new Queue<Unit>();
-        public List<Unit> BFSList()
-        {
-            List<Unit> result = new List<Unit>();
-
-            _bfsqueue.Enqueue(GetThisNode());
-
-            while (_bfsqueue.Count > 0)
-            {
-                result.Add(_bfsqueue.Peek().GetThisNode());
-
-                var a = _bfsqueue.Dequeue().GetChildNodes();
-                var c = a.Count;
-                for (int k = 0; k < c; k++)
-                    _bfsqueue.Enqueue(a[k]);
-
-            }
-
-            _bfsqueue.Clear();
-
-            return result;
         }
 
         #endregion
 
-        private SpriteRenderer mySprRenderer;
+        #region Sub actors
+
+        private List<Unit> _subActors = new List<Unit>();
+
+        public List<Unit> GetSubActorsAsUnits()
+        {
+            return _subActors;
+        }
+
+        public List<IActor> GetSubActors()
+        {
+            return _subActors.ConvertAll(_ => _ as IActor);
+        }
+
+        public void Internal_AddSubActor(Unit child)
+        {
+            if (child.GetParentActorAsUnit() != null)
+                child.GetParentActorAsUnit().Internal_RemoveSubActor(child);
+            child.Internal_SetParentActor(this);
+            GetSubActorsAsUnits().Add(child);
+        }
+
+        public void Internal_RemoveSubActor(Unit child)
+        {
+            child.Internal_SetParentActor(null);
+            GetSubActorsAsUnits().Remove(child);
+        }
+
+        public void Internal_RemoveSubActors(IEnumerable<Unit> children)
+        {
+            foreach (Unit child in children)
+                Internal_RemoveSubActor(child);
+        }
         
+        #endregion 
+
+        #region Groups and Plans
+
+        private List<UnitGroup> _groups = new List<UnitGroup>();
+        public List<UnitGroup> GetParticipatedGroupsAsUG()
+        {
+            return _groups;
+        }
+
+        public List<IActorGroup> GetParticipatedGroups()
+        {
+            return _groups.ConvertAll(_ => _ as IActorGroup);
+        }
+
+        public List<TaskPlan2> GetParticipatedGroupsPlans()
+        {
+            List<TaskPlan2> res = new List<TaskPlan2>();
+            foreach (var v in GetParticipatedGroups())
+            {
+                res.AddRange(v.GetThisGroupPlans());
+            }
+            return res;
+        }
+
+        public UnitGroup CreateGroupBySubGroupsUnits(IEnumerable<Unit> units)
+        {
+            /*UnitGroup res = GetGroupBySubGroupsUnits(units);
+
+            if (res == null)
+            {
+                res = new UnitGroup(this);
+                foreach (var v in units)
+                {
+                    var cht = v.GenerateGroupFromStructure();
+                    cht.ChangeParentTo(res);
+                }
+            }*/
+            UnitGroup res = new UnitGroup();
+            res.AddUnitToGroup(this);
+
+            foreach (var v in units)
+            {
+                var cht = v.GenerateGroupFromStructure();
+                cht.ChangeParentTo(res);
+            }
+            return res;
+        }
+
+        public UnitGroup GenerateGroupFromStructure()
+        {
+            UnitGroup res;
+            res = new UnitGroup();
+            res.AddUnitToGroup(this);
+
+            foreach (var v in GetSubActorsAsUnits())
+            {
+                var cht = v.GenerateGroupFromStructure();
+                cht.ChangeParentTo(res);
+            }
+            return res;
+        }
+
+        public UnitGroup GenerateGroupFromStructure2()
+        {
+            UnitGroup res;
+            res = new UnitGroup();
+            res.AddUnitToGroup(this);
+
+            GenerateGroupFromStructure2_Aux(res, GetSubActorsAsUnits());
+
+            return res;
+        }
+
+        private void GenerateGroupFromStructure2_Aux(UnitGroup ug, List<Unit> us)
+        {
+            if (us.Count > 0)
+            {
+                UnitGroup subg = new UnitGroup();
+                subg.ChangeParentTo(ug);
+
+                foreach (var u in us)
+                {
+                    subg.AddUnitToGroup(u);
+                    GenerateGroupFromStructure2_Aux(subg, u.GetSubActorsAsUnits());
+                }
+            }
+        }
+
+        #endregion       
+
+        #region Additional tree structure functinos
+
+        public bool IsRoot()
+        {
+            return GetParentActorAsUnit() == null;
+        }
+
+        public bool IsLeaf()
+        {
+            return GetSubActorsAsUnits().Count == 0;
+        }
+
+        public Unit GetRootUnit(ref int height)
+        {
+            if (GetParentActorAsUnit() == null)
+                return this;
+
+            height++;
+            return GetParentActorAsUnit().GetRootUnit(ref height);
+        }
+
+        public Unit GetRootUnit()
+        {
+            int _useless = 0;
+            return GetRootUnit(ref _useless);
+        }
+
+        public List<Unit> GetAllAncestors()
+        {
+            var res = new List<Unit>();
+            var p = GetParentActorAsUnit();
+            while (p!=null)
+            {
+               res.Add(p);
+               p = p.GetParentActorAsUnit();
+            }
+            return res;
+        }
+
+        public List<Unit> GetAllSubUnitsBFS()
+        {
+            List<Unit> result = new List<Unit>();
+
+            Queue<Unit> bfsqueue = new Queue<Unit>();
+            var ch = GetSubActorsAsUnits();
+            foreach (var v in ch)
+                bfsqueue.Enqueue(v);
+
+            while (bfsqueue.Count > 0)
+            {
+                result.Add(bfsqueue.Peek());
+
+                ch = bfsqueue.Dequeue().GetSubActorsAsUnits();
+                foreach (var v in ch)
+                    bfsqueue.Enqueue(v);
+            }
+
+            return result;
+        }
+
+        public static Unit GetLowestCommonAncestorUnit(List<Unit> units, bool flattenCopiedInputsToParent)
+        {   
+            if (units.Count == 1)
+                return units[0];
+
+            int currentLowestKnownHeight = 0;
+            Unit root = units[0].GetRootUnit(ref currentLowestKnownHeight);
+
+            Unit res = units[0].GetParentActorAsUnit();
+            
+            if (res == null)
+                return null;
+
+            List<Unit> unitsCopy = new List<Unit>(units);
+            if (flattenCopiedInputsToParent)
+                FlattenUnitsToParentIfAllSiblingsContained(unitsCopy);
+
+            Queue<Unit> bfsqueue = new Queue<Unit>();
+            bfsqueue.Enqueue(root);
+
+            Queue<int> heightsqueue = new Queue<int>();
+            heightsqueue.Enqueue(0);
+
+            while(bfsqueue.Count > 0)
+            {
+                var h = heightsqueue.Dequeue();
+                var u = bfsqueue.Dequeue();
+                if (h < currentLowestKnownHeight && h > 0)
+                {
+                    currentLowestKnownHeight = h;
+                    res = u.GetParentActorAsUnit();
+                }
+
+                var ch = u.GetSubActorsAsUnits();
+                unitsCopy.Remove(u); // implied : if contains u
+
+                if (unitsCopy.Count == 0)
+                    return res;
+
+                foreach (var v in ch)
+                {
+                    bfsqueue.Enqueue(v);
+                    heightsqueue.Enqueue(h+1);
+                }
+            }
+            
+            return null;
+        }
+
+        public static void FlattenUnitsToParentIfAllSiblingsContained(List<Unit> units)
+        {
+            foreach (var u in new List<Unit>(units))
+                u.Flatten_Aux(units);
+        }
+
+        private void Flatten_Aux(List<Unit> units)
+        {
+            if (!units.Contains(this))
+                return;
+
+            var p = GetParentActorAsUnit();
+            if (p != null)
+            {
+                var siblings = p.GetSubActorsAsUnits();
+                if (units.Contains2(siblings))
+                {
+                    units.Remove2(siblings);
+                    units.Add(p);
+                    p.Flatten_Aux(units);
+                }
+            }
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Selection related 
+
+        public bool IsSelected(Selector selector)
+        {
+            return selector.IsSelected(this);
+        }
+
+        public bool IsPreselected(Selector selector)
+        {
+            return selector.IsPreselected(this);
+        }
+
+        #endregion
+
+        private Formation _nominalFormation;
+        public Formation GetFormation()
+        {
+            return _nominalFormation;
+        }
+
+        public Vector3 GetPosition()
+        {
+            return myMover.transform.position;
+        }
+        
+        #region Main declarations
+
+        private SpriteRenderer mySprRenderer;
+        [HideInInspector] public UnitMover myMover;        
         [HideInInspector] public FactionAffiliation factionAffiliation;
 
         public enum UnitLevel { Army, Corps, Brigade, Division, Regiment, Battalion, Company, Platoon/*, Section*/ };
@@ -245,154 +453,130 @@ namespace Core.Units
         public UnitLevel unitLevel { get { return _level; } /*private*/ set { _level = value; } }
         public UnitType unitType { get { return _type; } private set { _type = value; } }
         
-        private Formation formation;        
-        public Formation GetFormation()
+        #endregion
+
+        #region Initialisation
+
+        private void Init()
         {
-            return formation;
-        }
 
-        /*
-        private List<UnitPieceWrapper> unitPiecesWrappersList = new List<UnitPieceWrapper>();
-        private Dictionary<UnitPieceWrapper, Action> onUnitPiecesRemovalHandlersDict = new Dictionary<UnitPieceWrapper, Action>();
-        
-        public static List<UnitPieceWrapper> GetUnitPieceWrappersInUnit(Unit unit)
-        {
-            return unit.unitPiecesWrappersList;
-        }
-
-        public static void AddUnitPieceToUnit(UnitPieceWrapper unitPieceWrapper, Unit unit, Action actionOnRemovalFromGroup)
-        {    
-            /// Keep an eye
-            if (false//unitPieceWrapper.Unit.GetWrappedReference().isVirtualUnit)
-            {
-                if (unitPieceWrapper.Unit != null)
-                {
-                    RemoveUnitPieceFromUnit(unitPieceWrapper, unit);
-                }
-            }
-    
-            unit.unitPiecesWrappersList.Add(unitPieceWrapper);
-
-            unit.SubscribeOnUnitPieceRemovalFromUnit(unitPieceWrapper, actionOnRemovalFromGroup);
-
-            unitPieceWrapper.SubscribeOnClearance("removeunitpiece",() => RemoveUnitPieceFromUnit(unitPieceWrapper, unit));
-            
-        }
-
-        public static void RemoveUnitPieceFromUnit(UnitPieceWrapper unitPieceWrapper, Unit unit)
-        {
-            if (unit != null)
-            {
-                unitPieceWrapper.UnsubscribeOnClearance("removeunitpiece");
-                if(unit.onUnitPiecesRemovalHandlersDict[unitPieceWrapper] != null)
-                    unit.onUnitPiecesRemovalHandlersDict[unitPieceWrapper].Invoke();
-                else
-                    Debug.LogWarning("is this normal ?");
-                unit.onUnitPiecesRemovalHandlersDict[unitPieceWrapper] = null;
-                unit.onUnitPiecesRemovalHandlersDict.Remove(unitPieceWrapper);
-            }
-        }*/
-
-        public bool IsSelected(Selector selector)
-        {
-            return selector.IsSelected(this);
-        }
-
-        public bool IsHighlighted(Selector selector)
-        {
-            return selector.IsHighlighted(this);
-        }
-
-        public static Unit CreateUnit(bool isVirtualUnit, bool realOrVirtualGroup)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Vector3 GetPosition()
-        {
-            return transform.position; //uw.GetWrappedReference().transform.position;
-            /*var l = uw.WrappedObject.unitPiecesWrappersList;
-            int c = l.Count;
-            Vector3 res = Vector3.zero;
-
-            if (c == 0)
-                throw new SystemException("what");
-
-            foreach(var v in l)
-            {
-                res += v.WrappedObject.transform.position;
-            }
-            res /= c;
-            return res;*/
-        }
-
-        /*public void SubscribeOnUnitPieceRemovalFromUnit(UnitPieceWrapper unitPieceWrapper, Action actionOnUnitPieceRemovalFromUnit)
-        {
-            Action a;
-            if(!onUnitPiecesRemovalHandlersDict.TryGetValue(unitPieceWrapper, out a))
-                onUnitPiecesRemovalHandlersDict.Add(unitPieceWrapper, actionOnUnitPieceRemovalFromUnit);
-            else
-                a += actionOnUnitPieceRemovalFromUnit;
-        }*/
-    
-        private Selector GetUsedSelector()
-        {
-            return SelectionHandler.GetUsedSelector();
-        }
-        
-        //[SerializeField] private bool _isVirtualUnit;
-        //public bool isVirtualUnit { get { return _isVirtualUnit; } private set { _isVirtualUnit = value;} }
-
-        [HideInInspector] public UnitMover myMover;
-        //protected Unit _myWrapper;
-        //public Unit GetRefWrapper() { return _myWrapper; }
-
-        private void Init(/*bool isVirtualUnit*/)
-        {
             factionAffiliation = GetComponent<FactionAffiliation>();
-            
-            UIHandler.GetUIOrdobMenu().AddUnitToOrdob(this);
-            _parent.Value = null;
-            
-            SubscribeOnDestruction("removefromunittree",
-                () =>
-                { 
-                    ChangeParentTo(null);
-                    RemoveChildren(GetChildNodes());
-                } );
-            
-            SubscribeOnDestruction("removeunitfromordob",
-                () => UIHandler.GetUIOrdobMenu().RemoveUnitFromOrdob(this));
-
-            _parent.ForceInvokeOnValueChange();
-            _childNodes = new List<Unit>();
-
-            formation = new Formation(this, Formation.FormationRole.MainGuard, Formation.FormationType.Column);
-
-            SubscribeOnDestruction("clearformation",
-                () => { formation = null; });
-
             myMover = GetComponent<UnitMover>();
-            mySprRenderer = GetComponent<SpriteRenderer>();
-
+            mySprRenderer = GetComponentInChildren<SpriteRenderer>();
+            
+            _nominalFormation = new Formation(this, Formation.FormationRole.MainGuard, Formation.FormationType.Column);
             GetFormation().facingAngle = 0f;
             GetFormation().depthLength = 10f;
             GetFormation().frontLength = 5f;
 
+            UIHandler.GetUIOrdobMenu().RegisterUnitToOrdob(this);
+
+            _parent.Value = null;
+            _parent.ForceInvokeOnValueChange();
+            //_childNodes = new List<Unit>();
+
+            onSelectionStateChange.SubscribeEventHandlerMethod("unselectparentsorchildren",
+                _ =>
+                {
+                    Selector selector = _.Item1;
+                    bool newSelectionState = _.Item2;
+                    int channel = _.Item3;
+
+                    if (channel == 0)
+                    {
+                        if (newSelectionState)
+                        {
+                            foreach (var ps in GetAllAncestors())
+                            {
+                                selector.DeselectEntity(ps);
+                                selector.DeselectEntity(ps, 1);
+                            }
+                            
+                            foreach (var chn in GetAllSubUnitsBFS())
+                            {
+                                selector.DeselectEntity(chn);
+                                selector.SelectEntity(chn, 1);
+                            }
+
+                            selector.SelectEntity(this, 1);
+                        }
+                        else
+                        {
+                            selector.DeselectEntity(this, 1);
+
+                            foreach (var ps in GetAllAncestors())
+                                selector.DeselectEntity(ps, 1);
+
+                            foreach (var chn in GetAllSubUnitsBFS())
+                                selector.DeselectEntity(chn, 1);
+                        }
+                    }
+                });
+
+            /*SubscribeOnDestruction("clearnominalformation",
+                () => { _nominalFormation = null; });*/
+            
+            /*SubscribeOnDestruction("clearlocalauxiliaryformations",
+                () => { _localAuxiliaryFormations.Clear(); });*/
+
+            /*SubscribeOnDestruction("removefromunittree",
+                () =>
+                { 
+                    ChangeParentTo(null);
+                    Internal_RemoveSubActors(GetSubActorsAsUnits());
+                });*/
+            
+            /*SubscribeOnDestruction("removeunitfromordob",
+                () => UIHandler.GetUIOrdobMenu().UnregisterUnitFromOrdob(this));*/
+
         }
+
+        #endregion
+
+        #region Behaviour methods
 
         private void Awake()
         {
-            Init(/*isVirtualUnit*/);
+            Init();
         }
         
         private void Update()
         {
 
-            if (IsSelected(GetUsedSelector())
-                && Input.GetKeyDown(KeyCode.K))
+            var list = GetSubActorsAsUnits();
+            float c = list.Count;
+            if (c > 0)
             {
-                DestroyThis();
+                Vector3 targetPos = Vector3.zero;
+                foreach(var chu in list)
+                {
+                    targetPos += chu.GetPosition();
+                }
+                targetPos /= c;
+                
+                myMover.MoveToPosition(targetPos, 0.5f);
+            }
+
+            if (IsSelected(GetUsedSelector()))
+            {
+                if (Input.GetKeyDown(KeyCode.K))
+                {
+                    DestroyThis();
+                }
+                if (Input.GetKeyDown(KeyCode.Backspace))
+                {
+                    foreach (var gr in GetParticipatedGroups())
+                    {
+                        (gr as UnitGroup).RemoveUnitFromGroup(this);
+                    }
+                }
+                if (Input.GetKeyDown(KeyCode.KeypadEnter))
+                {
+                    foreach (var pl in GetParticipatedGroupsPlans())
+                    {
+                        pl.EndPlanExecution();
+                    }
+                }
             }
 
             DrawUpdate();
@@ -405,38 +589,48 @@ namespace Core.Units
             
             if (IsSelected(GetUsedSelector()))
             {
-                mySprRenderer.color = factionAffiliation.MyFaction.baseColor;
-                foreach (Unit u in GetChildNodes())
+                mySprRenderer.color = factionAffiliation.GetFaction().baseColor;
+                foreach (Unit u in GetSubActorsAsUnits())
                 {
                     var p = u.GetPosition(); // in the future, take the highest ranked unit in the group
                     Debug.DrawLine(transform.position, p, Color.white);
                 }
             }
-            else if (IsHighlighted(GetUsedSelector()))
+            else if (IsPreselected(GetUsedSelector()) || GetUsedSelector().IsSelected(this, 1))
             {
                 mySprRenderer.color = 
-                    new Color(factionAffiliation.MyFaction.baseColor.r,
-                            factionAffiliation.MyFaction.baseColor.g,
-                            factionAffiliation.MyFaction.baseColor.b,
-                            factionAffiliation.MyFaction.baseColor.a/2);
+                    new Color(factionAffiliation.GetFaction().baseColor.r,
+                            factionAffiliation.GetFaction().baseColor.g,
+                            factionAffiliation.GetFaction().baseColor.b,
+                            factionAffiliation.GetFaction().baseColor.a/2);
             }
             
-            if (GetFormation() != null)
+            // Likely to change at least slightly when the notion of the "position" of a formation will be clarified
+            // Most interesting idea for now : Weighted sum of positions of child formations...
+            DrawFormation(GetFormation(), transform.position);
+            //foreach (var form in _localAuxiliaryFormations)
+            //    DrawFormation(form, transform.position);
+        }
+
+        private void DrawFormation(Formation formation, Vector3 center)
+        {
+            if (formation != null)
             {
-                Vector3 center = transform.position;
 
-                var frontPoint = center + GetFormation().GetFacingVector() * GetFormation().depthLength/2;
-                var rearPoint = center - GetFormation().GetFacingVector() * GetFormation().depthLength/2;
+                var frontPoint = center + formation.GetFacingVect() * formation.depthLength/2;
+                var rearPoint = center - formation.GetFacingVect() * formation.depthLength/2;
 
-                var lateralDirection = GetFormation().GetFacingVectorLeftNormal()/2;
+                var lateralDirection = formation.GetFacingVectLeftNormal()/2;
 
                 //Debug.DrawLine(frontPoint, rearPoint);
-                Debug.DrawLine(frontPoint-lateralDirection*GetFormation().frontLength, frontPoint+lateralDirection*GetFormation().frontLength);
-                Debug.DrawLine(frontPoint-lateralDirection*GetFormation().frontLength, rearPoint-lateralDirection*GetFormation().frontLength);
-                Debug.DrawLine(frontPoint+lateralDirection*GetFormation().frontLength, rearPoint+lateralDirection*GetFormation().frontLength);
+                Debug.DrawLine(frontPoint-lateralDirection*formation.frontLength, frontPoint+lateralDirection*formation.frontLength);
+                Debug.DrawLine(frontPoint-lateralDirection*formation.frontLength, rearPoint-lateralDirection*formation.frontLength);
+                Debug.DrawLine(frontPoint+lateralDirection*formation.frontLength, rearPoint+lateralDirection*formation.frontLength);
                 //Debug.DrawLine(rearPoint-lateralDirection*formation.frontLength, rearPoint+lateralDirection*formation.frontLength);
             }
         }
+
+        #endregion
 
     }
 }

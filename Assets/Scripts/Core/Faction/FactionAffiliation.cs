@@ -12,8 +12,8 @@ namespace Core.Faction
     /// </summary>    
     public class FactionAffiliation : MonoBehaviour
     {
-        [SerializeField] private FactionData myFaction;
-        public FactionData MyFaction { get { return myFaction; } private set { myFaction = value; } }
+        [SerializeField] private FactionData _faction;
+        public FactionData GetFaction() { return _faction; }
 
     }
 }

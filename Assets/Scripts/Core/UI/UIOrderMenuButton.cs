@@ -11,6 +11,7 @@ using UnityEngine.UI;
 using Nrealus.Extensions;
 using Nrealus.Extensions.Observer;
 using System.Linq;
+using Core.Formations;
 
 namespace Core.UI
 {
@@ -22,7 +23,7 @@ namespace Core.UI
     public class UIOrderMenuButton : MonoBehaviour
     {
         
-        private enum TaskTypeEnum {Move, Build, EngageAt}
+        private enum TaskTypeEnum { Move, Move2, EngageAt}
         [SerializeField]
         private TaskTypeEnum taskTypeAsEnumField;
 
@@ -58,32 +59,36 @@ namespace Core.UI
             {
                 associatedTaskEditMenu.SetActiveRecursivelyExt(true);
                 
-                List<ISelectable> l = mySelector.GetCurrentlySelectedEntitiesOfType<Unit>();
+                List<ISelectable> selected = mySelector.GetCurrentlySelectedEntitiesOfType<Unit>();
                 
                 switch (taskTypeAsEnumField)
                 {
                     case TaskTypeEnum.Move :
-                        CreateTaskMarkerEtc<MoveTaskMarker>(l);
+                        UITaskMarkerCreationAndTaskBuilding<MoveTaskMarker>(selected);
                         break;
-                    /*case TaskTypeEnum.Build :
-                        CreateTaskMarker<MoveTaskMarker>(l);
+                    case TaskTypeEnum.Move2 :
+                        UITaskMarkerCreationAndTaskBuilding<MoveTaskMarker>(selected);
                         break;
                     case TaskTypeEnum.EngageAt :
-                        CreateTaskMarker<MoveTaskMarker>(l);
-                        break;*/
+                        UITaskMarkerCreationAndTaskBuilding<TargetTaskMarker>(selected);
+                        break;
                 }
             }
             on = desiredButtonState;
         }
 
-        private void CreateTaskMarkerEtc<T>(List<ISelectable> list) where T : TaskMarker
+        private IActorGroup _actorGroup;
+        private MapMarkerWrapper<TaskMarker> _lastPlacedTaskMarkerWrapper;
+        private void UITaskMarkerCreationAndTaskBuilding<T>(List<ISelectable> selected) where T : TaskMarker
         {
-            if (list.Count > 0)
+            if (selected.Count > 0)
             {
-                T taskMarker = TaskMarker.CreateInstanceAtScreenPosition<T>(UIHandler.GetPointedScreenPosition());
 
+                //if (_taskSubject == null)
+                //    _taskSubject = PrepareAndGetSubjectFromSelected(selected);
+
+                T taskMarker = TaskMarker.CreateInstanceAtScreenPosition<T>(UIHandler.GetPointedScreenPosition());
                 taskMarker.InitBinderForTask(associatedTaskEditMenu);
-                
                 taskMarker.EnterPlacementUIMode();
 
                 taskMarker.OnExitPlacementUIMode.SubscribeEventHandlerMethod("spawnerbuttondeactivate",// += SpawnerButtonDeactivate;
@@ -98,19 +103,40 @@ namespace Core.UI
                     {
                         if (b)
                         {
-                            EditedPlanAddTask(taskMarker.GetTask(), list[0] as Unit);
+                            if (_actorGroup == null)
+                                _actorGroup = UnitGroup.PrepareAndCreateGroupFromSelected(selected);
+
+                            TaskPlan2 taskPlan = taskMarker.InsertAssociatedTaskIntoPlan(_actorGroup, _lastPlacedTaskMarkerWrapper?.Value);
+
+                            if (!taskPlan.IsPlanBeingExecuted())
+                                taskPlan.StartPlanExecution();
 
                             if (Input.GetKey(KeyCode.LeftShift))
                             {
+                                /*if (_lastPlacedTaskMarkerWrapper == null)
+                                {
+                                    var tm = ITaskSubject.GetPlans().FirstOrDefault()?.GetCurrentTaskInPlan()?.GetTaskMarker();
+                                    if (tm != null)
+                                        _lastPlacedTaskMarkerWrapper = new MapMarkerWrapper<TaskMarker>(tm);
+                                }
+                                else
+                                {
+                                    _lastPlacedTaskMarkerWrapper = new MapMarkerWrapper<TaskMarker>(taskMarker);
+                                }*/
                                 _lastPlacedTaskMarkerWrapper = new MapMarkerWrapper<TaskMarker>(taskMarker);
                                 OnButtonActivationOrNot(true);
                             }
                             else
+                            {
+                                _actorGroup = null;
                                 _lastPlacedTaskMarkerWrapper = null;
+                            }
                         }
                         else
                         {
+                            _actorGroup = null;
                             _lastPlacedTaskMarkerWrapper = null;
+                            taskMarker.OnPlacementConfirmation.UnsubscribeEventHandlerMethod("onplacementconfirmationcallback");
                             //editedTaskPlan = null;
                         }
                     });
@@ -119,46 +145,36 @@ namespace Core.UI
             }
         }
 
-        private MapMarkerWrapper<TaskMarker> _lastPlacedTaskMarkerWrapper;
-        //private TaskPlan2 editedTaskPlan;
-
-        private void EditedPlanAddTask(Task t, ITaskSubject ts)
+        /*private ITaskSubject PrepareAndGetSubjectFromSelected(List<ISelectable> selectedEntities)
         {
-            t.GetParameters().AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
-            if (_lastPlacedTaskMarkerWrapper?.Value == null)
+            Formation res;
+            if (selectedEntities.Count == 1)
             {
-                var tp = new TaskPlan2(ts);
-                tp.AddTaskToPlan(t);
-                tp.StartPlanExecution();                
+                (selectedEntities[0] as Unit).ResetNominalFormationStructure();
+                res = (selectedEntities[0] as Unit).GetNominalFormation();
             }
             else
             {
-                _lastPlacedTaskMarkerWrapper?.Value.GetTask().GetTaskPlan().AddTaskToPlan(t);
-            }
+                var units = selectedEntities.ConvertAll( _ => _ as Unit);
+                Unit.FlattenUnitsToParentIfAllSiblingsContained(units);
 
-            /*if (editedTaskPlan == null)
-            {
-                editedTaskPlan = new TaskPlan2(ts);
-                editedTaskPlan.AddTaskToPlan(t);
-                editedTaskPlan.StartPlanExecution();
-            }
-            else
-            {
-                editedTaskPlan.AddTaskToPlan(t);
-            }
+                Unit lca = Unit.GetLowestCommonAncestor(units, false);
+                units.Remove(lca);
 
-            t.GetParameters().AddExecutionMode(TaskParams.TaskExecutionMode.Chain);
-
-            if (Input.GetKey(KeyCode.LeftShift))
-            {
-                OnButtonActivationOrNot(true);
+                if (units.Count == 0)
+                {
+                    Debug.Log("ky");
+                    lca.ResetNominalFormationStructure();
+                    res = lca.GetNominalFormation();
+                }
+                else
+                {
+                    Debug.Log("kyy");
+                    res = lca.AddOrGetLocalAuxiliaryFormation(units);
+                }
             }
-            else
-            {
-                editedTaskPlan = null;
-            }*/
-
-        }
+            return res;
+        }*/
 
     }
 }

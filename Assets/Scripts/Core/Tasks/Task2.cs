@@ -19,31 +19,6 @@ namespace Core.Tasks
             return taskPlan;
         }
 
-        protected override bool InstanceTryStartExecution()
-        {
-            if (IsInPhase(TaskPhase.Staging))
-            {
-                if(GetTaskPlan().GetCurrentTaskInPlan() == this)
-                {
-                    SetPhase(TaskPhase.WaitToStartExecution);
-                    return true;
-                }
-                else
-                {
-                    if (GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.InstantOverrideAll))
-                    {
-                        GetTaskPlan().StopPlanExecution();
-                        SetPhase(Task.TaskPhase.WaitToStartExecution);  
-                        return true;
-                    }
-                    return false;
-                }
-            }
-
-            return false;
-        }
-
-
         protected override void InitPhasesFSM()
         {
             
@@ -56,10 +31,10 @@ namespace Core.Tasks
                 UpdateExecutionWaitingTimeToStart);
 
             orderPhasesFSM.AddState(TaskPhase.Execution,
-                EnterExecution,
+                null/*EnterExecution*/,
                 UpdateExecution);
 
-            orderPhasesFSM.AddState(TaskPhase.Pause);
+            orderPhasesFSM.AddState(TaskPhase.Paused);
 
             orderPhasesFSM.AddState(TaskPhase.Cancelled,
                 () =>
@@ -68,13 +43,11 @@ namespace Core.Tasks
                 { });
 
             orderPhasesFSM.AddState(TaskPhase.End,
-               () => 
-               { },
+               null/*EnterEnd*/,
                () =>
                {
-                    SetPhase( TaskPhase.End2);
+                    SetPhase(TaskPhase.End2);
                });
-
             
             bool waitForReactionAtEnd = false;
 
@@ -87,11 +60,16 @@ namespace Core.Tasks
                 {
                     waitForReactionAtEnd = true;
                 }
-                if (GetTaskPlan().GetTaskInPlanFollowing(this) != null
-                    && GetTaskPlan().GetTaskInPlanFollowing(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
+
+                if (GetTaskPlan()?.GetTaskInPlanAfter(this) != null
+                    && GetTaskPlan().GetTaskInPlanAfter(this).GetParameters().ContainsExecutionMode(TaskParams.TaskExecutionMode.Chain))
                 {
-                    nextActiveOrder = new TaskWrapper(GetTaskPlan().GetTaskInPlanFollowing(this));
+                    nextActiveOrder = new TaskWrapper(GetTaskPlan().GetTaskInPlanAfter(this));
                 }
+                /*else
+                {
+                    GetTaskPlan().EndPlanExecution();
+                }*/
             },
             () =>
             {
@@ -132,12 +110,17 @@ namespace Core.Tasks
             }
         }
 
-        protected virtual void EnterExecution()
+        /*protected virtual void EnterExecution()
         {
-            GetParameters().plannedStartingTime = TimeHandler.CurrentTime();
-        }
+            //GetParameters().plannedStartingTime = TimeHandler.CurrentTime();
+        }*/
 
         protected abstract void UpdateExecution();
+
+        /*protected virtual void EnterEnd()
+        {
+
+        }*/
 
     }
 }

@@ -14,13 +14,13 @@ namespace Core.MapMarkers
     public class FirePositionMarker : MapMarker//, IHasRefWrapper<MapMarkerWrapper<FirePositionMarker>>
     {
 
-        public static FirePositionMarker CreateInstance(Vector3 position, float radius)
+        public static FirePositionMarker CreateFirePositionMarker(Vector3 worldPosition, float radius)
         {
             FirePositionMarker res = Instantiate<FirePositionMarker>(
                 GameObject.Find("ResourcesList").GetComponent<ResourcesListComponent>().firePositionMarkerPrefab,
                 GameObject.Find("UI World Canvas").transform);
             
-            res.Init(position, radius);
+            res.Init(worldPosition, radius);
 
             return res;
         }

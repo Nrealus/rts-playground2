@@ -3771,7 +3771,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ac6c589d9e588e4b9b6ff74678d84bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  editTasksParent: {fileID: 3777231944253688019}
 --- !u!1 &7106178221845335655
 GameObject:
   m_ObjectHideFlags: 0
@@ -6827,7 +6826,7 @@ PrefabInstance:
     - target: {fileID: 759156176540157670, guid: b3cdd245c795fb8648306423bdf1fe44,
         type: 3}
       propertyPath: taskTypeAsEnumField
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4512027486335028589, guid: b3cdd245c795fb8648306423bdf1fe44,
         type: 3}
@@ -14052,6 +14051,11 @@ PrefabInstance:
       propertyPath: associatedTaskEditMenu
       value: 
       objectReference: {fileID: 1111436673703068920}
+    - target: {fileID: 759156176540157670, guid: b3cdd245c795fb8648306423bdf1fe44,
+        type: 3}
+      propertyPath: taskTypeAsEnumField
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4512027486335028589, guid: b3cdd245c795fb8648306423bdf1fe44,
         type: 3}
       propertyPath: m_Delegates.Array.data[0].callback.m_PersistentCalls.m_Calls.Array.data[0].m_Target
